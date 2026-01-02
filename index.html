@@ -9,60 +9,49 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
-        /* Adjusted font size: professional and slightly smaller */
         body { 
             font-family: 'Inter', sans-serif; 
-            font-size: 0.9rem; 
-            color: #334155;
+            font-size: 0.9rem; /* Slightly smaller font as requested */
         }
         .sidebar-link:hover { background-color: rgba(255,255,255,0.1); }
         .stat-card { transition: all 0.3s ease; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
-        select, button { font-size: 0.85rem !important; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="bg-slate-50 flex">
+<body class="bg-gray-100 flex">
 
-    <aside class="w-64 bg-slate-900 h-screen sticky top-0 text-white hidden md:flex flex-col shadow-xl">
-        <div class="p-6 border-b border-slate-800">
-            <h2 class="font-bold text-lg tracking-tight text-blue-400">DEVELOPMENT</h2>
-            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1 font-semibold">Data Analytics Hub</p>
+    <aside class="w-64 bg-slate-900 h-screen sticky top-0 text-white hidden md:flex flex-col">
+        <div class="p-6 border-b border-slate-700">
+            <h2 class="font-bold text-lg tracking-tight">D4D PORTAL</h2>
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Development Analytics</p>
         </div>
-        <nav class="flex-1 p-4 space-y-1">
-            <a href="#" class="block p-3 rounded sidebar-link bg-blue-600/20 text-blue-400 font-medium">State Dashboard</a>
-            <a href="#" class="block p-3 rounded sidebar-link text-slate-400 hover:text-white transition">District Comparison</a>
-            <a href="#" class="block p-3 rounded sidebar-link text-slate-400 hover:text-white transition">Sectoral Deep-Dive</a>
-            <a href="#" class="block p-3 rounded sidebar-link text-slate-400 hover:text-white transition">Policy Impact</a>
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="#" class="block p-3 rounded sidebar-link bg-blue-600 text-sm">Dashboard Overview</a>
+            <a href="#" class="block p-3 rounded sidebar-link text-sm text-slate-300">State Comparison</a>
+            <a href="#" class="block p-3 rounded sidebar-link text-sm text-slate-300">Sector Reports</a>
+            <a href="#" class="block p-3 rounded sidebar-link text-sm text-slate-300">Global Benchmarks</a>
         </nav>
-        <div class="p-4 border-t border-slate-800 text-[10px] text-slate-500 text-center uppercase tracking-tighter">
-            System Updated: Jan 2026
+        <div class="p-4 border-t border-slate-700 text-[11px] text-slate-500 text-center">
+            Updated: Jan 2026
         </div>
     </aside>
 
     <main class="flex-1 min-h-screen">
         
-        <header class="bg-white border-b border-slate-200 p-6">
+        <header class="bg-white border-b border-gray-200 p-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-xl font-bold text-slate-800 tracking-tight uppercase">DATA FOR DEVELOPMENT</h1>
-                    <p class="text-slate-500 text-sm mt-0.5 font-medium italic">"Precision Insights for a Progressive Tomorrow"</p>
+                    <h1 class="text-xl font-bold text-gray-800 uppercase tracking-tight">Data For Development</h1>
+                    <p class="text-gray-500 text-sm mt-1 italic">"Precision Insights for a Progressive Tomorrow"</p>
                 </div>
-                
-                <div class="flex items-center gap-3">
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">Select State</span>
-                        <select class="border border-slate-300 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
-                            <option>Maharashtra</option>
-                            <option>Karnataka</option>
-                            <option>Gujarat</option>
-                            <option>Kerala</option>
-                            <option>Tamil Nadu</option>
-                            <option>Uttar Pradesh</option>
-                        </select>
-                    </div>
-                    <button class="mt-4 bg-slate-800 text-white px-4 py-2 rounded-md font-semibold hover:bg-slate-700 transition shadow-sm">
-                        Apply Filters
-                    </button>
+                <div class="flex gap-3">
+                    <select class="border border-gray-300 rounded px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500">
+                        <option>Select State: Maharashtra</option>
+                        <option>Karnataka</option>
+                        <option>Gujarat</option>
+                        <option>Tamil Nadu</option>
+                    </select>
+                    <button class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-semibold hover:bg-blue-700 transition">EXPORT PDF</button>
                 </div>
             </div>
         </header>
@@ -70,80 +59,80 @@
         <div class="p-6 space-y-6">
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">GSDP Growth</p>
+                <div class="stat-card bg-white p-4 rounded-lg border border-gray-200">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase">GSDP Growth</p>
                     <div class="flex items-end justify-between mt-1">
-                        <h3 class="text-2xl font-bold text-slate-800">7.2%</h3>
-                        <span class="text-green-600 text-[11px] font-bold bg-green-50 px-2 py-0.5 rounded">▲ 0.4%</span>
+                        <h3 class="text-xl font-bold text-gray-800">7.2%</h3>
+                        <span class="text-green-500 text-xs font-medium">▲ 0.4%</span>
                     </div>
                 </div>
-                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Literacy Rate</p>
+                <div class="stat-card bg-white p-4 rounded-lg border border-gray-200">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase">Literacy Rate</p>
                     <div class="flex items-end justify-between mt-1">
-                        <h3 class="text-2xl font-bold text-slate-800">82.4%</h3>
-                        <span class="text-blue-600 text-[11px] font-bold">State Rank #5</span>
+                        <h3 class="text-xl font-bold text-gray-800">82.4%</h3>
+                        <span class="text-blue-500 text-xs font-medium">Rank #5</span>
                     </div>
                 </div>
-                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-orange-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Health Index</p>
+                <div class="stat-card bg-white p-4 rounded-lg border border-gray-200">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase">Health Score</p>
                     <div class="flex items-end justify-between mt-1">
-                        <h3 class="text-2xl font-bold text-slate-800">74/100</h3>
-                        <span class="text-amber-600 text-[11px] font-bold">Stable</span>
+                        <h3 class="text-xl font-bold text-gray-800">74/100</h3>
+                        <span class="text-green-500 text-xs font-medium">Stable</span>
                     </div>
                 </div>
-                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-purple-500">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Renewable Mix</p>
+                <div class="stat-card bg-white p-4 rounded-lg border border-gray-200">
+                    <p class="text-[11px] font-bold text-gray-400 uppercase">Renewable Energy</p>
                     <div class="flex items-end justify-between mt-1">
-                        <h3 class="text-2xl font-bold text-slate-800">35%</h3>
-                        <span class="text-green-600 text-[11px] font-bold bg-green-50 px-2 py-0.5 rounded">▲ 5.1%</span>
+                        <h3 class="text-xl font-bold text-gray-800">35%</h3>
+                        <span class="text-orange-500 text-xs font-medium">▲ 5%</span>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 class="text-[11px] font-bold text-slate-500 uppercase mb-6 tracking-widest">Growth Projection (2021-2026)</h4>
-                    <canvas id="lineChart" height="140"></canvas>
+                <div class="bg-white p-5 rounded-lg border border-gray-200">
+                    <h4 class="text-xs font-bold text-gray-600 uppercase mb-4">5-Year Growth Trend</h4>
+                    <canvas id="lineChart" height="150"></canvas>
                 </div>
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h4 class="text-[11px] font-bold text-slate-500 uppercase mb-6 tracking-widest">Sectoral Budget Allocation</h4>
-                    <canvas id="barChart" height="140"></canvas>
+                <div class="bg-white p-5 rounded-lg border border-gray-200">
+                    <h4 class="text-xs font-bold text-gray-600 uppercase mb-4">Sectoral Investment Allocation</h4>
+                    <canvas id="barChart" height="150"></canvas>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h4 class="text-[11px] font-bold text-slate-600 uppercase">Live Development Metrics</h4>
-                    <button class="text-blue-600 font-bold text-[10px] uppercase hover:underline">View Full Dataset</button>
+            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h4 class="text-xs font-bold text-gray-600 uppercase">Development Metric Details</h4>
+                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">LIVE DATA</span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-[13px]">
-                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-gray-50 text-gray-500 border-b">
                             <tr>
-                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">Indicator Name</th>
-                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">Current Value</th>
-                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">National Avg</th>
-                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">Action Status</th>
+                                <th class="px-6 py-3 font-semibold">Indicator Name</th>
+                                <th class="px-6 py-3 font-semibold">State Score</th>
+                                <th class="px-6 py-3 font-semibold">National Average</th>
+                                <th class="px-6 py-3 font-semibold">Trend</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-semibold text-slate-700">Rural Digital Connectivity</td>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-medium">Digital Literacy (Rural)</td>
                                 <td class="px-6 py-4">58.2%</td>
-                                <td class="px-6 py-4 text-slate-400">42.0%</td>
-                                <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase">On Track</span></td>
+                                <td class="px-6 py-4 text-gray-400">42.0%</td>
+                                <td class="px-6 py-4"><span class="text-green-600 font-bold font-xs">↑ Strong</span></td>
                             </tr>
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-semibold text-slate-700">Maternal Mortality Rate</td>
-                                <td class="px-6 py-4">98/1L</td>
-                                <td class="px-6 py-4 text-slate-400">103/1L</td>
-                                <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Improving</span></td>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-medium">Maternal Mortality Ratio</td>
+                                <td class="px-6 py-4">98</td>
+                                <td class="px-6 py-4 text-gray-400">103</td>
+                                <td class="px-6 py-4"><span class="text-blue-600 font-bold font-xs">↘ Improving</span></td>
                             </tr>
-                            <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-semibold text-slate-700">Ease of Logistics</td>
-                                <td class="px-6 py-4">Top Tier</td>
-                                <td class="px-6 py-4 text-slate-400">Mid Tier</td>
-                                <td class="px-6 py-4"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Needs Review</span></td>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-medium">Forest Cover Growth</td>
+                                <td class="px-6 py-4">12.5%</td>
+                                <td class="px-6 py-4 text-gray-400">10.1%</td>
+                                <td class="px-6 py-4"><span class="text-green-600 font-bold font-xs">↑ Strong</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -160,25 +149,15 @@
             data: {
                 labels: ['2021', '2022', '2023', '2024', '2025', '2026'],
                 datasets: [{
-                    label: 'Development Index Score',
+                    label: 'State Index Score',
                     data: [62, 65, 64, 69, 72, 74],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                    tension: 0.3,
+                    borderColor: '#2563eb',
+                    tension: 0.4,
                     fill: true,
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#3b82f6'
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)'
                 }]
             },
-            options: { 
-                plugins: { legend: { display: false } }, 
-                scales: { 
-                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
-                } 
-            }
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
         });
 
         // Bar Chart Logic
@@ -186,22 +165,14 @@
         new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: ['Health', 'Education', 'Infra', 'Agriculture', 'Tech'],
+                labels: ['Health', 'Edu', 'Infra', 'Agri', 'Tech'],
                 datasets: [{
-                    label: 'Budget (in Cr)',
+                    label: 'Budget Allocation (Cr)',
                     data: [450, 620, 890, 310, 540],
-                    backgroundColor: '#1e293b',
-                    borderRadius: 4,
-                    barThickness: 25
+                    backgroundColor: '#0f172a'
                 }]
             },
-            options: { 
-                plugins: { legend: { display: false } }, 
-                scales: { 
-                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
-                } 
-            }
+            options: { plugins: { legend: { display: false } } }
         });
     </script>
 </body>
