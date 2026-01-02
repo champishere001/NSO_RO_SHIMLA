@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PLFS Pro - Multi-File Dashboard</title>
+    <title>PLFS Pro - Master Dashboard</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -11,7 +11,7 @@
     <style>
         :root { 
             --primary: #0061a4; --bg: #f8fafc; --glass: rgba(255, 255, 255, 0.8);
-            --border: #e2e8f0; --text: #1e293b; --accent: #00bfa5;
+            --border: #e2e8f0; --text: #1e293b; --accent: #00bfa5; --danger: #ef4444;
         }
 
         body { 
@@ -29,7 +29,7 @@
 
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
-        /* Enhanced Top Bar */
+        /* Top Bar */
         .top-bar {
             height: 80px; background: var(--glass); backdrop-filter: blur(10px);
             padding: 0 30px; display: flex; align-items: center; justify-content: space-between;
@@ -48,8 +48,6 @@
             display: flex; flex-direction: column; transition: transform 0.3s;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
         }
-        .pane:hover { transform: translateY(-2px); }
-
         .pane-fresh { width: 60%; }
         .pane-rv { width: 40%; background: #fcfdfe; }
 
@@ -68,50 +66,65 @@
         }
         td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
-        /* Inputs */
-        input[type="date"], input[type="text"] {
+        /* Buttons & UI Elements */
+        .btn-group { display: flex; gap: 10px; }
+        .btn {
+            padding: 10px 18px; border-radius: 10px; border: none; cursor: pointer;
+            font-weight: 700; font-size: 12px; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        input[type="date"], input[type="text"], select {
             border: 1.5px solid var(--border); padding: 8px 12px; border-radius: 10px;
-            font-size: 12px; outline: none; transition: 0.2s; width: 100%;
+            font-size: 12px; outline: none; transition: 0.2s;
         }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,97,164,0.1); }
 
-        .btn-sync {
-            background: var(--primary); color: white; padding: 12px 24px; border-radius: 12px;
-            border: none; cursor: pointer; font-weight: 700; transition: 0.3s;
-        }
-        .btn-sync:hover { background: #004a7c; transform: scale(1.02); }
-
-        /* File Upload Area */
         .upload-zone {
             border: 2px dashed var(--primary); background: #f0f7ff;
-            padding: 10px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+            padding: 8px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+        }
+
+        #loadingOverlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.8);
+            display: none; justify-content: center; align-items: center; z-index: 999;
+            font-weight: 700; color: var(--primary);
         }
     </style>
 </head>
 <body>
 
+    <div id="loadingOverlay">Connecting to Server...</div>
     <div class="month-rail" id="monthRail"></div>
 
     <div class="main">
         <header class="top-bar">
             <div>
                 <h1 style="margin:0; font-size: 22px; font-weight: 800; color: #0f172a;">PLFS Master Hub</h1>
-                <div id="monthDisplay" style="color: var(--primary); font-weight: 600;">January Operations</div>
+                <div id="monthDisplay" style="color: var(--primary); font-weight: 600;">Loading...</div>
             </div>
 
-            <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="btn-group">
                 <div class="stats-pill">
                     <span id="totalCount">Units: 0</span>
                     <span id="sroCount">SROs: 0</span>
                 </div>
                 
                 <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                    <span style="font-size: 20px;">📂</span>
-                    <span style="font-size: 12px; font-weight: 600;">Upload Multi-Files</span>
+                    <span>📂</span>
+                    <span style="font-size: 11px; font-weight: 700;">Upload Files</span>
                 </div>
                 <input type="file" id="fileInput" multiple style="display:none" onchange="uploadFiles(this)">
                 
-                <button class="btn-sync" onclick="saveToCloud()">Sync To Cloud</button>
+                <button class="btn btn-secondary" id="fetchBtn" onclick="fetchFromServer()">
+                    <span>🔄</span> Fetch Data
+                </button>
+
+                <button class="btn btn-primary" onclick="saveToCloud()">
+                    <span>☁️</span> Sync Cloud
+                </button>
             </div>
         </header>
 
@@ -119,14 +132,14 @@
             <section class="pane pane-fresh">
                 <div class="header-strip">
                     <h3>1st Visit (Fresh)</h3>
-                    <select id="sroFilter" onchange="applyFilters()" style="border-radius: 8px; border: 1px solid var(--border); padding: 4px;">
+                    <select id="sroFilter" onchange="applyFilters()">
                         <option value="all">All SROs</option>
                     </select>
                 </div>
                 <div class="table-wrap">
                     <table>
                         <thead>
-                            <tr><th>FSU</th><th>Village/Town</th><th>Enumerator Name</th><th>Start Date</th><th>End Date</th></tr>
+                            <tr><th>FSU</th><th>Village/Town</th><th>Enumerator</th><th>Start Date</th><th>End Date</th></tr>
                         </thead>
                         <tbody id="freshBody"></tbody>
                     </table>
@@ -164,44 +177,78 @@
     let masterData = [];
     let selectedMonth = new Date().getMonth();
 
-    // Init Rail
-    const rail = document.getElementById('monthRail');
-    months.forEach((m, i) => {
-        rail.innerHTML += `<div class="month-tab ${i === selectedMonth ? 'active' : ''}" onclick="changeMonth(${i})">${m.substring(0,3).toUpperCase()}</div>`;
-    });
+    // Initialize UI
+    window.onload = () => {
+        const rail = document.getElementById('monthRail');
+        months.forEach((m, i) => {
+            rail.innerHTML += `<div class="month-tab ${i === selectedMonth ? 'active' : ''}" onclick="changeMonth(${i})">${m.substring(0,3).toUpperCase()}</div>`;
+        });
+        fetchFromServer(); // Auto-fetch on load
+    };
+
+    async function fetchFromServer() {
+        const overlay = document.getElementById('loadingOverlay');
+        const fetchBtn = document.getElementById('fetchBtn');
+        overlay.style.display = 'flex';
+        fetchBtn.disabled = true;
+
+        try {
+            const snapshot = await database.ref('plfs_roster/Himachal').once('value');
+            const data = snapshot.val();
+            
+            if (data) {
+                // Convert object to array if necessary
+                masterData = Array.isArray(data) ? data : Object.values(data);
+                updateSroDropdown();
+                applyFilters();
+            } else {
+                console.log("No remote data found.");
+            }
+        } catch (e) {
+            alert("Fetch failed: " + e.message);
+        } finally {
+            overlay.style.display = 'none';
+            fetchBtn.disabled = false;
+        }
+    }
 
     async function uploadFiles(input) {
         if (!input.files.length) return;
         
-        let allSros = new Set();
-        
         for (let file of input.files) {
             const buffer = await file.arrayBuffer();
-            const raw = XLSX.utils.sheet_to_json(XLSX.read(buffer).Sheets[XLSX.read(buffer).SheetNames[0]], {range: 7});
+            const workbook = XLSX.read(buffer);
+            const raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {range: 7});
             
             raw.forEach(r => {
                 if (!r.FSU) return;
                 const sro = String(r['SRO [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim();
-                allSros.add(sro);
                 const baseMonth = (parseInt(String(r['Month [Qtr]']).match(/\d+/)) - 1) % 12;
 
                 for (let v = 1; v <= 4; v++) {
-                    masterData.push({
-                        uid: `${r.FSU}-V${v}`, fsu: r.FSU, visit: v, sro: sro,
-                        monthIdx: (baseMonth + (v - 1)) % 12,
-                        village: String(r['Village[Code]'] || r['Town [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim(),
-                        enumerator: "", startDate: "", endDate: "", collectionDate: ""
-                    });
+                    const uid = `${r.FSU}-V${v}`;
+                    // Check if duplicate
+                    if (!masterData.find(m => m.uid === uid)) {
+                        masterData.push({
+                            uid: uid, fsu: r.FSU, visit: v, sro: sro,
+                            monthIdx: (baseMonth + (v - 1)) % 12,
+                            village: String(r['Village[Code]'] || r['Town [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim(),
+                            enumerator: "", startDate: "", endDate: "", collectionDate: ""
+                        });
+                    }
                 }
             });
         }
+        updateSroDropdown();
+        applyFilters();
+    }
 
+    function updateSroDropdown() {
+        const allSros = [...new Set(masterData.map(d => d.sro))].sort();
         const sroSelect = document.getElementById('sroFilter');
         sroSelect.innerHTML = '<option value="all">All SROs</option>';
-        Array.from(allSros).sort().forEach(s => sroSelect.innerHTML += `<option value="${s}">${s}</option>`);
-        
-        document.getElementById('sroCount').innerText = `SROs: ${allSros.size}`;
-        applyFilters();
+        allSros.forEach(s => sroSelect.innerHTML += `<option value="${s}">${s}</option>`);
+        document.getElementById('sroCount').innerText = `SROs: ${allSros.length}`;
     }
 
     function changeMonth(idx) {
@@ -271,9 +318,13 @@
     function updateVal(uid, key, val) { const item = masterData.find(d => d.uid === uid); if (item) item[key] = val; }
 
     async function saveToCloud() {
-        if (!masterData.length) return;
-        await database.ref('plfs_roster/Himachal').set(masterData);
-        alert("Success: All files merged and synced!");
+        if (!masterData.length) return alert("No data to sync.");
+        try {
+            await database.ref('plfs_roster/Himachal').set(masterData);
+            alert("Cloud Sync Successful!");
+        } catch (e) {
+            alert("Sync Failed: " + e.message);
+        }
     }
 </script>
 </body>
