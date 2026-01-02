@@ -2,335 +2,207 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PLFS Pro - Premium Dashboard (Large Font)</title>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data for Development | State Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { 
-            --bg-glow: radial-gradient(circle at top right, #1e3a8a, #070b14);
-            --pane-cream: #fffefb; 
-            --primary: #2563eb;
-            --accent: #00f2fe;
-            --text-dark: #0f172a;
-            --text-light: #f8fafc;
-            --border: #e2e8f0;
-        }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; 
-            background: var(--bg-glow);
-            background-attachment: fixed;
-            display: flex; height: 100vh; color: var(--text-dark); overflow: hidden;
-            font-size: 16px; /* Increased base size */
-        }
-
-        /* Month Rail */
-        .month-rail { 
-            width: 100px; background: rgba(15, 23, 42, 0.85); 
-            backdrop-filter: blur(15px);
-            display: flex; flex-direction: column; padding: 15px 0; z-index: 100;
-            border-right: 1px solid rgba(255,255,255,0.1);
-        }
-        .month-tab { 
-            padding: 22px 0; color: #94a3b8; cursor: pointer; text-align: center; 
-            font-size: 13px; font-weight: 800; transition: 0.3s;
-        }
-        .month-tab.active { 
-            color: var(--accent); background: rgba(255,255,255,0.05); 
-            box-shadow: inset 5px 0 0 var(--accent);
-        }
-
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-
-        /* Top Bar */
-        .top-bar {
-            height: 100px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(25px);
-            padding: 0 40px; display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 50;
-        }
-        .top-bar h1 { color: white; font-size: 32px; margin:0; text-shadow: 0 0 20px rgba(0,242,254,0.3); }
-
-        /* Stats & Buttons */
-        .stats-pill { 
-            background: rgba(255, 255, 255, 0.1); color: var(--accent); padding: 10px 20px; 
-            border-radius: 30px; font-size: 15px; font-weight: 700; border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .btn {
-            padding: 14px 24px; border-radius: 12px; border: none; cursor: pointer;
-            font-weight: 700; font-size: 15px; transition: 0.3s; display: flex; align-items: center; gap: 10px;
-        }
-        .btn-primary { background: var(--accent); color: #0f172a; box-shadow: 0 0 20px rgba(0,242,254,0.4); }
-        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
-        .btn:hover { transform: translateY(-3px); filter: brightness(1.2); }
-
-        /* Dashboard & Creamy Panes */
-        .dashboard { display: flex; flex: 1; overflow: hidden; padding: 30px; gap: 30px; }
-        .pane { 
-            background: var(--pane-cream); border-radius: 28px; 
-            display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.6);
-        }
-        .pane-fresh { width: 65%; }
-        .pane-rv { width: 35%; }
-
-        .header-strip { 
-            padding: 25px 30px; background: rgba(0,0,0,0.03);
-            border-bottom: 2px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;
-        }
-        .header-strip h3 { margin: 0; font-size: 18px; letter-spacing: 2px; color: #1e3a8a; font-weight: 800; }
-
-        /* Tables */
-        .table-wrap { flex: 1; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th { 
-            background: #f8fafc; padding: 20px; text-align: left; font-size: 13px; 
-            color: #475569; text-transform: uppercase; position: sticky; top: 0; z-index: 10;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        td { padding: 20px; border-bottom: 1px solid #f1ece4; font-size: 16px; color: var(--text-dark); }
-        tr:hover { background: #fffcf0; }
-
-        /* Inputs - Large */
-        input[type="date"], input[type="text"], select {
-            border: 2px solid #e2e8f0; padding: 12px; border-radius: 10px;
-            font-size: 15px; background: white; width: 100%; font-family: inherit;
-        }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-
-        #loadingOverlay {
-            position: fixed; inset: 0; background: rgba(7, 11, 20, 0.95);
-            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 999;
-            color: var(--accent); font-size: 24px; gap: 25px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
-        .fsu-badge { font-weight: 800; color: var(--primary); font-size: 17px; }
+        /* Adjusted font size: professional and slightly smaller */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            font-size: 0.9rem; 
+            color: #334155;
+        }
+        .sidebar-link:hover { background-color: rgba(255,255,255,0.1); }
+        .stat-card { transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+        select, button { font-size: 0.85rem !important; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 flex">
 
-    <div id="loadingOverlay">
-        <div style="width: 70px; height: 70px; border: 6px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        <span style="font-weight: 700; letter-spacing: 1px;">SYNCING SECURE DATA...</span>
-    </div>
+    <aside class="w-64 bg-slate-900 h-screen sticky top-0 text-white hidden md:flex flex-col shadow-xl">
+        <div class="p-6 border-b border-slate-800">
+            <h2 class="font-bold text-lg tracking-tight text-blue-400">DEVELOPMENT</h2>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1 font-semibold">Data Analytics Hub</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-1">
+            <a href="#" class="block p-3 rounded sidebar-link bg-blue-600/20 text-blue-400 font-medium">State Dashboard</a>
+            <a href="#" class="block p-3 rounded sidebar-link text-slate-400 hover:text-white transition">District Comparison</a>
+            <a href="#" class="block p-3 rounded sidebar-link text-slate-400 hover:text-white transition">Sectoral Deep-Dive</a>
+            <a href="#" class="block p-3 rounded sidebar-link text-slate-400 hover:text-white transition">Policy Impact</a>
+        </nav>
+        <div class="p-4 border-t border-slate-800 text-[10px] text-slate-500 text-center uppercase tracking-tighter">
+            System Updated: Jan 2026
+        </div>
+    </aside>
 
-    <div class="month-rail" id="monthRail"></div>
-
-    <div class="main">
-        <header class="top-bar">
-            <div>
-                <h1>PLFS Master Hub</h1>
-                <div id="monthDisplay" style="color: var(--accent); font-weight: 700; font-size: 18px; margin-top: 6px; letter-spacing: 1px;">Loading...</div>
-            </div>
-
-            <div style="display: flex; gap: 20px; align-items: center;">
-                <div class="stats-pill">
-                    <span id="totalCount">Units: 0</span> • <span id="sroCount">SROs: 0</span>
+    <main class="flex-1 min-h-screen">
+        
+        <header class="bg-white border-b border-slate-200 p-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 tracking-tight uppercase">DATA FOR DEVELOPMENT</h1>
+                    <p class="text-slate-500 text-sm mt-0.5 font-medium italic">"Precision Insights for a Progressive Tomorrow"</p>
                 </div>
                 
-                <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
-                    <span>📂</span> Upload
-                </button>
-                <input type="file" id="fileInput" multiple style="display:none" onchange="uploadFiles(this)">
-                
-                <button class="btn btn-secondary" id="fetchBtn" onclick="fetchFromServer()">
-                    <span>🔄</span> Fetch
-                </button>
-
-                <button class="btn btn-primary" onclick="saveToCloud()">
-                    <span>☁️</span> Sync Cloud
-                </button>
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">Select State</span>
+                        <select class="border border-slate-300 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white shadow-sm">
+                            <option>Maharashtra</option>
+                            <option>Karnataka</option>
+                            <option>Gujarat</option>
+                            <option>Kerala</option>
+                            <option>Tamil Nadu</option>
+                            <option>Uttar Pradesh</option>
+                        </select>
+                    </div>
+                    <button class="mt-4 bg-slate-800 text-white px-4 py-2 rounded-md font-semibold hover:bg-slate-700 transition shadow-sm">
+                        Apply Filters
+                    </button>
+                </div>
             </div>
         </header>
 
-        <div class="dashboard">
-            <section class="pane pane-fresh">
-                <div class="header-strip">
-                    <h3>1ST VISIT (FRESH)</h3>
-                    <select id="sroFilter" onchange="applyFilters()" style="width: 250px;">
-                        <option value="all">All SROs</option>
-                    </select>
+        <div class="p-6 space-y-6">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">GSDP Growth</p>
+                    <div class="flex items-end justify-between mt-1">
+                        <h3 class="text-2xl font-bold text-slate-800">7.2%</h3>
+                        <span class="text-green-600 text-[11px] font-bold bg-green-50 px-2 py-0.5 rounded">▲ 0.4%</span>
+                    </div>
                 </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr><th>FSU</th><th>Village/Town</th><th>Enumerator Name</th><th>Start Date</th><th>End Date</th></tr>
-                        </thead>
-                        <tbody id="freshBody"></tbody>
-                    </table>
+                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Literacy Rate</p>
+                    <div class="flex items-end justify-between mt-1">
+                        <h3 class="text-2xl font-bold text-slate-800">82.4%</h3>
+                        <span class="text-blue-600 text-[11px] font-bold">State Rank #5</span>
+                    </div>
                 </div>
-            </section>
+                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-orange-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Health Index</p>
+                    <div class="flex items-end justify-between mt-1">
+                        <h3 class="text-2xl font-bold text-slate-800">74/100</h3>
+                        <span class="text-amber-600 text-[11px] font-bold">Stable</span>
+                    </div>
+                </div>
+                <div class="stat-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-purple-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Renewable Mix</p>
+                    <div class="flex items-end justify-between mt-1">
+                        <h3 class="text-2xl font-bold text-slate-800">35%</h3>
+                        <span class="text-green-600 text-[11px] font-bold bg-green-50 px-2 py-0.5 rounded">▲ 5.1%</span>
+                    </div>
+                </div>
+            </div>
 
-            <section class="pane pane-rv">
-                <div class="header-strip">
-                    <h3>REVISITS (V2-V4)</h3>
-                    <div id="rvStats" style="font-size: 14px; font-weight: 900; color: #94a3b8; background: #f1f5f9; padding: 5px 12px; border-radius: 10px;">0 UNITS</div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="text-[11px] font-bold text-slate-500 uppercase mb-6 tracking-widest">Growth Projection (2021-2026)</h4>
+                    <canvas id="lineChart" height="140"></canvas>
                 </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr><th>UID (FSU-VISIT)</th><th>Enumerator</th><th>Collection Date</th></tr>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="text-[11px] font-bold text-slate-500 uppercase mb-6 tracking-widest">Sectoral Budget Allocation</h4>
+                    <canvas id="barChart" height="140"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <h4 class="text-[11px] font-bold text-slate-600 uppercase">Live Development Metrics</h4>
+                    <button class="text-blue-600 font-bold text-[10px] uppercase hover:underline">View Full Dataset</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[13px]">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">Indicator Name</th>
+                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">Current Value</th>
+                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">National Avg</th>
+                                <th class="px-6 py-4 font-semibold uppercase text-[10px]">Action Status</th>
+                            </tr>
                         </thead>
-                        <tbody id="rvBody"></tbody>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-semibold text-slate-700">Rural Digital Connectivity</td>
+                                <td class="px-6 py-4">58.2%</td>
+                                <td class="px-6 py-4 text-slate-400">42.0%</td>
+                                <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase">On Track</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-semibold text-slate-700">Maternal Mortality Rate</td>
+                                <td class="px-6 py-4">98/1L</td>
+                                <td class="px-6 py-4 text-slate-400">103/1L</td>
+                                <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Improving</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-semibold text-slate-700">Ease of Logistics</td>
+                                <td class="px-6 py-4">Top Tier</td>
+                                <td class="px-6 py-4 text-slate-400">Mid Tier</td>
+                                <td class="px-6 py-4"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Needs Review</span></td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
-            </section>
+            </div>
         </div>
-    </div>
+    </main>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI",
-        authDomain: "action-plan-62fae.firebaseapp.com",
-        databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com",
-        projectId: "action-plan-62fae"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    let masterData = [];
-    let selectedMonth = new Date().getMonth();
-
-    window.onload = () => {
-        const rail = document.getElementById('monthRail');
-        months.forEach((m, i) => {
-            rail.innerHTML += `<div class="month-tab ${i === selectedMonth ? 'active' : ''}" onclick="changeMonth(${i})">${m.substring(0,3).toUpperCase()}</div>`;
-        });
-        fetchFromServer();
-    };
-
-    async function fetchFromServer() {
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.style.display = 'flex';
-        try {
-            const snapshot = await database.ref('plfs_roster/Himachal').once('value');
-            if (snapshot.exists()) {
-                masterData = Object.values(snapshot.val());
-                updateSroDropdown();
-                applyFilters();
-            }
-        } catch (e) { console.error(e); }
-        overlay.style.display = 'none';
-    }
-
-    async function uploadFiles(input) {
-        if (!input.files.length) return;
-        for (let file of input.files) {
-            const buffer = await file.arrayBuffer();
-            const raw = XLSX.utils.sheet_to_json(XLSX.read(buffer).Sheets[XLSX.read(buffer).SheetNames[0]], {range: 7});
-            raw.forEach(r => {
-                if (!r.FSU) return;
-                const sro = String(r['SRO [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim();
-                const baseMonth = (parseInt(String(r['Month [Qtr]']).match(/\d+/)) - 1) % 12;
-                for (let v = 1; v <= 4; v++) {
-                    const uid = `${r.FSU}-V${v}`;
-                    if (!masterData.find(m => m.uid === uid)) {
-                        masterData.push({
-                            uid: uid, fsu: r.FSU, visit: v, sro: sro,
-                            monthIdx: (baseMonth + (v - 1)) % 12,
-                            village: String(r['Village[Code]'] || r['Town [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim(),
-                            enumerator: "", startDate: "", endDate: "", collectionDate: ""
-                        });
-                    }
-                }
-            });
-        }
-        updateSroDropdown(); applyFilters();
-    }
-
-    function updateSroDropdown() {
-        const sros = [...new Set(masterData.map(d => d.sro))].sort();
-        const select = document.getElementById('sroFilter');
-        select.innerHTML = '<option value="all">All SROs</option>';
-        sros.forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
-        document.getElementById('sroCount').innerText = `SROs: ${sros.length}`;
-    }
-
-    function changeMonth(idx) {
-        selectedMonth = idx;
-        document.querySelectorAll('.month-tab').forEach((t, i) => t.className = `month-tab ${i === idx ? 'active' : ''}`);
-        applyFilters();
-    }
-
-    function applyFilters() {
-        document.getElementById('monthDisplay').innerText = months[selectedMonth].toUpperCase() + " OPERATIONS";
-        const sro = document.getElementById('sroFilter').value;
-        const filtered = masterData.filter(d => d.monthIdx === selectedMonth && (sro === 'all' || d.sro === sro));
-        render(filtered);
-    }
-
-    function render(data) {
-        const fBody = document.getElementById('freshBody');
-        const rBody = document.getElementById('rvBody');
-        fBody.innerHTML = rBody.innerHTML = "";
-        
-        document.getElementById('totalCount').innerText = `Units: ${data.length}`;
-        
-        data.forEach(d => {
-            if (d.visit === 1) {
-                fBody.innerHTML += `<tr>
-                    <td><span class="fsu-badge">${d.fsu}</span></td>
-                    <td><div style="max-width:200px; font-weight:500">${d.village}</div></td>
-                    <td><input type="text" value="${d.enumerator}" placeholder="Assign Name" onchange="autoFill('${d.fsu}', this.value)"></td>
-                    <td><input type="date" value="${d.startDate}" onchange="smartDate('${d.uid}', this.value)"></td>
-                    <td><input type="date" value="${d.endDate}" id="end-${d.uid}" onchange="updateVal('${d.uid}', 'endDate', this.value)"></td>
-                </tr>`;
-            } else {
-                rBody.innerHTML += `<tr>
-                    <td style="font-weight:600">${d.uid}</td>
-                    <td id="e-${d.uid}" style="color:var(--primary); font-weight:800; font-size:15px">${d.enumerator || '--'}</td>
-                    <td><input type="date" value="${d.collectionDate}" onchange="updateVal('${d.uid}', 'collectionDate', this.value)"></td>
-                </tr>`;
+    <script>
+        // Line Chart Logic
+        const ctxLine = document.getElementById('lineChart').getContext('2d');
+        new Chart(ctxLine, {
+            type: 'line',
+            data: {
+                labels: ['2021', '2022', '2023', '2024', '2025', '2026'],
+                datasets: [{
+                    label: 'Development Index Score',
+                    data: [62, 65, 64, 69, 72, 74],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                    tension: 0.3,
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#3b82f6'
+                }]
+            },
+            options: { 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                } 
             }
         });
-        document.getElementById('rvStats').innerText = `${data.filter(d=>d.visit>1).length} UNITS`;
-    }
 
-    function autoFill(fsu, name) {
-        masterData.forEach(item => { 
-            if (item.fsu === fsu) { 
-                item.enumerator = name; 
-                const cell = document.getElementById(`e-${item.uid}`);
-                if (cell) cell.innerText = name;
-            } 
+        // Bar Chart Logic
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Health', 'Education', 'Infra', 'Agriculture', 'Tech'],
+                datasets: [{
+                    label: 'Budget (in Cr)',
+                    data: [450, 620, 890, 310, 540],
+                    backgroundColor: '#1e293b',
+                    borderRadius: 4,
+                    barThickness: 25
+                }]
+            },
+            options: { 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                } 
+            }
         });
-    }
-
-    function smartDate(uid, start) {
-        const item = masterData.find(d => d.uid === uid);
-        if (item && start) {
-            item.startDate = start;
-            let d = new Date(start); d.setDate(d.getDate() + 5);
-            item.endDate = d.toISOString().split('T')[0];
-            const endInp = document.getElementById(`end-${uid}`); if (endInp) endInp.value = item.endDate;
-        }
-    }
-
-    function updateVal(uid, key, val) { const item = masterData.find(d => d.uid === uid); if (item) item[key] = val; }
-
-    async function saveToCloud() {
-        if (!masterData.length) return;
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.style.display = 'flex';
-        try {
-            await database.ref('plfs_roster/Himachal').set(masterData);
-            alert("SUCCESS: All data synced to cloud.");
-        } catch (e) { alert("SYNC ERROR: Check connection."); }
-        overlay.style.display = 'none';
-    }
-</script>
-
-<style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-    ::-webkit-scrollbar { width: 10px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-</style>
+    </script>
 </body>
 </html>
