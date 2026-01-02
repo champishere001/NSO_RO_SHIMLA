@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MoSPI PLFS Master Roster</title>
+    <title>PLFS Pro - Multi-File Dashboard</title>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -10,100 +10,120 @@
     
     <style>
         :root { 
-            --mospi-blue: #1a237e; --mospi-gold: #ffd700; --bg: #f4f7f9;
-            --border: #d1d5db; --text: #1f2937; --white: #ffffff;
+            --primary: #0061a4; --bg: #f8fafc; --glass: rgba(255, 255, 255, 0.8);
+            --border: #e2e8f0; --text: #1e293b; --accent: #00bfa5;
         }
 
-        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg);
+            display: flex; height: 100vh; color: var(--text); overflow: hidden;
+        }
 
-        /* Sidebar - Month Rail */
-        .month-rail { width: 70px; background: #0a0e27; display: flex; flex-direction: column; padding: 10px 0; flex-shrink: 0; }
+        /* Month Rail */
+        .month-rail { width: 80px; background: #0f172a; display: flex; flex-direction: column; padding: 10px 0; z-index: 100; }
         .month-tab { 
-            padding: 15px 0; color: #9ca3af; cursor: pointer; text-align: center; 
-            font-size: 10px; font-weight: 700; transition: 0.3s; border-left: 3px solid transparent;
+            padding: 18px 0; color: #94a3b8; cursor: pointer; text-align: center; 
+            font-size: 10px; font-weight: 800; transition: 0.3s; border-left: 4px solid transparent;
         }
-        .month-tab.active { color: var(--mospi-gold); background: rgba(255,255,255,0.1); border-left-color: var(--mospi-gold); }
+        .month-tab.active { color: white; background: rgba(255,255,255,0.1); border-left-color: var(--primary); }
 
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
-        /* Official MoSPI Header */
-        .mospi-header {
-            background: var(--mospi-blue); color: white; padding: 10px 30px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 4px solid var(--mospi-gold); box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .gov-branding { display: flex; align-items: center; gap: 15px; }
-        .gov-text h1 { margin: 0; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; }
-        .gov-text p { margin: 0; font-size: 11px; color: #e0e0e0; }
-
-        /* Filter Toolbar */
-        .toolbar {
-            background: white; padding: 12px 30px; display: flex; align-items: center; gap: 20px;
-            border-bottom: 1px solid var(--border);
-        }
-        .filter-group { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
-        select, .btn { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-family: inherit; font-size: 12px; }
-        .btn-sync { background: var(--mospi-blue); color: white; border: none; cursor: pointer; font-weight: 700; padding: 8px 20px; }
-        .btn-sync:hover { background: #283593; }
-
-        /* Dashboard View */
-        .dashboard { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
-        .pane { background: var(--white); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; }
-        .pane-60 { width: 60%; }
-        .pane-40 { width: 40%; background: #fafbfc; }
-
-        .section-label { 
-            padding: 12px 20px; background: #f8fafc; border-bottom: 1px solid var(--border);
-            font-size: 12px; font-weight: 800; color: var(--mospi-blue); text-transform: uppercase;
+        /* Enhanced Top Bar */
+        .top-bar {
+            height: 80px; background: var(--glass); backdrop-filter: blur(10px);
+            padding: 0 30px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border); z-index: 50;
         }
 
-        .table-area { flex: 1; overflow-y: auto; }
+        .stats-pill { 
+            background: #e0e7ff; color: #4338ca; padding: 6px 14px; 
+            border-radius: 20px; font-size: 12px; font-weight: 700; display: flex; gap: 10px;
+        }
+
+        /* Dashboard Layout */
+        .dashboard { display: flex; flex: 1; overflow: hidden; padding: 20px; gap: 20px; }
+        .pane { 
+            background: white; border-radius: 20px; border: 1px solid var(--border);
+            display: flex; flex-direction: column; transition: transform 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+        .pane:hover { transform: translateY(-2px); }
+
+        .pane-fresh { width: 60%; }
+        .pane-rv { width: 40%; background: #fcfdfe; }
+
+        .header-strip { 
+            padding: 16px 24px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header-strip h3 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); }
+
+        /* Tables */
+        .table-wrap { flex: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f1f5f9; padding: 12px 15px; text-align: left; font-size: 11px; color: #475569; position: sticky; top: 0; }
-        td { padding: 10px 15px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; }
+        th { 
+            background: #f8fafc; padding: 14px 20px; text-align: left; font-size: 11px; 
+            color: #64748b; font-weight: 700; position: sticky; top: 0; z-index: 5;
+        }
+        td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
-        input { width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; outline: none; }
-        input:focus { border-color: var(--mospi-blue); }
+        /* Inputs */
+        input[type="date"], input[type="text"] {
+            border: 1.5px solid var(--border); padding: 8px 12px; border-radius: 10px;
+            font-size: 12px; outline: none; transition: 0.2s; width: 100%;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,97,164,0.1); }
+
+        .btn-sync {
+            background: var(--primary); color: white; padding: 12px 24px; border-radius: 12px;
+            border: none; cursor: pointer; font-weight: 700; transition: 0.3s;
+        }
+        .btn-sync:hover { background: #004a7c; transform: scale(1.02); }
+
+        /* File Upload Area */
+        .upload-zone {
+            border: 2px dashed var(--primary); background: #f0f7ff;
+            padding: 10px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div class="month-rail" id="monthRail"></div>
 
-    <div class="main-content">
-        <header class="mospi-header">
-            <div class="gov-branding">
-                <div style="font-size: 24px;">🏛️</div>
-                <div class="gov-text">
-                    <h1>Government of India</h1>
-                    <p>Ministry of Statistics and Programme Implementation (MoSPI)</p>
-                </div>
+    <div class="main">
+        <header class="top-bar">
+            <div>
+                <h1 style="margin:0; font-size: 22px; font-weight: 800; color: #0f172a;">PLFS Master Hub</h1>
+                <div id="monthDisplay" style="color: var(--primary); font-weight: 600;">January Operations</div>
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 14px; font-weight: 700; color: var(--mospi-gold);">PLFS MASTER ROSTER 2026</div>
-                <div style="font-size: 10px;">Periodic Labour Force Survey Dashboard</div>
+
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="stats-pill">
+                    <span id="totalCount">Units: 0</span>
+                    <span id="sroCount">SROs: 0</span>
+                </div>
+                
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <span style="font-size: 20px;">📂</span>
+                    <span style="font-size: 12px; font-weight: 600;">Upload Multi-Files</span>
+                </div>
+                <input type="file" id="fileInput" multiple style="display:none" onchange="uploadFiles(this)">
+                
+                <button class="btn-sync" onclick="saveToCloud()">Sync To Cloud</button>
             </div>
         </header>
 
-        <div class="toolbar">
-            <div class="filter-group">
-                <span>State:</span>
-                <select id="stateFilter" onchange="applyFilters()"><option value="all">All States</option></select>
-            </div>
-            <div class="filter-group">
-                <span>SRO:</span>
-                <select id="sroFilter" onchange="applyFilters()"><option value="all">All SROs</option></select>
-            </div>
-            <div style="flex-grow: 1;"></div>
-            <button class="btn" onclick="document.getElementById('fileInput').click()">📂 Import Files</button>
-            <button class="btn-sync" onclick="saveToCloud()">☁️ Sync to Firebase</button>
-            <input type="file" id="fileInput" multiple style="display:none" onchange="handleUpload(this)">
-        </div>
-
         <div class="dashboard">
-            <div class="pane pane-60">
-                <div class="section-label">Visit 1: Fresh Samples (First Visit Window)</div>
-                <div class="table-area">
+            <section class="pane pane-fresh">
+                <div class="header-strip">
+                    <h3>1st Visit (Fresh)</h3>
+                    <select id="sroFilter" onchange="applyFilters()" style="border-radius: 8px; border: 1px solid var(--border); padding: 4px;">
+                        <option value="all">All SROs</option>
+                    </select>
+                </div>
+                <div class="table-wrap">
                     <table>
                         <thead>
                             <tr><th>FSU</th><th>Village/Town</th><th>Enumerator Name</th><th>Start Date</th><th>End Date</th></tr>
@@ -111,19 +131,22 @@
                         <tbody id="freshBody"></tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <div class="pane pane-40">
-                <div class="section-label">Visits 2, 3, 4: Revisit Tracking</div>
-                <div class="table-area">
+            <section class="pane pane-rv">
+                <div class="header-strip">
+                    <h3>Revisits (V2-V4)</h3>
+                    <div id="rvStats" style="font-size: 11px; font-weight: 700; color: #64748b;">0 Units</div>
+                </div>
+                <div class="table-wrap">
                     <table>
                         <thead>
                             <tr><th>UID</th><th>Enumerator</th><th>Collection Date</th></tr>
                         </thead>
-                        <tbody id="revisitBody"></tbody>
+                        <tbody id="rvBody"></tbody>
                     </table>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -136,36 +159,35 @@
     };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-
+    
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     let masterData = [];
     let selectedMonth = new Date().getMonth();
 
+    // Init Rail
     const rail = document.getElementById('monthRail');
     months.forEach((m, i) => {
         rail.innerHTML += `<div class="month-tab ${i === selectedMonth ? 'active' : ''}" onclick="changeMonth(${i})">${m.substring(0,3).toUpperCase()}</div>`;
     });
 
-    async function handleUpload(input) {
+    async function uploadFiles(input) {
         if (!input.files.length) return;
-        let states = new Set();
-        let sros = new Set();
-
+        
+        let allSros = new Set();
+        
         for (let file of input.files) {
             const buffer = await file.arrayBuffer();
-            const raw = XLSX.utils.sheet_to_json(XLSX.read(buffer).Sheets[XLSX.read(buffer).Sheets[0]], {range: 7});
+            const raw = XLSX.utils.sheet_to_json(XLSX.read(buffer).Sheets[XLSX.read(buffer).SheetNames[0]], {range: 7});
             
             raw.forEach(r => {
                 if (!r.FSU) return;
-                const state = String(r['State/UT'] || 'Unknown').trim();
                 const sro = String(r['SRO [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim();
-                states.add(state); sros.add(sro);
-                
+                allSros.add(sro);
                 const baseMonth = (parseInt(String(r['Month [Qtr]']).match(/\d+/)) - 1) % 12;
 
                 for (let v = 1; v <= 4; v++) {
                     masterData.push({
-                        uid: `${r.FSU}-V${v}`, fsu: r.FSU, visit: v, sro: sro, state: state,
+                        uid: `${r.FSU}-V${v}`, fsu: r.FSU, visit: v, sro: sro,
                         monthIdx: (baseMonth + (v - 1)) % 12,
                         village: String(r['Village[Code]'] || r['Town [Code]'] || 'N/A').replace(/\[.*?\]/g, "").trim(),
                         enumerator: "", startDate: "", endDate: "", collectionDate: ""
@@ -173,15 +195,13 @@
                 }
             });
         }
-        updateDropdown('stateFilter', states);
-        updateDropdown('sroFilter', sros);
-        applyFilters();
-    }
 
-    function updateDropdown(id, set) {
-        const el = document.getElementById(id);
-        el.innerHTML = `<option value="all">All ${id.includes('state') ? 'States' : 'SROs'}</option>`;
-        Array.from(set).sort().forEach(val => el.innerHTML += `<option value="${val}">${val}</option>`);
+        const sroSelect = document.getElementById('sroFilter');
+        sroSelect.innerHTML = '<option value="all">All SROs</option>';
+        Array.from(allSros).sort().forEach(s => sroSelect.innerHTML += `<option value="${s}">${s}</option>`);
+        
+        document.getElementById('sroCount').innerText = `SROs: ${allSros.size}`;
+        applyFilters();
     }
 
     function changeMonth(idx) {
@@ -191,58 +211,69 @@
     }
 
     function applyFilters() {
-        const state = document.getElementById('stateFilter').value;
+        document.getElementById('monthDisplay').innerText = months[selectedMonth] + " Operations";
         const sro = document.getElementById('sroFilter').value;
-        const filtered = masterData.filter(d => 
-            d.monthIdx === selectedMonth && 
-            (state === 'all' || d.state === state) &&
-            (sro === 'all' || d.sro === sro)
-        );
-        renderTables(filtered);
+        const filtered = masterData.filter(d => d.monthIdx === selectedMonth && (sro === 'all' || d.sro === sro));
+        render(filtered);
     }
 
-    function renderTables(data) {
+    function render(data) {
         const fBody = document.getElementById('freshBody');
-        const rBody = document.getElementById('revisitBody');
+        const rBody = document.getElementById('rvBody');
         fBody.innerHTML = ""; rBody.innerHTML = "";
 
-        data.forEach(d => {
-            if (d.visit === 1) {
-                fBody.innerHTML += `<tr>
-                    <td><b>${d.fsu}</b></td><td>${d.village}</td>
-                    <td><input value="${d.enumerator}" onchange="syncName('${d.fsu}', this.value)"></td>
-                    <td><input type="date" value="${d.startDate}" onchange="setWindow('${d.uid}', this.value)"></td>
-                    <td><input type="date" value="${d.endDate}" id="end-${d.uid}" onchange="updateData('${d.uid}', 'endDate', this.value)"></td>
-                </tr>`;
-            } else {
-                rBody.innerHTML += `<tr>
-                    <td>${d.uid}</td><td id="e-${d.uid}" style="color:var(--mospi-blue); font-weight:700;">${d.enumerator || '--'}</td>
-                    <td><input type="date" value="${d.collectionDate}" onchange="updateData('${d.uid}', 'collectionDate', this.value)"></td>
-                </tr>`;
-            }
+        const fList = data.filter(d => d.visit === 1);
+        const rList = data.filter(d => d.visit > 1);
+
+        document.getElementById('totalCount').innerText = `Units: ${data.length}`;
+        document.getElementById('rvStats').innerText = `${rList.length} Units`;
+
+        fList.forEach(d => {
+            fBody.innerHTML += `<tr>
+                <td><b>${d.fsu}</b></td><td>${d.village}</td>
+                <td><input type="text" value="${d.enumerator}" placeholder="Assign" onchange="autoFill('${d.fsu}', this.value)"></td>
+                <td><input type="date" value="${d.startDate}" onchange="smartDate('${d.uid}', this.value)"></td>
+                <td><input type="date" value="${d.endDate}" id="end-${d.uid}" onchange="updateVal('${d.uid}', 'endDate', this.value)"></td>
+            </tr>`;
+        });
+
+        rList.forEach(d => {
+            rBody.innerHTML += `<tr>
+                <td>${d.uid}</td>
+                <td id="e-${d.uid}" style="font-weight:700; color:var(--primary);">${d.enumerator || '--'}</td>
+                <td><input type="date" value="${d.collectionDate}" onchange="updateVal('${d.uid}', 'collectionDate', this.value)"></td>
+            </tr>`;
         });
     }
 
-    function syncName(fsu, name) {
-        masterData.forEach(item => { if (item.fsu === fsu) { item.enumerator = name; let el = document.getElementById(`e-${item.uid}`); if (el) el.innerText = name; } });
+    function autoFill(fsu, name) {
+        masterData.forEach(item => { 
+            if (item.fsu === fsu) { 
+                item.enumerator = name; 
+                const cell = document.getElementById(`e-${item.uid}`);
+                if (cell) cell.innerText = name;
+            } 
+        });
     }
 
-    function setWindow(uid, start) {
+    function smartDate(uid, start) {
         const item = masterData.find(d => d.uid === uid);
-        if (item && start) {
+        if (item) {
             item.startDate = start;
-            let d = new Date(start); d.setDate(d.getDate() + 5);
-            item.endDate = d.toISOString().split('T')[0];
-            const endEl = document.getElementById(`end-${uid}`); if (endEl) endEl.value = item.endDate;
+            if (start) {
+                let d = new Date(start); d.setDate(d.getDate() + 5);
+                item.endDate = d.toISOString().split('T')[0];
+                const endInp = document.getElementById(`end-${uid}`); if (endInp) endInp.value = item.endDate;
+            }
         }
     }
 
-    function updateData(uid, key, val) { const item = masterData.find(d => d.uid === uid); if (item) item[key] = val; }
+    function updateVal(uid, key, val) { const item = masterData.find(d => d.uid === uid); if (item) item[key] = val; }
 
     async function saveToCloud() {
         if (!masterData.length) return;
-        await database.ref('mospi_plfs/master').set(masterData);
-        alert("Official Roster Synced to Firebase!");
+        await database.ref('plfs_roster/Himachal').set(masterData);
+        alert("Success: All files merged and synced!");
     }
 </script>
 </body>
