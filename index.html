@@ -54,7 +54,6 @@
         .sro-pill-wrapper { 
             display: flex; align-items: center; background: rgba(255,255,255,0.08); 
             border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; 
-            overflow: hidden;
         }
         .sro-pill-wrapper.active { background: var(--accent); border-color: var(--accent); }
         .sro-pill-wrapper:hover { border-color: var(--accent); }
@@ -62,12 +61,9 @@
         .sro-pill { padding: 6px 12px; color: #cbd5e1; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; }
         .active .sro-pill { color: #0f172a; }
         
-        .sro-del { 
-            padding: 6px 10px; cursor: pointer; color: #94a3b8; font-size: 16px; font-weight: bold; 
-            transition: 0.2s; background: rgba(0,0,0,0.1);
-        }
-        .sro-del:hover { color: var(--danger); background: rgba(255,0,0,0.1); }
-        .active .sro-del { color: #0f172a; border-left: 1px solid rgba(0,0,0,0.1); }
+        .sro-del { padding-right: 10px; cursor: pointer; color: #94a3b8; font-size: 16px; font-weight: bold; transition: 0.2s; }
+        .sro-del:hover { color: var(--danger); }
+        .active .sro-del { color: #0f172a; }
 
         .search-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 8px; color: white; width: 150px; font-size: 12px; }
 
@@ -105,6 +101,7 @@
             <div>
                 <h1 style="color:white; margin:0; font-size: 18px;">PLFS National Master</h1>
                 <select id="stateFilter" onchange="fetchFromServer()" style="background: #1e293b; color: white; border: 1px solid var(--accent); padding: 4px 8px; border-radius: 4px; margin-top: 5px; font-size: 12px;">
+                    <option value="" disabled selected>Select State</option>
                     <option value="Himachal">Himachal Pradesh</option>
                     <option value="Punjab">Punjab</option>
                     <option value="Haryana">Haryana</option>
@@ -120,7 +117,9 @@
         </header>
 
         <div class="filter-section">
-            <div class="sro-grid" id="sroContainer"></div>
+            <div class="sro-grid" id="sroContainer">
+                <span style="color: #94a3b8; font-size: 11px;">Select a state to view SRO filters...</span>
+            </div>
             <input type="text" class="search-box" id="globalSearch" placeholder="Search FSU..." oninput="applyFilters()">
         </div>
 
@@ -160,11 +159,12 @@
         const rail = document.getElementById('monthRail');
         const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         months.forEach((m, i) => rail.innerHTML += `<div class="month-tab ${i === selectedMonth ? 'active' : ''}" onclick="changeMonth(${i})">${m.toUpperCase()}</div>`);
-        fetchFromServer();
     };
 
     async function fetchFromServer() {
         const state = document.getElementById('stateFilter').value;
+        if(!state) return;
+        
         currentSro = 'ALL';
         document.getElementById('loadingOverlay').style.display = 'flex';
         try {
@@ -199,42 +199,51 @@
     function updateSroPills() {
         const sros = [...new Set(masterData.map(d => d.sro))].sort();
         const container = document.getElementById('sroContainer');
+        
+        if (masterData.length === 0) {
+            container.innerHTML = `<span style="color: #94a3b8; font-size: 11px;">No data found for this state. Import Excel to begin.</span>`;
+            return;
+        }
+
         container.innerHTML = `<div class="sro-pill-wrapper ${currentSro === 'ALL' ? 'active' : ''}"><div class="sro-pill" onclick="filterBySro('ALL')">ALL SROs</div></div>`;
         
         sros.forEach(s => {
-            if(!s) return;
             container.innerHTML += `
                 <div class="sro-pill-wrapper ${currentSro === s ? 'active' : ''}">
                     <div class="sro-pill" onclick="filterBySro('${s}')">${s}</div>
-                    <div class="sro-del" title="Remove SRO Data" onclick="event.stopPropagation(); deleteSroBulk('${s}')">×</div>
+                    <div class="sro-del" onclick="event.stopPropagation(); deleteSroBulk('${s}')">×</div>
                 </div>`;
         });
     }
 
     function deleteSroBulk(sroName) {
-        const count = masterData.filter(d => d.sro === sroName).length;
-        if (confirm(`Remove SRO: ${sroName}?\nThis will delete ${count} total records from ALL months.`)) {
+        if (confirm(`Delete ALL data for SRO: ${sroName}? This cannot be undone locally.`)) {
             masterData = masterData.filter(d => d.sro !== sroName);
             if (currentSro === sroName) currentSro = 'ALL';
-            updateSroPills();
+            updateSroPills(); 
             applyFilters();
         }
     }
 
-    function del(uid) { 
-        if(confirm("Delete record?")) { 
-            masterData = masterData.filter(d => d.uid !== uid); 
-            updateSroPills(); 
-            applyFilters(); 
-        } 
+    function filterBySro(sro) { 
+        currentSro = sro; 
+        updateSroPills(); 
+        applyFilters(); 
     }
 
-    function filterBySro(sro) { currentSro = sro; updateSroPills(); applyFilters(); }
-    function changeMonth(idx) { selectedMonth = idx; document.querySelectorAll('.month-tab').forEach((t, i) => t.className = `month-tab ${i === idx ? 'active' : ''}`); applyFilters(); }
+    function changeMonth(idx) { 
+        selectedMonth = idx; 
+        document.querySelectorAll('.month-tab').forEach((t, i) => t.className = `month-tab ${i === idx ? 'active' : ''}`); 
+        applyFilters(); 
+    }
 
     function applyFilters() {
         const query = document.getElementById('globalSearch').value.toLowerCase();
-        const filtered = masterData.filter(d => (currentSro === 'ALL' || d.sro === currentSro) && d.monthIdx === selectedMonth && (d.fsu.toString().includes(query) || d.village.toLowerCase().includes(query)));
+        const filtered = masterData.filter(d => 
+            (currentSro === 'ALL' || d.sro === currentSro) && 
+            d.monthIdx === selectedMonth && 
+            (d.fsu.toString().includes(query) || d.village.toLowerCase().includes(query))
+        );
         updateStats(filtered);
         render(filtered);
     }
@@ -247,13 +256,27 @@
     }
 
     function render(data) {
-        const fBody = document.getElementById('freshBody'); const rBody = document.getElementById('rvBody');
+        const fBody = document.getElementById('freshBody'); 
+        const rBody = document.getElementById('rvBody');
         fBody.innerHTML = rBody.innerHTML = "";
+        
         data.forEach(d => {
             if (d.visit === 1) {
-                fBody.innerHTML += `<tr><td><b>${d.fsu}</b><br><small style="color:var(--primary); font-weight:800">${d.sro}</small></td><td>${d.village}</td><td><input type="text" value="${d.enumerator}" onchange="autoFill('${d.fsu}', this.value)"></td><td><input type="date" value="${d.startDate}" onchange="smartDate('${d.uid}', this.value)"></td><td><input type="date" value="${d.endDate}" id="end-${d.uid}"></td><td><button style="border:none; background:none; cursor:pointer;" onclick="del('${d.uid}')">🗑️</button></td></tr>`;
+                fBody.innerHTML += `<tr>
+                    <td><b>${d.fsu}</b><br><small style="color:var(--primary); font-weight:800">${d.sro}</small></td>
+                    <td>${d.village}</td>
+                    <td><input type="text" value="${d.enumerator}" onchange="autoFill('${d.fsu}', this.value)"></td>
+                    <td><input type="date" value="${d.startDate}" onchange="smartDate('${d.uid}', this.value)"></td>
+                    <td><input type="date" value="${d.endDate}" id="end-${d.uid}"></td>
+                    <td><button style="border:none; background:none; cursor:pointer;" onclick="del('${d.uid}')">🗑️</button></td>
+                </tr>`;
             } else {
-                rBody.innerHTML += `<tr><td><b>${d.uid}</b></td><td id="e-${d.uid}" style="color:var(--primary); font-weight:700">${d.enumerator || '--'}</td><td><input type="date" value="${d.collectionDate}" onchange="updateVal('${d.uid}', 'collectionDate', this.value)"></td><td><button style="border:none; background:none; cursor:pointer;" onclick="del('${d.uid}')">🗑️</button></td></tr>`;
+                rBody.innerHTML += `<tr>
+                    <td><b>${d.uid}</b></td>
+                    <td id="e-${d.uid}" style="color:var(--primary); font-weight:700">${d.enumerator || '--'}</td>
+                    <td><input type="date" value="${d.collectionDate}" onchange="updateVal('${d.uid}', 'collectionDate', this.value)"></td>
+                    <td><button style="border:none; background:none; cursor:pointer;" onclick="del('${d.uid}')">🗑️</button></td>
+                </tr>`;
             }
         });
     }
@@ -261,7 +284,15 @@
     function autoFill(fsu, name) { masterData.forEach(item => { if (item.fsu === fsu) { item.enumerator = name; const cell = document.getElementById(`e-${item.uid}`); if (cell) cell.innerText = name; } }); }
     function smartDate(uid, start) { const item = masterData.find(d => d.uid === uid); if (item && start) { item.startDate = start; let d = new Date(start); d.setDate(d.getDate() + 5); item.endDate = d.toISOString().split('T')[0]; const endInp = document.getElementById(`end-${uid}`); if (endInp) endInp.value = item.endDate; } }
     function updateVal(uid, key, val) { const item = masterData.find(d => d.uid === uid); if (item) item[key] = val; }
-    async function saveToCloud() { const state = document.getElementById('stateFilter').value; try { await database.ref(`plfs_roster/${state}`).set(masterData); alert("Database Synced!"); } catch (e) { alert("Sync Failed"); } }
+    function del(uid) { if(confirm("Delete record?")) { masterData = masterData.filter(d => d.uid !== uid); applyFilters(); } }
+    async function saveToCloud() { 
+        const state = document.getElementById('stateFilter').value; 
+        if(!state) return alert("Select a state first!");
+        try { 
+            await database.ref(`plfs_roster/${state}`).set(masterData); 
+            alert("Database Synced!"); 
+        } catch (e) { alert("Sync Failed"); } 
+    }
 </script>
 </body>
 </html>
