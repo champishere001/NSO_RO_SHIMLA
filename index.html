@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PLFS Unified - Mobile Premium</title>
+    <title>PLFS Unified - SRO Fix</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -23,6 +23,7 @@
         .sidebar { width: 300px; background: var(--sidebar-bg); display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.1); transition: 0.3s ease; z-index: 2000; }
         .sidebar-scroll { overflow-y: auto; flex: 1; padding: 15px; scrollbar-width: none; }
         .section-label { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; margin: 20px 0 10px 5px; }
+        
         .state-item { padding: 14px 18px; margin-bottom: 6px; border-radius: 12px; cursor: pointer; font-weight: 800; color: #94a3b8; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
         .state-item.active { background: rgba(6, 182, 212, 0.15); color: var(--accent-blue); border-color: var(--accent-blue); }
 
@@ -64,6 +65,7 @@
 
         #loginOverlay { position: fixed; inset: 0; background: var(--page-bg); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .login-card { background: #111827; padding: 40px; border-radius: 28px; width: 100%; max-width: 340px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        
         .grid-container { display: grid; gap: 8px; margin-bottom: 15px; grid-template-columns: repeat(3, 1fr); }
         .chip { font-size: 10px; padding: 12px 5px; text-align: center; border-radius: 8px; cursor: pointer; font-weight: 700; color: #94a3b8; background: rgba(255,255,255,0.05); border: 1px solid transparent; }
         .chip.active { background: var(--accent-blue); color: #083344; border-color: #22d3ee; }
@@ -75,10 +77,10 @@
 <div id="loginOverlay">
     <div class="login-card">
         <h1 style="color: white; font-weight: 900; margin-bottom: 30px;">PLFS HUB</h1>
-        <button class="btn" style="background: var(--accent-blue); width:100%; margin-bottom:12px; padding:18px; border-radius: 15px; border:none; font-weight:800;" onclick="loginAsState()">STATE LOGIN</button>
-        <button class="btn" style="background: #374151; color: white; width:100%; padding:15px; border:none; border-radius: 15px;" onclick="showPassInput()">ADMIN ACCESS</button>
+        <button class="btn" style="background: var(--accent-blue); width:100%; margin-bottom:12px; padding:18px; border-radius: 15px; border:none; font-weight:800; cursor:pointer;" onclick="loginAsState()">ENTER PORTAL</button>
+        <button class="btn" style="background: #374151; color: white; width:100%; padding:15px; border:none; border-radius: 15px; cursor:pointer;" onclick="showPassInput()">ADMIN LOGIN</button>
         <div id="passArea" style="display:none; margin-top: 20px;">
-            <input type="password" id="adminPass" placeholder="Enter PIN" style="text-align: center; margin-bottom:10px;">
+            <input type="password" id="adminPass" placeholder="PIN" style="text-align: center; margin-bottom:10px;">
             <button class="btn" style="background: #f59e0b; color: white; width:100%; padding:12px; border:none; border-radius:10px;" onclick="validateAdmin()">VERIFY</button>
         </div>
     </div>
@@ -96,21 +98,21 @@
     <header class="header-container">
         <div style="display: flex; align-items: center; gap: 12px;">
             <button class="menu-btn" onclick="toggleSidebar()">☰ MENU</button>
-            <div id="breadcrumb" style="font-size: 14px; font-weight: 700; color: #f8fafc;">Awaiting Selection</div>
+            <div id="breadcrumb" style="font-size: 14px; font-weight: 700; color: #f8fafc;">Select Region</div>
         </div>
         <div style="display:flex; align-items: center; gap:15px;">
             <div class="progress-wrapper" style="text-align: right;">
                 <div class="progress-container"><div id="pBar"></div></div>
                 <div id="pText" style="font-size: 9px; font-weight: 800; color: #94a3b8; margin-top: 4px;">0%</div>
             </div>
-            <button class="btn" style="background: var(--accent-blue); padding: 10px 15px; border:none; border-radius: 8px; font-weight: 800; color:#083344;" onclick="saveToCloud()">PUSH</button>
+            <button class="btn" style="background: var(--accent-blue); padding: 10px 15px; border:none; border-radius: 8px; font-weight: 800; color:#083344; cursor:pointer;" onclick="saveToCloud()">PUSH</button>
         </div>
     </header>
 
     <div class="dashboard-content">
         <section class="pane" style="flex: 1.5;">
             <div class="pane-header">
-                <span>FRESH (V1)</span>
+                <span>V1 DATA</span>
                 <input type="text" class="search-input" placeholder="Search FSU..." onkeyup="filterData(this.value)">
             </div>
             <div style="flex:1; overflow:auto;">
@@ -121,7 +123,7 @@
             </div>
         </section>
         <section class="pane" style="flex: 1;">
-            <div class="pane-header"><span>REVISITS (RV)</span></div>
+            <div class="pane-header"><span>RV DATA</span></div>
             <div style="flex:1; overflow:auto;">
                 <table id="tableRV">
                     <thead><tr><th width="120">UID</th><th width="150">ENUM</th><th width="140">DATE</th></tr></thead>
@@ -168,13 +170,14 @@
         const container = document.getElementById('sidebarContent'); container.innerHTML = "";
         const states = [...new Set(masterData.map(d => d.state))].sort();
         
-        container.innerHTML += `<div class="section-label">State Hubs</div>`;
+        container.innerHTML += `<div class="section-label">State Regions</div>`;
         states.forEach(st => {
             const stDiv = document.createElement('div');
             stDiv.className = `state-item ${selectedState === st ? 'active' : ''}`;
             stDiv.innerText = st;
             stDiv.onclick = () => { 
-                selectedState = st; selectedMonth = null; selectedSro = null; 
+                if(selectedState === st) selectedState = null;
+                else { selectedState = st; selectedMonth = null; selectedSro = null; }
                 renderSidebar(); updateDisplay(); 
             };
             container.appendChild(stDiv);
@@ -182,7 +185,9 @@
             if (selectedState === st) {
                 const sub = document.createElement('div');
                 sub.style.paddingLeft = "10px";
-                sub.innerHTML = `<div class="section-label">Schedule Month</div>`;
+                
+                // --- Month Section ---
+                sub.innerHTML = `<div class="section-label">Month Filter</div>`;
                 const mGrid = document.createElement('div'); mGrid.className = 'grid-container';
                 monthsShort.forEach((m, i) => {
                     const ch = document.createElement('div');
@@ -193,15 +198,15 @@
                 });
                 sub.appendChild(mGrid);
 
-                // Dynamic SRO Filter
+                // --- SRO Section (Directly Below Months) ---
                 if (selectedMonth !== null) {
-                    sub.innerHTML += `<div class="section-label">SRO Boundary</div>`;
+                    sub.innerHTML += `<div class="section-label">SRO Regions</div>`;
                     const sGrid = document.createElement('div'); sGrid.className = 'grid-container';
                     const availableSros = [...new Set(masterData.filter(d => d.state === st).map(d => d.sro))].sort();
                     
                     const allCh = document.createElement('div');
                     allCh.className = `chip sro-chip ${selectedSro === 'ALL' ? 'active' : ''}`;
-                    allCh.innerText = "📊 VIEW ALL REGIONS";
+                    allCh.innerText = "ALL REGIONS";
                     allCh.onclick = (e) => { e.stopPropagation(); selectedSro = 'ALL'; renderSidebar(); updateDisplay(); if(window.innerWidth < 768) toggleSidebar(); };
                     sGrid.appendChild(allCh);
 
@@ -223,13 +228,12 @@
 
     function updateDisplay() {
         if (!selectedState || selectedMonth === null) return;
-        document.getElementById('breadcrumb').innerText = `${selectedState} / ${monthsShort[selectedMonth]}`;
+        document.getElementById('breadcrumb').innerText = `${selectedState} / ${monthsShort[selectedMonth]} ${selectedSro ? '/ '+selectedSro : ''}`;
         
         const isQ1 = selectedMonth <= 2;
         let filtered = [];
         const stateSet = masterData.filter(d => d.state === selectedState && (selectedSro === 'ALL' || !selectedSro ? true : d.sro === selectedSro));
 
-        // Rolling Logic for Q1 (Jan-Mar)
         if (isQ1) {
             stateSet.forEach(d => {
                 if (selectedMonth === 0 && d.monthIdx === 0 && d.visit === 1) filtered.push(d);
@@ -246,7 +250,6 @@
             filtered = stateSet.filter(d => d.monthIdx === selectedMonth);
         }
 
-        // Apply Search
         filtered = filtered.filter(d => d.fsu.toString().includes(searchQuery) || d.village.toLowerCase().includes(searchQuery));
 
         const fBody = document.getElementById('freshBody'); fBody.innerHTML = "";
@@ -274,8 +277,9 @@
         });
 
         const per = filtered.length > 0 ? Math.round((comp/filtered.length)*100) : 0;
-        document.getElementById('pBar').style.width = per+"%";
-        document.getElementById('pBar').className = per < 50 ? 'p-low' : (per < 90 ? 'p-mid' : 'p-high');
+        const pb = document.getElementById('pBar');
+        pb.style.width = per+"%";
+        pb.className = per < 50 ? 'p-low' : (per < 90 ? 'p-mid' : 'p-high');
         document.getElementById('pText').innerText = per+"%";
     }
 
@@ -285,7 +289,7 @@
     }
 
     async function saveToCloud() {
-        if(!selectedState) return alert("Select a state.");
+        if(!selectedState) return;
         const stateData = masterData.filter(d => d.state === selectedState);
         const dataObj = {}; stateData.forEach(item => dataObj[item.uid] = item);
         await database.ref(`plfs_roster/${selectedState}`).set(dataObj);
