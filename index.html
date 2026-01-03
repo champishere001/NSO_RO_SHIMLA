@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         :root { 
             --bg-glow: radial-gradient(circle at top right, #1e3a8a, #070b14);
@@ -16,6 +16,7 @@
             --accent: #00f2fe;
             --text-dark: #0f172a;
             --border: #e2e8f0;
+            --danger: #ef4444;
         }
 
         body { 
@@ -80,6 +81,7 @@
         }
         .btn-primary { background: var(--accent); color: #0f172a; }
         .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-danger { background: var(--danger); color: white; margin-left: 10px; }
 
         select, input {
             border: 2px solid #e2e8f0; padding: 10px; border-radius: 8px;
@@ -94,6 +96,9 @@
             color: #475569; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #e2e8f0;
         }
         td { padding: 18px; border-bottom: 1px solid #f1ece4; font-size: 16px; }
+
+        .del-btn { color: #cbd5e1; cursor: pointer; transition: 0.2s; border:none; background:none; font-size: 18px; }
+        .del-btn:hover { color: var(--danger); transform: scale(1.2); }
 
         #loadingOverlay {
             position: fixed; inset: 0; background: rgba(7, 11, 20, 0.95);
@@ -111,12 +116,15 @@
         <header class="top-bar">
             <div>
                 <h1>National PLFS Hub</h1>
-                <select id="stateFilter" onchange="fetchFromServer()" style="background: #0f172a; color: white; border: 1px solid var(--accent); margin-top: 10px; width: 200px;">
-                    <option value="Himachal">Himachal Pradesh</option>
-                    <option value="Punjab">Punjab</option>
-                    <option value="Haryana">Haryana</option>
-                    <option value="Delhi">Delhi</option>
-                </select>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <select id="stateFilter" onchange="fetchFromServer()" style="background: #0f172a; color: white; border: 1px solid var(--accent); margin-top: 10px; width: 200px;">
+                        <option value="Himachal">Himachal Pradesh</option>
+                        <option value="Punjab">Punjab</option>
+                        <option value="Haryana">Haryana</option>
+                        <option value="Delhi">Delhi</option>
+                    </select>
+                    <button class="btn btn-danger" style="margin-top: 10px; padding: 8px 12px; font-size: 12px;" onclick="clearStateData()">🗑️ Clear State</button>
+                </div>
             </div>
 
             <div style="display: flex; gap: 15px;">
@@ -140,7 +148,7 @@
                 </div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>FSU</th><th>Village</th><th>Enumerator</th><th>Start</th><th>End</th></tr></thead>
+                        <thead><tr><th>FSU</th><th>Village</th><th>Enumerator</th><th>Start</th><th>End</th><th></th></tr></thead>
                         <tbody id="freshBody"></tbody>
                     </table>
                 </div>
@@ -150,7 +158,7 @@
                 <div class="header-strip"><h3>REVISITS</h3></div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>UID</th><th>Enumerator</th><th>Collection</th></tr></thead>
+                        <thead><tr><th>UID</th><th>Enumerator</th><th>Collection</th><th></th></tr></thead>
                         <tbody id="rvBody"></tbody>
                     </table>
                 </div>
@@ -167,7 +175,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    
+
     let masterData = [];
     let selectedMonth = new Date().getMonth();
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -242,7 +250,7 @@
         const total = data.length;
         const assigned = data.filter(d => d.enumerator).length;
         const sros = [...new Set(data.map(d => d.sro))].length;
-        
+
         document.getElementById('statFsu').innerText = total;
         document.getElementById('statAssign').innerText = total > 0 ? Math.round((assigned/total)*100) + "%" : "0%";
         document.getElementById('statSro').innerText = sros;
@@ -252,21 +260,26 @@
         const fBody = document.getElementById('freshBody');
         const rBody = document.getElementById('rvBody');
         fBody.innerHTML = rBody.innerHTML = "";
-        
+
         data.forEach(d => {
-            const html = d.visit === 1 ? `
+            if (d.visit === 1) {
+                fBody.innerHTML += `
                 <tr>
                     <td style="font-weight:800; color:var(--primary)">${d.fsu}</td><td>${d.village}</td>
                     <td><input type="text" value="${d.enumerator}" onchange="autoFill('${d.fsu}', this.value)"></td>
                     <td><input type="date" value="${d.startDate}" onchange="smartDate('${d.uid}', this.value)"></td>
                     <td><input type="date" value="${d.endDate}" id="end-${d.uid}" onchange="updateVal('${d.uid}', 'endDate', this.value)"></td>
-                </tr>` : `
+                    <td><button class="del-btn" onclick="deleteEntry('${d.uid}')">×</button></td>
+                </tr>`;
+            } else {
+                rBody.innerHTML += `
                 <tr>
                     <td style="font-weight:600">${d.uid}</td>
                     <td id="e-${d.uid}" style="color:var(--primary); font-weight:700">${d.enumerator || '--'}</td>
                     <td><input type="date" value="${d.collectionDate}" onchange="updateVal('${d.uid}', 'collectionDate', this.value)"></td>
+                    <td><button class="del-btn" onclick="deleteEntry('${d.uid}')">×</button></td>
                 </tr>`;
-            if (d.visit === 1) fBody.innerHTML += html; else rBody.innerHTML += html;
+            }
         });
     }
 
@@ -291,6 +304,23 @@
     }
 
     function updateVal(uid, key, val) { const item = masterData.find(d => d.uid === uid); if (item) item[key] = val; }
+
+    function deleteEntry(uid) {
+        if(confirm("Delete this specific record?")) {
+            masterData = masterData.filter(d => d.uid !== uid);
+            applyFilters();
+        }
+    }
+
+    async function clearStateData() {
+        const state = document.getElementById('stateFilter').value;
+        if(confirm(`ARE YOU SURE? This will permanently delete ALL ${state} data from the cloud.`)) {
+            await database.ref(`plfs_roster/${state}`).remove();
+            masterData = [];
+            applyFilters();
+            alert("Data cleared.");
+        }
+    }
 
     async function saveToCloud() {
         const state = document.getElementById('stateFilter').value;
