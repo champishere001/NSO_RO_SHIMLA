@@ -54,14 +54,20 @@
         .sro-pill-wrapper { 
             display: flex; align-items: center; background: rgba(255,255,255,0.08); 
             border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; 
+            overflow: hidden;
         }
         .sro-pill-wrapper.active { background: var(--accent); border-color: var(--accent); }
+        .sro-pill-wrapper:hover { border-color: var(--accent); }
         
         .sro-pill { padding: 6px 12px; color: #cbd5e1; cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; }
         .active .sro-pill { color: #0f172a; }
         
-        .sro-del { padding-right: 10px; cursor: pointer; color: #94a3b8; font-size: 16px; font-weight: bold; transition: 0.2s; }
-        .sro-del:hover { color: var(--danger); }
+        .sro-del { 
+            padding: 6px 10px; cursor: pointer; color: #94a3b8; font-size: 16px; font-weight: bold; 
+            transition: 0.2s; background: rgba(0,0,0,0.1);
+        }
+        .sro-del:hover { color: var(--danger); background: rgba(255,0,0,0.1); }
+        .active .sro-del { color: #0f172a; border-left: 1px solid rgba(0,0,0,0.1); }
 
         .search-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 8px; color: white; width: 150px; font-size: 12px; }
 
@@ -190,26 +196,27 @@
         updateSroPills(); applyFilters();
     }
 
-    // Logic updated to ensure buttons are removed if data is empty
     function updateSroPills() {
         const sros = [...new Set(masterData.map(d => d.sro))].sort();
         const container = document.getElementById('sroContainer');
         container.innerHTML = `<div class="sro-pill-wrapper ${currentSro === 'ALL' ? 'active' : ''}"><div class="sro-pill" onclick="filterBySro('ALL')">ALL SROs</div></div>`;
         
         sros.forEach(s => {
+            if(!s) return;
             container.innerHTML += `
                 <div class="sro-pill-wrapper ${currentSro === s ? 'active' : ''}">
                     <div class="sro-pill" onclick="filterBySro('${s}')">${s}</div>
-                    <div class="sro-del" onclick="deleteSroBulk('${s}')">×</div>
+                    <div class="sro-del" title="Remove SRO Data" onclick="event.stopPropagation(); deleteSroBulk('${s}')">×</div>
                 </div>`;
         });
     }
 
     function deleteSroBulk(sroName) {
-        if (confirm(`Delete ALL data for SRO: ${sroName}? Button will be removed.`)) {
+        const count = masterData.filter(d => d.sro === sroName).length;
+        if (confirm(`Remove SRO: ${sroName}?\nThis will delete ${count} total records from ALL months.`)) {
             masterData = masterData.filter(d => d.sro !== sroName);
             if (currentSro === sroName) currentSro = 'ALL';
-            updateSroPills(); // Refresh UI to remove button
+            updateSroPills();
             applyFilters();
         }
     }
@@ -217,7 +224,7 @@
     function del(uid) { 
         if(confirm("Delete record?")) { 
             masterData = masterData.filter(d => d.uid !== uid); 
-            updateSroPills(); // Also check if this was the last record for an SRO
+            updateSroPills(); 
             applyFilters(); 
         } 
     }
