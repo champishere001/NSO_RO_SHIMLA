@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PLFS Pro - Month Sync Fix</title>
+    <title>PLFS Pro - Admin Active</title>
     
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -47,17 +47,18 @@
         table { width: 100%; border-collapse: collapse; }
         th { background: #fdfaf7; padding: 8px 10px; text-align: left; font-size: 9px; color: #a39b94; text-transform: uppercase; border-bottom: 1px solid var(--row-border); }
         td { padding: 8px 10px; border-bottom: 1px solid var(--row-border); font-size: 13px; background-color: var(--row-bg); color: var(--text-dark); font-weight: 600; }
-        input { border: 1px solid rgba(0,0,0,0.1); background: white; width: 100%; font-size: 12px; padding: 6px; border-radius: 6px; box-sizing: border-box; }
+        
+        /* Restricted Input style */
+        .readonly-input { background: transparent !important; border: none !important; color: #1e293b; font-weight: 700; pointer-events: none; }
+        .admin-editable { background: white; border: 1px solid rgba(0,0,0,0.1); }
 
         @media (max-width: 768px) {
             .sidebar { position: absolute; left: -240px; height: 100%; }
             .sidebar.open { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.8); }
             .dashboard-content { flex-direction: column; }
-            .pane-v1, .pane-rv { flex: none; width: 100%; }
             thead { display: none; }
             tr { display: flex; flex-direction: column; padding: 12px; border-bottom: 6px solid #f1ebe4; background: var(--row-bg); }
             td { display: block; padding: 4px 0; border: none; width: 100% !important; }
-            td:first-child { color: var(--accent-blue); font-size: 15px; font-weight: 800; border-bottom: 1px solid #eee; margin-bottom: 5px; }
             td::before { content: attr(data-label); display: block; font-size: 8px; color: #a39b94; text-transform: uppercase; }
         }
 
@@ -66,10 +67,11 @@
 
         #loginOverlay { position: fixed; inset: 0; background: var(--page-bg); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .login-card { background: #111827; padding: 30px; border-radius: 20px; width: 100%; max-width: 320px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-        .grid-container { display: grid; gap: 6px; margin-bottom: 10px; grid-template-columns: repeat(3, 1fr); }
         .chip { font-size: 9px; padding: 8px 2px; text-align: center; border-radius: 6px; cursor: pointer; font-weight: 700; color: #94a3b8; background: rgba(255,255,255,0.05); }
         .chip.active { background: var(--accent-blue); color: #083344; }
-        .sro-chip { grid-column: span 3; text-align: left; padding: 10px; font-size: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Admin Badge */
+        #adminBadge { display: none; background: #f59e0b; color: black; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -77,10 +79,10 @@
 <div id="loginOverlay">
     <div class="login-card">
         <h2 style="color: white; margin-bottom: 25px;">PLFS HUB</h2>
-        <button style="background: var(--accent-blue); width:100%; margin-bottom:10px; padding:15px; border-radius: 12px; border:none; font-weight:800; cursor:pointer;" onclick="loginAsState()">STATE ACCESS</button>
-        <button style="background: #1e293b; color: white; width:100%; padding:12px; border:none; border-radius: 12px; cursor:pointer;" onclick="showPassInput()">ADMIN LOGIN</button>
+        <button style="background: var(--accent-blue); width:100%; margin-bottom:10px; padding:15px; border-radius: 12px; border:none; font-weight:800;" onclick="loginAsState()">STATE ACCESS</button>
+        <button style="background: #1e293b; color: white; width:100%; padding:12px; border:none; border-radius: 12px;" onclick="showPassInput()">ADMIN LOGIN</button>
         <div id="passArea" style="display:none; margin-top: 15px;">
-            <input type="password" id="adminPass" placeholder="PIN" style="text-align: center; margin-bottom:10px; background: #0f172a; color: white; border-color: #334155;">
+            <input type="password" id="adminPass" placeholder="PIN" style="text-align: center; margin-bottom:10px; background: #0f172a; color: white; padding: 10px; border-radius: 8px; border: 1px solid #334155;">
             <button style="background: #06b6d4; color: #083344; width:100%; padding:10px; border:none; border-radius:8px; font-weight:800;" onclick="validateAdmin()">VERIFY</button>
         </div>
     </div>
@@ -98,14 +100,15 @@
     <header class="header-container">
         <div style="display: flex; align-items: center; gap: 10px;">
             <button class="menu-btn" onclick="toggleSidebar()">MENU</button>
-            <div id="breadcrumb" style="font-size: 12px; font-weight: 700; color: #94a3b8;">Select State/Month</div>
+            <div id="breadcrumb" style="font-size: 12px; font-weight: 700; color: #94a3b8;">Dashboard</div>
+            <span id="adminBadge">ADMIN MODE</span>
         </div>
         <div style="display:flex; align-items: center; gap:12px;">
-            <div class="progress-wrapper" style="text-align: right;">
+            <div class="progress-wrapper">
                 <div class="progress-container"><div id="pBar"></div></div>
-                <div id="pText" style="font-size: 8px; font-weight: 800; color: #64748b; margin-top: 2px;">0%</div>
+                <div id="pText" style="font-size: 8px; font-weight: 800; color: #64748b; margin-top: 2px; text-align: right;">0%</div>
             </div>
-            <button style="background: var(--accent-blue); padding: 8px 16px; border:none; border-radius: 8px; font-weight: 800; color:#083344; cursor:pointer; font-size: 11px;" onclick="saveToCloud()">PUSH DATA</button>
+            <button id="pushButton" style="background: var(--accent-blue); padding: 8px 16px; border:none; border-radius: 8px; font-weight: 800; color:#083344; font-size: 11px;" onclick="saveToCloud()">PUSH DATA</button>
         </div>
     </header>
 
@@ -117,7 +120,7 @@
             </div>
             <div style="flex:1; overflow:auto;">
                 <table>
-                    <thead><tr><th width="70">FSU</th><th>VILLAGE NAME</th><th width="130">ENUMERATOR</th><th width="110">TARGET</th></tr></thead>
+                    <thead><tr><th width="70">FSU</th><th>VILLAGE</th><th width="130">ENUMERATOR</th><th width="110">TARGET</th></tr></thead>
                     <tbody id="freshBody"></tbody>
                 </table>
             </div>
@@ -153,7 +156,10 @@
     
     function validateAdmin() {
         if(document.getElementById('adminPass').value === '12345') {
-            isAdmin = true; document.getElementById('loginOverlay').style.display = 'none'; loadFromFirebase();
+            isAdmin = true; 
+            document.getElementById('adminBadge').style.display = 'inline-block';
+            document.getElementById('loginOverlay').style.display = 'none'; 
+            loadFromFirebase();
         } else alert("Invalid PIN");
     }
     function loginAsState() { isAdmin = false; document.getElementById('loginOverlay').style.display = 'none'; loadFromFirebase(); }
@@ -171,7 +177,7 @@
         const container = document.getElementById('sidebarContent'); container.innerHTML = "";
         const states = [...new Set(masterData.map(d => d.state))].sort();
         
-        container.innerHTML += `<div class="section-label">States</div>`;
+        container.innerHTML += `<div class="section-label">State Regions</div>`;
         states.forEach(st => {
             const stDiv = document.createElement('div');
             stDiv.className = `state-item ${selectedState === st ? 'active' : ''}`;
@@ -188,6 +194,8 @@
                 sub.style.paddingLeft = "8px";
                 sub.innerHTML = `<div class="section-label">Month</div>`;
                 const mGrid = document.createElement('div'); mGrid.className = 'grid-container';
+                mGrid.style.display = 'grid'; mGrid.style.gridTemplateColumns = 'repeat(3, 1fr)'; mGrid.style.gap = '5px';
+                
                 monthsShort.forEach((m, i) => {
                     const ch = document.createElement('div');
                     ch.className = `chip ${selectedMonth === i ? 'active' : ''}`;
@@ -199,23 +207,24 @@
 
                 if (selectedMonth !== null) {
                     sub.innerHTML += `<div class="section-label">SRO</div>`;
-                    const sGrid = document.createElement('div'); sGrid.className = 'grid-container';
+                    const sGrid = document.createElement('div');
                     const availableSros = [...new Set(masterData.filter(d => d.state === st).map(d => d.sro))].sort();
                     
                     const allCh = document.createElement('div');
-                    allCh.className = `chip sro-chip ${selectedSro === 'ALL' ? 'active' : ''}`;
+                    allCh.className = `chip ${selectedSro === 'ALL' ? 'active' : ''}`;
+                    allCh.style.width = '100%'; allCh.style.marginBottom = '5px';
                     allCh.innerText = "ALL REGIONS";
                     allCh.onclick = (e) => { e.stopPropagation(); selectedSro = 'ALL'; renderSidebar(); updateDisplay(); if(window.innerWidth < 768) toggleSidebar(); };
-                    sGrid.appendChild(allCh);
+                    sub.appendChild(allCh);
 
                     availableSros.forEach(sr => {
                         const srCh = document.createElement('div');
-                        srCh.className = `chip sro-chip ${selectedSro === sr ? 'active' : ''}`;
+                        srCh.className = `chip ${selectedSro === sr ? 'active' : ''}`;
+                        srCh.style.width = '100%'; srCh.style.marginBottom = '5px';
                         srCh.innerText = sr || 'Unassigned';
                         srCh.onclick = (e) => { e.stopPropagation(); selectedSro = sr; renderSidebar(); updateDisplay(); if(window.innerWidth < 768) toggleSidebar(); };
-                        sGrid.appendChild(srCh);
+                        sub.appendChild(srCh);
                     });
-                    sub.appendChild(sGrid);
                 }
                 container.appendChild(sub);
             }
@@ -226,30 +235,18 @@
 
     function updateDisplay() {
         if (!selectedState || selectedMonth === null) return;
-        document.getElementById('breadcrumb').innerText = `${selectedState} / ${monthsShort[selectedMonth]}`;
         
-        const isQ1 = selectedMonth <= 2;
+        const stateSet = masterData.filter(d => d.state === selectedState && (selectedSro === 'ALL' || !selectedSro ? true : d.sro === selectedSro));
         let filtered = [];
         
-        // This is the FIX: StateSet now gets all data for the state, filtering happens in logic
-        const stateSet = masterData.filter(d => d.state === selectedState && (selectedSro === 'ALL' || !selectedSro ? true : d.sro === selectedSro));
-
-        if (isQ1) {
+        // Q1 Rolling Logic
+        if (selectedMonth <= 2) {
             stateSet.forEach(d => {
-                // If current month matches the sample's monthIdx, it's a V1 Fresh visit
-                if (d.monthIdx === selectedMonth && d.visit === 1) {
-                    filtered.push(d);
-                } 
-                // Promote previous months to Revisits (RV)
-                else if (selectedMonth === 1) { // Feb Selection
-                    if (d.monthIdx === 0 && d.visit === 1) filtered.push({...d, visit: 2, uid: d.fsu + '-V2'});
-                }
-                else if (selectedMonth === 2) { // Mar Selection
-                    if ((d.monthIdx === 0 || d.monthIdx === 1) && d.visit === 1) filtered.push({...d, visit: 2, uid: d.fsu + '-RV'});
-                }
+                if (d.monthIdx === selectedMonth && d.visit === 1) filtered.push(d);
+                else if (selectedMonth === 1 && d.monthIdx === 0 && d.visit === 1) filtered.push({...d, visit: 2, uid: d.fsu + '-V2'});
+                else if (selectedMonth === 2 && (d.monthIdx === 0 || d.monthIdx === 1) && d.visit === 1) filtered.push({...d, visit: 2, uid: d.fsu + '-RV'});
             });
         } else {
-            // Standard month-for-month logic for Q2 onwards
             filtered = stateSet.filter(d => d.monthIdx === selectedMonth);
         }
 
@@ -263,17 +260,27 @@
             const isDone = d.visit === 1 ? d.endDate : d.collectionDate;
             if (isDone) comp++;
             
+            // Admin can edit Enumerator and Dates, State User can only view or edit their part
+            const inputClass = isAdmin ? "admin-editable" : "readonly-input";
+            
             if (d.visit === 1) {
-                fBody.innerHTML += `<tr><td data-label="FSU">${d.fsu}</td><td data-label="Village">${d.village}</td><td data-label="Enum"><input type="text" value="${d.enumerator||''}" onchange="updateVal('${d.uid}','enumerator',this.value)"></td><td data-label="Target"><input type="date" value="${d.endDate||''}" onchange="updateVal('${d.uid}','endDate',this.value)"></td></tr>`;
+                fBody.innerHTML += `<tr>
+                    <td data-label="FSU">${d.fsu}</td>
+                    <td data-label="Village">${d.village}</td>
+                    <td data-label="Enum"><input type="text" class="${inputClass}" style="padding:5px; border-radius:4px;" value="${d.enumerator||''}" onchange="updateVal('${d.uid}','enumerator',this.value)"></td>
+                    <td data-label="Target"><input type="date" class="${inputClass}" style="padding:5px; border-radius:4px;" value="${d.endDate||''}" onchange="updateVal('${d.uid}','endDate',this.value)"></td>
+                </tr>`;
             } else {
-                rBody.innerHTML += `<tr><td data-label="UID">${d.uid}</td><td data-label="Enum">${d.enumerator||'--'}</td><td data-label="Date"><input type="date" value="${d.collectionDate||''}" onchange="updateVal('${d.uid}','collectionDate',this.value)"></td></tr>`;
+                rBody.innerHTML += `<tr>
+                    <td data-label="UID">${d.uid}</td>
+                    <td data-label="Enum">${d.enumerator||'--'}</td>
+                    <td data-label="Date"><input type="date" class="admin-editable" style="padding:5px; border-radius:4px;" value="${d.collectionDate||''}" onchange="updateVal('${d.uid}','collectionDate',this.value)"></td>
+                </tr>`;
             }
         });
 
         const per = filtered.length > 0 ? Math.round((comp/filtered.length)*100) : 0;
-        const pb = document.getElementById('pBar');
-        pb.style.width = per+"%";
-        pb.className = per < 50 ? 'p-low' : (per < 90 ? 'p-mid' : 'p-high');
+        document.getElementById('pBar').style.width = per+"%";
         document.getElementById('pText').innerText = per+"%";
     }
 
@@ -287,7 +294,7 @@
         const stateData = masterData.filter(d => d.state === selectedState);
         const dataObj = {}; stateData.forEach(item => dataObj[item.uid] = item);
         await database.ref(`plfs_roster/${selectedState}`).set(dataObj);
-        alert("Pushed to Cloud");
+        alert("Pushed to Cloud Successfully!");
     }
 </script>
 </body>
