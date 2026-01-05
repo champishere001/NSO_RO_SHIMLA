@@ -13,7 +13,7 @@
         .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-header { padding: 20px; font-weight: 800; font-size: 18px; color: var(--accent); border-bottom: 1px solid var(--border); text-align: center; cursor: pointer; user-select: none; }
         .nav-scroll { flex: 1; overflow-y: auto; padding: 10px; }
-        .zo-item { padding: 12px; font-weight: 800; cursor: pointer; border-radius: 8px; margin-bottom: 4px; background: rgba(255,255,255,0.03); font-size: 13px; display: flex; justify-content: space-between; }
+        .zo-item { padding: 12px; font-weight: 800; cursor: pointer; border-radius: 8px; margin-bottom: 4px; background: rgba(255,255,255,0.03); font-size: 13px; }
         .zo-item.active { background: rgba(88, 166, 255, 0.1); color: var(--accent); }
         .st-item { padding: 8px 15px 8px 25px; font-weight: 600; cursor: pointer; border-radius: 8px; font-size: 13px; color: var(--text-dim); }
         .st-item.active { color: #fff; background: rgba(255,255,255,0.05); }
@@ -32,6 +32,9 @@
         table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
         th { text-align: left; padding: 12px; font-size: 11px; color: var(--text-dim); border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.4; }
+        .tag { font-size: 9px; padding: 2px 5px; border-radius: 3px; font-weight: bold; text-transform: uppercase; margin-right: 5px; }
+        .tag-rural { background: rgba(46, 160, 67, 0.2); color: var(--v1); border: 1px solid var(--v1); }
+        .tag-urban { background: rgba(88, 166, 255, 0.2); color: var(--accent); border: 1px solid var(--accent); }
         input { background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; width: 100%; font-size: 13px; }
         .sync-badge { font-size: 10px; font-weight: bold; margin-left: auto; padding-right: 10px; }
     </style>
@@ -49,20 +52,20 @@
 <main class="main">
     <header class="top-bar">
         <input type="text" id="searchBox" placeholder="Search FSU or Town..." oninput="debouncedSearch(this.value)">
-        <div id="syncBadge" class="sync-badge" style="color:var(--rv)">OFFLINE</div>
-        <button style="background:var(--v1); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:bold;" onclick="syncAllData()">PUSH DATA</button>
+        <div id="syncBadge" class="sync-badge" style="color:var(--rv)">CONNECTING...</div>
+        <button style="background:var(--v1); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="syncAllData()">PUSH DATA</button>
     </header>
 
     <div class="workspace">
         <div style="display:flex; gap:8px; margin-bottom:15px;">
-            <button id="btnV1" class="v-btn v1 active" onclick="setVisit(1)">Visit 1</button>
+            <button id="btnV1" class="v-btn v1 active" onclick="setVisit(1)">Visit 1 (Fresh)</button>
             <button id="btnV2" class="v-btn v2" onclick="setVisit(2)">Revisits</button>
         </div>
         <table>
             <thead>
                 <tr>
                     <th style="width: 15%;">FSU</th>
-                    <th style="width: 40%;">Location Details</th>
+                    <th style="width: 40%;">Location & Tehsil Details</th>
                     <th style="width: 25%;">Enumerator</th>
                     <th style="width: 20%;">Target Date</th>
                 </tr>
@@ -75,12 +78,7 @@
 </main>
 
 <script>
-    const config = { 
-        apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI", 
-        authDomain: "action-plan-62fae.firebaseapp.com", 
-        databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com", 
-        projectId: "action-plan-62fae" 
-    };
+    const config = { apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI", authDomain: "action-plan-62fae.firebaseapp.com", databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com", projectId: "action-plan-62fae" };
     firebase.initializeApp(config);
     const db = firebase.database();
 
@@ -90,37 +88,22 @@
     let master = [];
     let selZo = null, selSt = null, selSro = null, selMo = null, selVis = 1, query = "";
 
-    function checkAdminPass() {
-        if(prompt("Password:") === "12345") window.location.href = './admin.html';
-    }
+    function checkAdminPass() { if(prompt("Password:") === "12345") window.location.href = './admin.html'; }
 
-    // --- डेटा लोड करने वाला फंक्शन ---
     function initData() {
         db.ref(`plfs_roster`).on('value', (snap) => {
             if(snap.exists()) {
                 let cloudData = [];
                 const val = snap.val();
-                
-                // अगर डेटा Nested है (State के अंदर), तो उसे समतल (Flatten) करें
                 Object.keys(val).forEach(key => {
                     const content = val[key];
-                    if (content.uid) {
-                        cloudData.push(content);
-                    } else {
-                        Object.values(content).forEach(item => {
-                            if(item.uid) cloudData.push(item);
-                        });
-                    }
+                    if (content.uid) cloudData.push(content);
+                    else Object.values(content).forEach(item => { if(item.uid) cloudData.push(item); });
                 });
-
                 master = cloudData;
-                localStorage.setItem('plfs_master', JSON.stringify(master));
                 document.getElementById('syncBadge').innerText = "ONLINE";
                 document.getElementById('syncBadge').style.color = "var(--v1)";
-                renderNav();
-                refresh();
-            } else {
-                document.getElementById('navScroll').innerHTML = "No Data Found in Firebase";
+                renderNav(); refresh();
             }
         });
     }
@@ -129,11 +112,8 @@
         const container = document.getElementById('navScroll');
         const activeStates = [...new Set(master.map(m => m.state))];
         let html = '';
-
         Object.keys(zones).forEach(zo => {
-            const hasActiveState = zones[zo].some(s => activeStates.includes(s));
-            if(!hasActiveState) return;
-
+            if(!zones[zo].some(s => activeStates.includes(s))) return;
             html += `<div class="zo-item ${selZo===zo?'active':''}" onclick="selZo=(selZo==='${zo}'?null:'${zo}'); renderNav();">${zo}</div>`;
             if(selZo === zo) {
                 zones[zo].filter(s => activeStates.includes(s)).forEach(st => {
@@ -144,9 +124,7 @@
                             html += `<div class="sro-item ${selSro===s?'active':''}" onclick="selSro='${s}'; renderNav(); refresh(); event.stopPropagation();">${s}</div>`;
                             if(selSro === s) {
                                 html += `<div class="m-grid" onclick="event.stopPropagation();">`;
-                                months.forEach((m,i) => {
-                                    html += `<div class="m-chip ${selMo===i?'active':''}" onclick="selMo=${i}; renderNav(); refresh();">${m}</div>`;
-                                });
+                                months.forEach((m,i) => { html += `<div class="m-chip ${selMo===i?'active':''}" onclick="selMo=${i}; renderNav(); refresh();">${m}</div>`; });
                                 html += `</div>`;
                             }
                         });
@@ -159,39 +137,50 @@
 
     function refresh() {
         const body = document.getElementById('dataBody');
-        if(!selSt || !selSro || selMo === null) { 
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">Select: State > SRO > Month</td></tr>'; 
-            return; 
+        if(!selSt || !selSro || selMo === null) { body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">Select Filters Above</td></tr>'; return; }
+
+        let filtered = [];
+        if (selVis === 1) {
+            // Fresh Samples for selected month
+            filtered = master.filter(d => d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro) && d.monthIdx === selMo && d.visitNum == 1);
+        } else {
+            // Revisit Logic requested:
+            if (selMo === 0) filtered = []; // Jan has no revisits
+            else if (selMo === 1) filtered = master.filter(d => d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro) && d.monthIdx === 0 && d.visitNum > 1);
+            else if (selMo === 2) filtered = master.filter(d => d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro) && (d.monthIdx === 0 || d.monthIdx === 1) && d.visitNum > 1);
+            else filtered = master.filter(d => d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro) && d.monthIdx < selMo && d.visitNum > 1);
         }
 
-        const filtered = master.filter(d => 
-            d.state === selSt && 
-            (selSro === "ALL SROs" || d.sro === selSro) && 
-            d.monthIdx === selMo && 
-            (selVis === 1 ? (d.visitNum == 1) : (d.visitNum > 1)) &&
-            (d.fsu.toString().includes(query) || (d.location && d.location.toLowerCase().includes(query.toLowerCase())))
-        );
+        // Apply Search
+        filtered = filtered.filter(d => d.fsu.toString().includes(query) || (d.location && d.location.toLowerCase().includes(query.toLowerCase())));
 
         if(filtered.length === 0) {
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No records found for this selection.</td></tr>';
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No records for this selection.</td></tr>';
             return;
         }
 
-        body.innerHTML = filtered.map(d => `
-            <tr>
-                <td><b>${d.fsu}</b><br><small>${d.sector || ''}</small></td>
-                <td>${d.location || 'N/A'}</td>
-                <td><input type="text" value="${d.enumerator || ''}" onchange="upd('${d.uid}','en',this.value)" placeholder="Enter Name"></td>
-                <td><input type="date" value="${d.date || ''}" onchange="upd('${d.uid}','dt',this.value)"></td>
-            </tr>
-        `).join('');
+        body.innerHTML = filtered.map(d => {
+            const tehsilText = d.sector === 'Rural' ? ` | Tehsil: ${d.tehsil || 'N/A'}` : '';
+            return `
+                <tr>
+                    <td><b>${d.fsu}</b></td>
+                    <td>
+                        <div>${d.location || 'N/A'}</div>
+                        <span class="tag ${d.sector==='Rural'?'tag-rural':'tag-urban'}">${d.sector}</span>
+                        <small style="color:var(--text-dim)">${tehsilText}</small>
+                    </td>
+                    <td><input type="text" value="${d.enumerator || ''}" onchange="upd('${d.uid}','en',this.value)" placeholder="Assign Enumerator"></td>
+                    <td><input type="date" value="${d.date || ''}" onchange="upd('${d.uid}','dt',this.value)"></td>
+                </tr>`;
+        }).join('');
     }
 
     function upd(id, k, v) { 
         let item = master.find(x=>x.uid===id); 
         if(item) {
             if(k==='en') item.enumerator = v; else item.date = v;
-            localStorage.setItem('plfs_master', JSON.stringify(master));
+            document.getElementById('syncBadge').innerText = "CHANGED (PUSH DATA)";
+            document.getElementById('syncBadge').style.color = "var(--rv)";
         }
     }
 
@@ -203,7 +192,9 @@
                 grouped[item.state][item.uid] = item; 
             });
             await db.ref(`plfs_roster`).update(grouped);
-            alert("Data Uploaded Successfully!");
+            document.getElementById('syncBadge').innerText = "ONLINE";
+            document.getElementById('syncBadge').style.color = "var(--v1)";
+            alert("Data Pushed Successfully!");
         } catch(e) { alert("Error: " + e.message); }
     }
 
