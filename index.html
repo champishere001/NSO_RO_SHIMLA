@@ -60,6 +60,7 @@
         <input type="text" id="searchBox" placeholder="Search FSU Code..." oninput="setSearch(this.value)" style="flex:1;">
         <div id="syncBadge" class="badge" style="color:var(--text-dim); border-color:var(--border);">CHECKING RULES...</div>
         <button class="btn" style="background:#30363d; color:white;" onclick="unlockAdmin()">ADMIN</button>
+        <button id="fetchBtn" class="btn" style="background:var(--accent); color:black" onclick="fetchFromCloud()">FETCH DATA</button>
         <button id="syncBtn" class="btn" style="background:var(--v1); color:white" onclick="syncAll()">CLOUD SYNC</button>
     </header>
 
@@ -126,7 +127,6 @@
                     fsu = cols[3]; mCode = cols[4]; sro = cols[5]; loc = cols[8];
                 }
 
-                // FIX: Skip headers or empty rows
                 if (!fsu || fsu === "FSU" || isNaN(fsu)) return;
 
                 if (fsu && mCode) {
@@ -145,7 +145,7 @@
     }
 
     async function syncAll() {
-        if(master.length === 0) return alert("No data.");
+        if(master.length === 0) return alert("No local data to sync.");
         const btn = document.getElementById('syncBtn');
         btn.innerText = "UPDATING...";
         
@@ -164,9 +164,49 @@
         btn.innerText = "CLOUD SYNC";
     }
 
+    async function fetchFromCloud() {
+        const btn = document.getElementById('fetchBtn');
+        const originalText = btn.innerText;
+        btn.innerText = "FETCHING...";
+        
+        try {
+            const snapshot = await db.ref('plfs_roster').once('value');
+            const cloudData = snapshot.val();
+            
+            if (!cloudData) {
+                alert("No data found in the cloud.");
+                btn.innerText = originalText;
+                return;
+            }
+
+            // Merge cloud data into master
+            Object.keys(cloudData).forEach(state => {
+                const stateData = cloudData[state];
+                Object.keys(stateData).forEach(uid => {
+                    const cloudItem = stateData[uid];
+                    const existingIdx = master.findIndex(x => x.uid === uid);
+                    
+                    if (existingIdx > -1) {
+                        // Merge: Cloud data takes priority for updates
+                        master[existingIdx] = { ...master[existingIdx], ...cloudItem };
+                    } else {
+                        // New record
+                        master.push(cloudItem);
+                    }
+                });
+            });
+
+            saveAndRefresh();
+            alert("Fetch Successful! Local data synchronized with Cloud.");
+        } catch(e) {
+            alert("FETCH FAILED: " + e.message);
+        } finally {
+            btn.innerText = originalText;
+        }
+    }
+
     function renderTable() {
         const body = document.getElementById('dataBody');
-        
         const filtered = master.filter(m => {
             const matchesSearch = !query || m.fsu.toString().includes(query);
             const matchesState = selectedState === "ALL" || m.state === selectedState;
@@ -178,7 +218,7 @@
                 <td><b>${item.fsu}</b><br><small style="color:var(--accent)">${item.state} (${item.sector})</small></td>
                 <td>${item.sro}<br><small>Visit ${item.visitNum}</small></td>
                 <td><small>${item.location}</small></td>
-                <td><input type="text" placeholder="Assign..." value="${item.enumerator}" onchange="updateEntry('${item.uid}','enumerator',this.value)"></td>
+                <td><input type="text" placeholder="Assign..." value="${item.enumerator||''}" onchange="updateEntry('${item.uid}','enumerator',this.value)"></td>
                 <td><input type="date" value="${item.date||''}" onchange="updateEntry('${item.uid}','date',this.value)"></td>
             </tr>
         `).join('') || '<tr><td colspan="5" style="text-align:center;">No data found.</td></tr>';
@@ -197,13 +237,16 @@
     function filterByState(state, el) {
         selectedState = state;
         document.querySelectorAll('.state-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
+        if(el) el.classList.add('active');
         renderTable();
     }
 
     function updateEntry(id, k, v) {
         let entry = master.find(x => x.uid === id);
-        if(entry) { entry[k] = v; localStorage.setItem('plfs_v5', JSON.stringify(master)); }
+        if(entry) { 
+            entry[k] = v; 
+            localStorage.setItem('plfs_v5', JSON.stringify(master)); 
+        }
     }
 
     function setSearch(v) { query = v; renderTable(); }
