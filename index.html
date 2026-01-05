@@ -38,7 +38,6 @@
         input { background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; width: 100%; font-size: 13px; }
         .sync-badge { font-size: 10px; font-weight: bold; margin-left: auto; padding-right: 10px; }
         .action-btn { background: #30363d; color: #fff; border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
-        .auto-btn { background: rgba(88, 166, 255, 0.1); color: var(--accent); border: 1px solid var(--accent); }
     </style>
 </head>
 <body>
@@ -51,17 +50,16 @@
 
 <main class="main">
     <header class="top-bar">
-        <input type="text" id="searchBox" placeholder="Filter FSU..." oninput="debouncedSearch(this.value)">
-        <button class="action-btn auto-btn" onclick="autoAssignWorkers()">AUTO-PICK WORKER</button>
-        <button class="action-btn" onclick="exportToCSV()">CSV</button>
+        <input type="text" id="searchBox" placeholder="Quick Search FSU..." oninput="debouncedSearch(this.value)">
+        <button class="action-btn" onclick="exportToCSV()">EXPORT CSV</button>
         <div id="syncBadge" class="sync-badge" style="color:var(--rv)">OFFLINE</div>
-        <button style="background:var(--v1); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="syncAllData()">PUSH</button>
+        <button style="background:var(--v1); color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="syncAllData()">PUSH TO CLOUD</button>
     </header>
 
     <div class="workspace">
         <div style="display:flex; gap:8px; margin-bottom:15px;">
             <button id="btnV1" class="v-btn v1 active" onclick="setVisit(1)">Visit 1 (Fresh)</button>
-            <button id="btnV2" class="v-btn v2" onclick="setVisit(2)">Revisits (3 Months)</button>
+            <button id="btnV2" class="v-btn v2" onclick="setVisit(2)">Revisits (3 Months Cycle)</button>
         </div>
         <table>
             <thead>
@@ -108,18 +106,23 @@
         });
     }
 
-    function autoAssignWorkers() {
-        let count = 0;
-        master.forEach(item => {
-            if (item.visitNum > 1) {
-                const v1 = master.find(x => x.fsu === item.fsu && x.state === item.state && x.visitNum === 1);
-                if (v1 && v1.enumerator && !item.enumerator) {
-                    item.enumerator = v1.enumerator;
-                    count++;
+    // UPDATED: AUTO-LINKS ENUMERATOR NAME BETWEEN VISITS
+    function upd(id, k, v) { 
+        let item = master.find(x => x.uid === id); 
+        if(item) {
+            if(k === 'en') {
+                item.enumerator = v;
+                // If we are updating a Visit 1 record, push the name to all revisits of the SAME FSU
+                if(item.visitNum === 1) {
+                    master.filter(x => x.fsu === item.fsu && x.state === item.state && x.visitNum > 1)
+                          .forEach(revisit => { revisit.enumerator = v; });
                 }
+            } else {
+                item.date = v;
             }
-        });
-        refresh();
+            document.getElementById('syncBadge').innerText = "UNSAVED CHANGES";
+            document.getElementById('syncBadge').style.color = "var(--rv)";
+        }
     }
 
     function renderNav() {
@@ -151,20 +154,18 @@
 
     function refresh() {
         const body = document.getElementById('dataBody');
-        if(!selSt || !selSro || selMo === null) { body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">Select filters</td></tr>'; return; }
+        if(!selSt || !selSro || selMo === null) { body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-dim)">Select filters to view list.</td></tr>'; return; }
 
         let filtered = [];
         if (selVis === 1) {
             filtered = master.filter(d => d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro) && d.monthIdx === selMo && d.visitNum == 1);
         } else {
-            // STRICT REVISIT LOGIC: Original Month + 1, Original Month + 2, Original Month + 3
+            // Revisit Logic (Show if original visit was 1, 2, or 3 months ago)
             filtered = master.filter(d => {
-                const isCorrectLocation = d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro);
-                const isRevisitRecord = d.visitNum > 1;
-                // Check if current selected month (selMo) falls within 3 months of the original visit
-                const isIn3MonthWindow = (selMo > d.monthIdx && selMo <= d.monthIdx + 3);
-                
-                return isCorrectLocation && isRevisitRecord && isIn3MonthWindow;
+                const isCorrectLoc = d.state === selSt && (selSro === "ALL SROs" || d.sro === selSro);
+                const isRevisit = d.visitNum > 1;
+                const isInWindow = (selMo > d.monthIdx && selMo <= d.monthIdx + 3);
+                return isCorrectLoc && isRevisit && isInWindow;
             });
         }
 
@@ -178,18 +179,9 @@
                     <span class="tag ${d.sector==='Rural'?'tag-rural':'tag-urban'}">${d.sector}</span>
                     <small style="color:var(--text-dim)">${d.sector==='Rural' ? 'Tehsil: '+(d.tehsil||'Pending') : 'SRO: '+d.sro}</small>
                 </td>
-                <td><input type="text" value="${d.enumerator || ''}" onchange="upd('${d.uid}','en',this.value)"></td>
+                <td><input type="text" value="${d.enumerator || ''}" onchange="upd('${d.uid}','en',this.value)" placeholder="Enter Name"></td>
                 <td><input type="date" value="${d.date || ''}" onchange="upd('${d.uid}','dt',this.value)"></td>
             </tr>`).join('');
-    }
-
-    function upd(id, k, v) { 
-        let item = master.find(x=>x.uid===id); 
-        if(item) {
-            if(k==='en') item.enumerator = v; else item.date = v;
-            document.getElementById('syncBadge').innerText = "UNSAVED";
-            document.getElementById('syncBadge').style.color = "var(--rv)";
-        }
     }
 
     async function syncAllData() {
@@ -198,7 +190,7 @@
         await db.ref(`plfs_roster`).update(grouped);
         document.getElementById('syncBadge').innerText = "LIVE";
         document.getElementById('syncBadge').style.color = "var(--v1)";
-        alert("Pushed Successfully");
+        alert("Data Pushed Successfully!");
     }
 
     function exportToCSV() {
@@ -209,7 +201,7 @@
         const blob = new Blob([headers + rows], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = window.URL.createObjectURL(blob);
-        a.download = `PLFS_Plan.csv`;
+        a.download = `PLFS_Schedule_${selSt}_${months[selMo]}.csv`;
         a.click();
     }
 
