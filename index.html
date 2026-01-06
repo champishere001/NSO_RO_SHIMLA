@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLFS 2026 | Development Portal</title>
+    <title>PLFS 2026 | Master Development Portal</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -17,11 +17,11 @@
         }
         body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
         
-        /* Sidebar Styles */
+        /* Sidebar */
         .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-header { padding: 20px; font-weight: 800; font-size: 16px; color: var(--accent); border-bottom: 1px solid var(--border); text-align: center; letter-spacing: 1px; }
         .nav-scroll { flex: 1; overflow-y: auto; padding: 10px; }
-        .state-item { padding: 8px 12px; font-size: 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; transition: 0.2s; color: var(--text-dim); }
+        .state-item { padding: 8px 12px; font-size: 12px; cursor: pointer; border-radius: 6px; margin-bottom: 2px; transition: 0.2s; color: var(--text-dim); text-transform: uppercase; }
         .state-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
         .state-item.active { background: var(--accent); color: #000; font-weight: 700; }
 
@@ -32,15 +32,15 @@
         
         .admin-panel { display: none; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 15px; border: 1px dashed var(--accent); border-radius: 10px; background: rgba(88,166,255,0.05); }
         
-        /* Table Styles */
+        /* Table */
         table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; }
         th { text-align: left; padding: 12px; font-size: 11px; color: var(--text-dim); background: rgba(0,0,0,0.2); text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
-        
-        /* Visual grouping: Add a thick border every 4 rows (Visit 1 to Visit 4) */
         tr:nth-child(4n) { border-bottom: 2px solid var(--accent); }
 
+        /* UI Elements */
         .btn { padding: 8px 15px; border-radius: 6px; font-weight: 700; cursor: pointer; border: none; font-size: 11px; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
         input { background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 6px; border-radius: 4px; width: 100%; }
         .badge { font-size: 10px; margin-left: auto; font-weight: bold; padding: 4px 8px; border-radius: 4px; border: 1px solid; }
     </style>
@@ -50,7 +50,7 @@
 <aside class="sidebar">
     <div class="sidebar-header">PLFS 2026 MASTER</div>
     <div class="nav-scroll">
-        <div class="state-item active" onclick="filterByState('ALL', this)">ALL STATES</div>
+        <div class="state-item active" id="btn-ALL" onclick="filterByState('ALL')">ALL STATES</div>
         <div id="stateList"></div>
     </div>
 </aside>
@@ -58,7 +58,7 @@
 <main class="main">
     <header class="top-bar">
         <input type="text" id="searchBox" placeholder="Search FSU Code..." oninput="setSearch(this.value)" style="flex:1;">
-        <div id="syncBadge" class="badge" style="color:var(--text-dim); border-color:var(--border);">CHECKING RULES...</div>
+        <div id="syncBadge" class="badge" style="color:var(--text-dim); border-color:var(--border);">INITIALIZING...</div>
         <button class="btn" style="background:#30363d; color:white;" onclick="unlockAdmin()">ADMIN</button>
         <button id="fetchBtn" class="btn" style="background:var(--accent); color:black" onclick="fetchFromCloud()">FETCH DATA</button>
         <button id="syncBtn" class="btn" style="background:var(--v1); color:white" onclick="syncAll()">CLOUD SYNC</button>
@@ -92,8 +92,9 @@
 </main>
 
 <script>
+    // 1. UPDATED FIREBASE CONFIG
     const dbConfig = { 
-        databaseURL: "https://data-for-development-11b00-default-rtdb.firebaseio.com" 
+        databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com/" 
     };
     firebase.initializeApp(dbConfig);
     const db = firebase.database();
@@ -103,7 +104,7 @@
     let selectedState = "ALL";
 
     function unlockAdmin() {
-        if(prompt("Pass:") === "1234") {
+        if(prompt("Enter Admin Pass:") === "1234") {
             const p = document.getElementById('adminPanel');
             p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
         }
@@ -112,96 +113,92 @@
     async function handleExcel(input, sector) {
         const files = Array.from(input.files);
         for (let file of files) {
-            const fileName = file.name.split('.')[0]; 
-            const state = fileName.includes('_') ? fileName.split('_').pop().toUpperCase() : "UNKNOWN";
-            
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data);
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, range: 7, defval: ""});
+            try {
+                const fileName = file.name.split('.')[0]; 
+                // Extract state from name (e.g., "List_BIHAR.xlsx" -> "BIHAR")
+                const rawState = fileName.includes('_') ? fileName.split('_').pop().toUpperCase() : "UNKNOWN";
+                const state = rawState.replace(/[.#$[\]/]/g, "_").trim();
 
-            rows.forEach(cols => {
-                let fsu, mCode, sro, loc;
-                if (sector === 'Rural') {
-                    fsu = cols[4]; mCode = cols[5]; sro = cols[6]; loc = cols[10];
-                } else {
-                    fsu = cols[3]; mCode = cols[4]; sro = cols[5]; loc = cols[8];
-                }
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data);
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, range: 7, defval: ""});
 
-                if (!fsu || fsu === "FSU" || isNaN(fsu)) return;
+                rows.forEach(cols => {
+                    let fsu, mCode, sro, loc;
+                    if (sector === 'Rural') {
+                        fsu = cols[4]; mCode = cols[5]; sro = cols[6]; loc = cols[10];
+                    } else {
+                        fsu = cols[3]; mCode = cols[4]; sro = cols[5]; loc = cols[8];
+                    }
 
-                if (fsu && mCode) {
+                    if (!fsu || isNaN(fsu) || fsu === "") return;
+
                     const startMonth = (parseInt(mCode) >= 13) ? (parseInt(mCode) - 13) : (parseInt(mCode) - 1);
                     for (let i = 0; i < 4; i++) {
                         let curMonth = (startMonth + i) % 12;
-                        let uid = `${state}_${fsu}_M${curMonth}_V${i+1}`;
+                        let uid = `${state}_${fsu}_M${curMonth}_V${i+1}`.replace(/[.#$[\]/]/g, "_");
+                        
                         if (!master.find(x => x.uid === uid)) {
-                            master.push({ uid, fsu, state, sector, sro: String(sro||'').toUpperCase(), monthIdx: curMonth, location: loc || "---", enumerator: "", visitNum: i+1 });
+                            master.push({ 
+                                uid, fsu, state, sector, 
+                                sro: String(sro||'').toUpperCase(), 
+                                monthIdx: curMonth, 
+                                location: loc || "---", 
+                                enumerator: "", 
+                                visitNum: i+1,
+                                date: "" 
+                            });
                         }
                     }
-                }
-            });
+                });
+            } catch (e) {
+                console.error("File Error:", e);
+                alert("Error processing file: " + file.name);
+            }
         }
         saveAndRefresh();
     }
 
     async function syncAll() {
-        if(master.length === 0) return alert("No local data to sync.");
+        if(master.length === 0) return alert("No data to sync.");
         const btn = document.getElementById('syncBtn');
         btn.innerText = "UPDATING...";
         
         try {
             const updates = {};
             master.forEach(m => {
-                const safeState = m.state.replace(/[.#$[\]]/g, ""); 
-                updates[`/plfs_roster/${safeState}/${m.uid}`] = m;
+                // Organize by State in Firebase for better performance
+                updates[`/plfs_roster/${m.state}/${m.uid}`] = m;
             });
             await db.ref().update(updates);
-            alert("Success! Cloud Updated.");
-            document.getElementById('syncBadge').innerText = "CLOUD ONLINE";
+            alert("Cloud Sync Successful!");
         } catch(e) {
-            alert("SYNC FAILED: " + e.message);
+            console.error(e);
+            alert("Sync Failed: " + e.message);
+        } finally {
+            btn.innerText = "CLOUD SYNC";
         }
-        btn.innerText = "CLOUD SYNC";
     }
 
     async function fetchFromCloud() {
         const btn = document.getElementById('fetchBtn');
-        const originalText = btn.innerText;
         btn.innerText = "FETCHING...";
-        
         try {
-            const snapshot = await db.ref('plfs_roster').once('value');
-            const cloudData = snapshot.val();
-            
-            if (!cloudData) {
-                alert("No data found in the cloud.");
-                btn.innerText = originalText;
-                return;
-            }
-
-            // Merge cloud data into master
-            Object.keys(cloudData).forEach(state => {
-                const stateData = cloudData[state];
-                Object.keys(stateData).forEach(uid => {
-                    const cloudItem = stateData[uid];
-                    const existingIdx = master.findIndex(x => x.uid === uid);
-                    
-                    if (existingIdx > -1) {
-                        // Merge: Cloud data takes priority for updates
-                        master[existingIdx] = { ...master[existingIdx], ...cloudItem };
-                    } else {
-                        // New record
-                        master.push(cloudItem);
-                    }
+            const snap = await db.ref('plfs_roster').once('value');
+            const data = snap.val();
+            if (data) {
+                let flattened = [];
+                Object.values(data).forEach(stateGroup => {
+                    Object.values(stateGroup).forEach(item => flattened.push(item));
                 });
-            });
-
-            saveAndRefresh();
-            alert("Fetch Successful! Local data synchronized with Cloud.");
+                master = flattened;
+                saveAndRefresh();
+                alert("Data Refreshed from Cloud!");
+            }
         } catch(e) {
-            alert("FETCH FAILED: " + e.message);
+            alert("Fetch error: " + e.message);
         } finally {
-            btn.innerText = originalText;
+            btn.innerText = "FETCH DATA";
         }
     }
 
@@ -213,7 +210,7 @@
             return matchesSearch && matchesState;
         });
 
-        body.innerHTML = filtered.slice(0, 200).map(item => `
+        body.innerHTML = filtered.slice(0, 150).map(item => `
             <tr>
                 <td><b>${item.fsu}</b><br><small style="color:var(--accent)">${item.state} (${item.sector})</small></td>
                 <td>${item.sro}<br><small>Visit ${item.visitNum}</small></td>
@@ -221,63 +218,4 @@
                 <td><input type="text" placeholder="Assign..." value="${item.enumerator||''}" onchange="updateEntry('${item.uid}','enumerator',this.value)"></td>
                 <td><input type="date" value="${item.date||''}" onchange="updateEntry('${item.uid}','date',this.value)"></td>
             </tr>
-        `).join('') || '<tr><td colspan="5" style="text-align:center;">No data found.</td></tr>';
-        
-        renderSidebar();
-    }
-
-    function renderSidebar() {
-        const states = [...new Set(master.map(m => m.state))].sort();
-        const list = document.getElementById('stateList');
-        list.innerHTML = states.map(s => `
-            <div class="state-item ${selectedState === s ? 'active' : ''}" onclick="filterByState('${s}', this)">${s}</div>
-        `).join('');
-    }
-
-    function filterByState(state, el) {
-        selectedState = state;
-        document.querySelectorAll('.state-item').forEach(i => i.classList.remove('active'));
-        if(el) el.classList.add('active');
-        renderTable();
-    }
-
-    function updateEntry(id, k, v) {
-        let entry = master.find(x => x.uid === id);
-        if(entry) { 
-            entry[k] = v; 
-            localStorage.setItem('plfs_v5', JSON.stringify(master)); 
-        }
-    }
-
-    function setSearch(v) { query = v; renderTable(); }
-    
-    function saveAndRefresh() {
-        localStorage.setItem('plfs_v5', JSON.stringify(master));
-        renderTable();
-    }
-
-    function wipeData() { 
-        if(confirm("Wipe local data? This won't delete Cloud data.")) { 
-            master = []; 
-            localStorage.clear(); 
-            renderTable(); 
-        } 
-    }
-
-    db.ref('.info/connected').on('value', snap => {
-        const badge = document.getElementById('syncBadge');
-        if (snap.val() === true) {
-            badge.innerText = "DATABASE ONLINE";
-            badge.style.color = "var(--v1)";
-            badge.style.borderColor = "var(--v1)";
-        } else {
-            badge.innerText = "DATABASE OFFLINE";
-            badge.style.color = "var(--rv)";
-            badge.style.borderColor = "var(--rv)";
-        }
-    });
-
-    renderTable();
-</script>
-</body>
-</html>
+        `).join('') || '<tr><td colspan="5" style="text-
