@@ -30,14 +30,18 @@
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .top-bar { padding: 15px 30px; background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
         .search-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 12px 20px; border-radius: 10px; max-width: 350px; }
-        .workspace { flex: 1; padding: 25px 30px; overflow-y: auto; }
+        
+        /* FIX: Increased padding at the bottom of workspace to prevent cut-off */
+        .workspace { flex: 1; padding: 25px 30px 120px 30px; overflow-y: auto; }
         
         .btn { padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; font-size: 12px; display: flex; align-items: center; gap: 8px; }
         .btn-sync { background: var(--v1); color: white; }
         .btn-stats { background: #8b5cf6; color: white; }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-csv { border: 1px solid var(--v1); color: var(--v1); background: transparent; }
+        .btn-csv:hover { background: var(--v1); color: white; }
         
-        .table-wrap { background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; }
+        .table-wrap { background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; min-width: 950px; }
         th { text-align: left; padding: 12px 10px; font-size: 10px; color: var(--text-dim); background: rgba(15, 23, 42, 0.5); text-transform: uppercase; }
         td { padding: 12px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
@@ -71,7 +75,8 @@
 <main class="main">
     <header class="top-bar">
         <input type="text" class="search-input" placeholder="🔍 Search FSU or Locality..." onkeyup="doSearch(this.value)">
-        <button class="btn btn-stats" onclick="generateAnalysis()">📊 Get Stats & Analysis</button>
+        <button class="btn btn-csv" onclick="exportTableToCSV()">📥 Export CSV</button>
+        <button class="btn btn-stats" onclick="generateAnalysis()">📊 Stats</button>
         <button class="btn btn-sync" onclick="syncToCloud()">☁️ Push to Cloud</button>
     </header>
 
@@ -87,7 +92,7 @@
         </div>
 
         <div class="table-wrap">
-            <table>
+            <table id="mainTable">
                 <thead><tr id="tableHeader"></tr></thead>
                 <tbody id="dataBody"></tbody>
             </table>
@@ -127,10 +132,9 @@
         rows.slice(1).forEach(cols => {
             let fsu = cols[4], mCode = cols[5], sro = cols[6], loc = cols[10];
             if(fsu) {
-                // Consecutive Logic: V1=Jan, V2=Feb, V3=Mar, V4=Apr
                 const startMonth = (parseInt(mCode) >= 13) ? (parseInt(mCode) - 13) : (parseInt(mCode)-1);
                 for(let i = 0; i < 4; i++) {
-                    let curMonth = (startMonth + i) % 12; // Consecutive months
+                    let curMonth = (startMonth + i) % 12;
                     master.push({ 
                         uid: `${state}_${fsu}_V${i+1}`, 
                         fsu, state, sro: String(sro).trim(), 
@@ -194,7 +198,6 @@
                     autoName = d.enumerator || v1.enumerator || "";
                     if (v1.endDate) {
                         let date = new Date(v1.endDate);
-                        // Consecutive Cycle: Next Visit is +1 month from V1
                         date.setMonth(date.getMonth() + (d.visitNum - 1));
                         cycleDue = date.toISOString().split('T')[0];
                     }
@@ -218,6 +221,27 @@
         if(f==='en') item.enumerator = v; 
         if(f==='sd') item.startDate = v; 
         if(f==='ed') item.endDate = v; 
+    }
+
+    function exportTableToCSV() {
+        const rows = Array.from(document.querySelectorAll("table tr"));
+        if (rows.length <= 1) return alert("No data to export!");
+
+        const csvContent = rows.map(row => {
+            const cells = Array.from(row.querySelectorAll("th, td"));
+            return cells.map(cell => {
+                const input = cell.querySelector('input');
+                let val = input ? input.value : cell.innerText;
+                return `"${val.replace(/"/g, '""').replace(/\n/g, ' ')}"`;
+            }).join(",");
+        }).join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `PLFS_${selSt || 'Export'}_${months[selMo] || ''}.csv`;
+        link.click();
     }
 
     async function syncToCloud() { 
@@ -258,29 +282,21 @@
             if(m.endDate) sroMap[m.sro].done++;
         });
 
-        let html = `
-            <div class="stat-box" style="grid-column: 1 / -1; background:var(--accent); color:#000">
+        let html = `<div class="stat-box" style="grid-column: 1 / -1; background:var(--accent); color:#000">
                 <h4 style="margin:0">Total State Completion</h4>
                 <div style="font-size:36px; font-weight:900">${statePerc}%</div>
-                <div style="height:8px; background:rgba(0,0,0,0.1); border-radius:10px; margin:10px 0;">
-                    <div style="height:100%; width:${statePerc}%; background:#000; border-radius:10px;"></div>
-                </div>
+                <div style="height:8px; background:rgba(0,0,0,0.1); border-radius:10px; margin:10px 0;"><div style="height:100%; width:${statePerc}%; background:#000; border-radius:10px;"></div></div>
                 <small>${done} of ${total} entries completed</small>
-            </div>
-        `;
+            </div>`;
 
         Object.entries(sroMap).forEach(([name, stats]) => {
             const p = Math.round((stats.done/stats.total)*100);
-            html += `
-                <div class="stat-box">
+            html += `<div class="stat-box">
                     <h4 style="color:var(--accent)">SRO: ${name}</h4>
                     <div style="font-size:24px; font-weight:800">${p}%</div>
-                    <div style="height:6px; background:var(--border); border-radius:10px; margin:10px 0;">
-                        <div style="height:100%; width:${p}%; background:var(--v1); border-radius:10px;"></div>
-                    </div>
+                    <div style="height:6px; background:var(--border); border-radius:10px; margin:10px 0;"><div style="height:100%; width:${p}%; background:var(--v1); border-radius:10px;"></div></div>
                     <small style="color:var(--text-dim)">${stats.done} Done / ${stats.total} Total</small>
-                </div>
-            `;
+                </div>`;
         });
         content.innerHTML = html;
     }
