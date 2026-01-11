@@ -15,76 +15,111 @@
             --bg: #030712; --sidebar: #0f172a; --card: #1e293b; --border: #334155;
             --accent: #38bdf8; --v1: #10b981; --rural: #fbbf24; --text: #f8fafc; --text-dim: #94a3b8;
             --glass: rgba(15, 23, 42, 0.95);
+            --sb-width: 320px;
         }
-        * { box-sizing: border-box; transition: all 0.2s ease; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
         
-        /* Sidebar */
-        .sidebar { width: 340px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 25px; font-weight: 800; font-size: 18px; color: var(--accent); border-bottom: 1px solid var(--border); }
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            margin: 0; 
+            background: var(--bg); 
+            color: var(--text); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: row;
+            overflow: hidden; 
+        }
+
+        /* Sidebar Responsive */
+        .sidebar { 
+            width: var(--sb-width); 
+            min-width: var(--sb-width);
+            background: var(--sidebar); 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .sidebar-header { padding: 25px; font-weight: 800; font-size: 18px; color: var(--accent); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .nav-scroll { flex: 1; overflow-y: auto; padding: 20px; }
         
-        .zone-title { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin: 15px 0 10px; display: flex; align-items: center; gap: 8px; }
+        /* Rectangular State Boxes */
+        .zone-title { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; opacity: 0.7; }
         .zone-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-        .state-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .state-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         
-        .st-btn-circle { width: 85px; height: 85px; border-radius: 50%; border: 2px solid var(--border); background: linear-gradient(145deg, #1e293b, #0f172a); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .st-btn-circle.active { border-color: var(--accent); background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
-        .st-btn-circle.has-data { border-color: var(--v1); border-width: 3px; }
-        .st-label { font-size: 9px; font-weight: 800; text-align: center; line-height: 1.2; text-transform: uppercase; }
+        .st-btn { 
+            height: 48px; border-radius: 8px; border: 1px solid var(--border); 
+            background: rgba(30, 41, 59, 0.4); display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; padding: 5px; position: relative;
+        }
+        .st-btn.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.1); }
+        .st-btn.has-data { border-left: 4px solid var(--v1); }
+        .st-label { font-size: 10px; font-weight: 700; text-align: center; line-height: 1.2; text-transform: uppercase; color: var(--text-dim); }
+        .active .st-label { color: var(--accent); }
 
-        .sub-menu-container { grid-column: span 3; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px; margin-top: 10px; border: 1px solid var(--border); }
+        .sub-menu-container { grid-column: span 2; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 12px; margin-top: 5px; border: 1px solid var(--border); }
         .pill-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
         .pill { padding: 8px 4px; font-size: 9px; font-weight: 700; text-align: center; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; color: var(--text-dim); }
         .pill.active { background: var(--v1); color: #fff; border-color: var(--v1); }
 
         /* Main Section */
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-bar { padding: 15px 30px; background: var(--glass); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
-        .search-input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 10px; max-width: 300px; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .top-bar { padding: 15px 25px; background: var(--glass); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .search-input { flex: 1; min-width: 200px; background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 10px 15px; border-radius: 10px; }
         
-        .btn { padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; font-size: 11px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
         .btn-sync { background: var(--v1); color: white; }
         .btn-csv { background: transparent; border: 1px solid var(--v1); color: var(--v1); }
         .admin-locked { display: none; }
 
-        .loading-overlay { display: none; align-items: center; gap: 10px; color: var(--accent); font-weight: 800; font-size: 12px; }
-
-        .workspace { flex: 1; padding: 25px 30px; overflow-y: auto; }
-        .table-wrap { background: var(--card); border-radius: 16px; border: 1px solid var(--border); overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 950px; }
-        th { text-align: left; padding: 15px 10px; font-size: 10px; color: var(--text-dim); background: rgba(15, 23, 42, 0.5); text-transform: uppercase; }
-        td { padding: 14px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .workspace { flex: 1; padding: 20px; overflow-y: auto; }
+        .table-wrap { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { text-align: left; padding: 15px; font-size: 10px; color: var(--text-dim); background: rgba(15, 23, 42, 0.5); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 12px; }
         
-        /* Input Field Sizing */
-        .input-field { background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; font-size: 11px; width: 100%; }
-        .id-box { width: 85px !important; text-align: center; }
-        .name-box { min-width: 150px; }
+        .input-field { background: var(--bg); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; font-size: 11px; width: 100%; }
+        .type-badge { padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; }
+        .type-urban { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+        .type-rural { background: rgba(251, 191, 36, 0.15); color: var(--rural); }
 
-        /* Sector Badges */
-        .type-badge { padding: 4px 8px; border-radius: 5px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
-        .type-urban { background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid var(--accent); }
-        .type-rural { background: rgba(251, 191, 36, 0.15); color: var(--rural); border: 1px solid var(--rural); }
+        /* Responsive Mobile Adjustments */
+        @media (max-width: 850px) {
+            body { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; min-width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+            .nav-scroll { max-height: 350px; }
+            .main { height: auto; overflow: visible; }
+            .top-bar { padding: 15px; }
+            .workspace { padding: 10px; }
+        }
 
-        #loginModal { display:none; position:fixed; inset:0; background:rgba(3,7,18,0.95); z-index:10000; align-items:center; justify-content:center; }
-        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--border); width: 400px; }
+        #loginModal { display:none; position:fixed; inset:0; background:rgba(3,7,18,0.95); z-index:10000; align-items:center; justify-content:center; padding: 20px; }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
     </style>
 </head>
 <body>
 
 <div id="loginModal">
     <div class="modal-box" style="text-align: center;">
-        <h3 style="color:var(--accent)">Admin Login</h3>
-        <input type="password" id="passInput" class="input-field" placeholder="Enter Password" style="margin: 20px 0; text-align: center; font-size: 18px;">
-        <button class="btn btn-sync" style="width:100%; justify-content:center" onclick="verifyAdmin()">Unlock</button>
+        <h3 style="color:var(--accent)">Admin Access</h3>
+        <input type="password" id="passInput" class="input-field" placeholder="Enter Password" style="margin: 20px 0; text-align: center; font-size: 18px; padding: 15px;">
+        <button class="btn btn-sync" style="width:100%; justify-content:center" onclick="verifyAdmin()">Unlock System</button>
         <button class="btn" style="width:100%; margin-top:10px; background:#ef4444; color:white; justify-content:center" onclick="closeModal('loginModal')">Cancel</button>
     </div>
 </div>
 
 <aside class="sidebar">
-    <div class="sidebar-header">PLFS COMMAND</div>
+    <div class="sidebar-header">
+        <span>PLFS COMMAND</span>
+        <span id="mobile-toggle" style="display:none; font-size: 20px;">☰</span>
+    </div>
     <div class="nav-scroll" id="navScroll"></div>
-    <div style="padding:20px; border-top:1px solid var(--border); display:grid; gap:10px;">
+    <div style="padding:15px; border-top:1px solid var(--border); display:grid; gap:8px;">
         <button id="adminBtn" class="btn" style="background:var(--border); color:white; justify-content:center" onclick="document.getElementById('loginModal').style.display='flex'">🔐 Admin Access</button>
         <label class="btn admin-locked" style="background:var(--accent); color:#000; justify-content:center">🏙️ Urban Import <input type="file" hidden onchange="handleExcel(this, 'Urban')"></label>
         <label class="btn admin-locked" style="background:var(--rural); color:#000; justify-content:center">🚜 Rural Import <input type="file" hidden onchange="handleExcel(this, 'Rural')"></label>
@@ -93,27 +128,39 @@
 
 <main class="main">
     <header class="top-bar">
-        <input type="text" class="search-input" placeholder="🔍 Search FSU..." onkeyup="doSearch(this.value)">
-        <div id="statusIndicator" class="loading-overlay">⏳ Processing Data...</div>
-        <button class="btn btn-csv" onclick="exportTableToCSV()">📥 Export CSV</button>
-        <button id="syncBtn" class="btn btn-sync" onclick="syncToCloud()">☁️ Sync to Cloud</button>
+        <input type="text" class="search-input" placeholder="🔍 Search FSU or Locality..." onkeyup="doSearch(this.value)">
+        <div class="btn-group">
+            <button class="btn btn-csv" onclick="exportTableToCSV()">📥 Export</button>
+            <button id="syncBtn" class="btn btn-sync" onclick="syncToCloud()">☁️ Sync</button>
+        </div>
     </header>
 
     <div class="workspace">
-        <div id="activeHeader" style="display:none; margin-bottom: 15px; color: var(--accent); font-weight: 800;">
-            <span id="vSt"></span> | <span id="vSro"></span> | <span id="vMo"></span>
+        <div id="activeHeader" style="display:none; margin-bottom: 15px; padding: 10px; background: rgba(56,189,248,0.1); border-radius: 8px; border-left: 4px solid var(--accent);">
+            <span id="vSt" style="font-weight: 800; color: var(--accent);"></span> 
+            <span style="margin: 0 10px; opacity: 0.3;">|</span>
+            <span id="vSro" style="font-weight: 600;"></span> 
+            <span style="margin: 0 10px; opacity: 0.3;">|</span>
+            <span id="vMo" style="font-weight: 600;"></span>
         </div>
-        <div style="display:flex; gap:10px;">
-            <button id="btnV1" class="btn btn-sync" style="flex:1; justify-content:center" onclick="setVisit(1)">Visit 1 (Initial)</button>
-            <button id="btnV2" class="btn" style="flex:1; justify-content:center; border:1px solid var(--border); color:#fff" onclick="setVisit(2)">Revisits (30-Day Cycle)</button>
+        
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+            <button id="btnV1" class="btn btn-sync" style="flex:1; justify-content:center" onclick="setVisit(1)">Visit 1</button>
+            <button id="btnV2" class="btn" style="flex:1; justify-content:center; border:1px solid var(--border); color:#fff" onclick="setVisit(2)">Revisits</button>
         </div>
+
         <div class="table-wrap">
-            <table><thead><tr id="tableHeader"></tr></thead><tbody id="dataBody"></tbody></table>
+            <table>
+                <thead><tr id="tableHeader"></tr></thead>
+                <tbody id="dataBody"></tbody>
+            </table>
         </div>
+        <div id="statusIndicator" style="display:none; text-align:center; padding: 20px; color: var(--accent); font-weight: 700;">⏳ Syncing with Cloud...</div>
     </div>
 </main>
 
 <script>
+    // Firebase Setup (Configs remain as provided)
     const config = { apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI", authDomain: "action-plan-62fae.firebaseapp.com", databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com", projectId: "action-plan-62fae" };
     firebase.initializeApp(config); const db = firebase.database();
 
@@ -121,24 +168,17 @@
     const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const nsoZones = { "NORTH": ["HIMACHAL PRADESH", "PUNJAB", "HARYANA", "RAJASTHAN", "DELHI", "JAMMU & KASHMIR", "LADAKH", "CHANDIGARH"], "SOUTH": ["ANDHRA PRADESH", "KARNATAKA", "KERALA", "TAMIL NADU", "TELANGANA", "PUDUCHERRY"], "EAST": ["BIHAR", "JHARKHAND", "ODISHA", "WEST BENGAL"], "WEST": ["GOA", "GUJARAT", "MAHARASHTRA", "DADRA NAGAR HAVELI"], "CENTRAL": ["CHHATTISGARH", "MADHYA PRADESH", "UTTARAKHAND", "UTTAR PRADESH"], "NE": ["ASSAM", "ARUNACHAL PRADESH", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "SIKKIM", "TRIPURA"] };
 
-    function showLoading(show) {
-        document.getElementById('statusIndicator').style.display = show ? 'flex' : 'none';
-    }
-
     function refresh() {
         const body = document.getElementById('dataBody');
-        if(!selSt || !selSro) { body.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:50px; opacity:0.3'>Select State & SRO from Sidebar</td></tr>"; return; }
+        if(!selSt || !selSro) { body.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:80px; opacity:0.3'>Please Select State & SRO from Sidebar</td></tr>"; return; }
         document.getElementById('activeHeader').style.display = 'block';
         document.getElementById('vSt').innerText = selSt; document.getElementById('vSro').innerText = selSro; document.getElementById('vMo').innerText = months[selMo];
 
-        const filtered = master.filter(d => d.state === selSt && d.sro === selSro && d.monthIdx === selMo && (selVis === 1 ? d.visitNum === 1 : d.visitNum > 1) && (d.fsu.toString().includes(query) || d.location.includes(query)));
+        const filtered = master.filter(d => d.state === selSt && d.sro === selSro && d.monthIdx === selMo && (selVis === 1 ? d.visitNum === 1 : d.visitNum > 1) && (d.fsu.toString().includes(query) || d.location.toLowerCase().includes(query.toLowerCase())));
         
-        let h = `<th>FSU</th><th>Sector</th><th>Locality</th><th>Enm ID</th><th>Worker Name</th>`;
-        h += `<th>${selVis===1?'Start Date':'Cycle'}</th><th>${selVis===1?'End Date':'30-Day Due'}</th>`;
-        document.getElementById('tableHeader').innerHTML = h;
+        document.getElementById('tableHeader').innerHTML = `<th>FSU</th><th>Sector</th><th>Locality</th><th>Enm ID</th><th>Worker</th><th>${selVis===1?'Start Date':'Cycle'}</th><th>${selVis===1?'End Date':'30-Day Due'}</th>`;
 
         body.innerHTML = filtered.map(d => {
-            // AUTO-INHERIT FROM VISIT 1
             const v1 = (d.visitNum === 1) ? d : master.find(x => x.fsu === d.fsu && x.state === d.state && x.visitNum === 1);
             let workerId = v1?.enmId || "";
             let workerName = v1?.enumerator || "";
@@ -146,19 +186,16 @@
 
             if (d.visitNum > 1 && v1?.endDate) {
                 let initialDate = new Date(v1.endDate);
-                // 30 Days Revisit Logic
                 initialDate.setDate(initialDate.getDate() + (30 * (d.visitNum - 1)));
-                dueDisplay = initialDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                dueDisplay = initialDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
             }
-
-            const typeClass = d.type === 'Urban' ? 'type-urban' : 'type-rural';
 
             return `<tr>
                 <td><b>${d.fsu}</b></td>
-                <td><span class="type-badge ${typeClass}">${d.type}</span></td>
+                <td><span class="type-badge ${d.type === 'Urban' ? 'type-urban' : 'type-rural'}">${d.type}</span></td>
                 <td>${d.location}</td>
-                <td><input class="input-field id-box" value="${workerId}" ${selVis > 1 ? 'readonly style="opacity:0.6; border:none"' : `onchange="upd('${d.uid}','eid',this.value)"`}></td>
-                <td><input class="input-field name-box" value="${workerName}" ${selVis > 1 ? 'readonly style="opacity:0.6; border:none"' : `onchange="upd('${d.uid}','en',this.value)"`}></td>
+                <td><input class="input-field" style="width:70px" value="${workerId}" ${selVis > 1 ? 'readonly' : `onchange="upd('${d.uid}','eid',this.value)"`}></td>
+                <td><input class="input-field" value="${workerName}" ${selVis > 1 ? 'readonly' : `onchange="upd('${d.uid}','en',this.value)"`}></td>
                 <td>${selVis===1?`<input type="date" class="input-field" value="${d.startDate||''}" onchange="upd('${d.uid}','sd',this.value)">`:'Revisit '+(d.visitNum-1)}</td>
                 <td>${selVis===1?`<input type="date" class="input-field" value="${d.endDate||''}" onchange="upd('${d.uid}','ed',this.value)">`:`<b style="color:var(--v1)">${dueDisplay}</b>`}</td>
             </tr>`;
@@ -168,33 +205,26 @@
     function upd(id, f, v) { 
         let item = master.find(x => x.uid === id); 
         if(item) { 
-            if(f==='eid') item.enmId = v; 
-            if(f==='en') item.enumerator = v; 
-            if(f==='sd') item.startDate = v; 
-            if(f==='ed') item.endDate = v; 
+            if(f==='eid') item.enmId = v; if(f==='en') item.enumerator = v; 
+            if(f==='sd') item.startDate = v; if(f==='ed') item.endDate = v; 
             if(selVis === 1) refresh(); 
         } 
     }
 
     async function syncToCloud() { 
         if(!selSt) return alert("Select state first"); 
-        showLoading(true);
+        document.getElementById('statusIndicator').style.display='block';
         const data = {}; 
         master.filter(m => m.state === selSt).forEach(m => data[m.uid] = m); 
-        try {
-            await db.ref(`plfs_roster/${selSt}`).set(data); 
-            alert("Database Updated Successfully");
-        } catch(e) { alert("Error Syncing"); }
-        showLoading(false);
+        try { await db.ref(`plfs_roster/${selSt}`).set(data); alert("Cloud Updated"); } catch(e) { alert("Sync Error"); }
+        document.getElementById('statusIndicator').style.display='none';
     }
 
     async function autoFetch() { 
-        showLoading(true);
         const snap = await db.ref(`plfs_roster`).once('value'); 
         master = []; 
         if(snap.exists()) { snap.forEach(s => Object.values(s.val()).forEach(r => master.push(r))); } 
-        renderNav(); 
-        showLoading(false);
+        renderNav(); refresh();
     }
 
     function renderNav() {
@@ -205,7 +235,9 @@
             states.forEach(st => {
                 const hasData = master.some(x => x.state === st);
                 const active = selSt === st;
-                html += `<div class="st-btn-circle ${active?'active':''} ${hasData?'has-data':''}" onclick="selectState('${st}')"><div class="st-label">${st}</div></div>`;
+                html += `<div class="st-btn ${active?'active':''} ${hasData?'has-data':''}" onclick="selectState('${st}')">
+                            <div class="st-label">${st}</div>
+                         </div>`;
                 if (active) {
                     const sros = [...new Set(master.filter(x => x.state === st).map(x => x.sro))].sort();
                     html += `<div class="sub-menu-container"><div class="pill-grid">` + 
@@ -217,14 +249,13 @@
         } container.innerHTML = html;
     }
 
-    async function selectState(st) { selSt = st; selSro = null; renderNav(); refresh(); }
+    function selectState(st) { selSt = st; selSro = null; renderNav(); refresh(); }
     function setVisit(v) { selVis = v; document.getElementById('btnV1').className = v===1?'btn btn-sync':'btn'; document.getElementById('btnV2').className = v===2?'btn btn-sync':'btn'; refresh(); }
     function doSearch(v) { query = v; refresh(); }
     function verifyAdmin() { if(document.getElementById('passInput').value === '12345') { document.querySelectorAll('.admin-locked').forEach(el => el.style.display = 'flex'); document.getElementById('adminBtn').style.display = 'none'; closeModal('loginModal'); } else { alert("Wrong Password"); } }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
     async function handleExcel(input, type) {
-        showLoading(true);
         const file = input.files[0]; if(!file) return;
         let stName = file.name.split('.')[0].split('_').pop().trim().toUpperCase();
         const data = new Uint8Array(await file.arrayBuffer());
@@ -236,10 +267,11 @@
                 for(let i=0; i<4; i++) master.push({ uid: `${stName}_${fsu}_V${i+1}`, fsu, state: stName, sro, monthIdx: (startM + i)%12, location: loc||"---", visitNum: i+1, type: type });
             }
         }); 
-        renderNav(); 
-        showLoading(false);
+        renderNav();
     }
-    function exportTableToCSV() { const rows = Array.from(document.querySelectorAll("table tr")); const csv = rows.map(r => Array.from(r.querySelectorAll("th, td")).map(c => { const i = c.querySelector('input'); return `"${(i ? i.value : c.innerText).replace(/"/g, '""')}"`; }).join(",")).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `PLFS_Report.csv`; a.click(); }
+    
+    function exportTableToCSV() { const rows = Array.from(document.querySelectorAll("table tr")); const csv = rows.map(r => Array.from(r.querySelectorAll("th, td")).map(c => { const i = c.querySelector('input'); return `"${(i ? i.value : c.innerText).replace(/"/g, '""')}"`; }).join(",")).join("\n"); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `PLFS_${selSt}_Report.csv`; a.click(); }
+    
     autoFetch();
 </script>
 </body>
