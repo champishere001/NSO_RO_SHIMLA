@@ -21,10 +21,25 @@
         * { box-sizing: border-box; transition: all 0.2s ease; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
 
-        .sidebar { width: var(--sb-width); min-width: var(--sb-width); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 200; }
+        /* SIDEBAR & RESPONSIVE NAV */
+        .sidebar { width: var(--sb-width); min-width: var(--sb-width); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1000; }
         .sidebar-header { padding: 25px; font-weight: 800; font-size: 18px; color: var(--accent); border-bottom: 1px solid var(--border); letter-spacing: 1px; }
         .nav-scroll { flex: 1; overflow-y: auto; padding: 15px; scrollbar-width: thin; }
         
+        .overlay-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 900; backdrop-filter: blur(4px); }
+
+        @media (max-width: 1024px) {
+            .sidebar { position: fixed; left: -100%; top: 0; bottom: 0; width: 280px; min-width: 280px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .sidebar.open { left: 0; }
+            .overlay-mask.active { display: block; }
+            .mobile-hide { display: none !important; }
+            .top-bar { padding: 10px 15px !important; gap: 10px !important; }
+            .search-input { order: 3; width: 100% !important; flex: none !important; margin-top: 5px; }
+            .info-panel { grid-template-columns: 1fr !important; padding: 15px !important; gap: 15px !important; }
+            .sro-box { min-width: 100% !important; }
+        }
+
+        /* UI ELEMENTS */
         .zone-title { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; opacity: 0.6; }
         .zone-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
         .state-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -38,72 +53,51 @@
         .pill { padding: 8px; font-size: 9px; font-weight: 700; text-align: center; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; color: var(--text-dim); background: var(--sidebar); }
         .pill.active { background: var(--v1); color: #fff; border-color: var(--v1); }
         .pill.all-btn { grid-column: span 2; border-color: var(--accent); color: var(--accent); }
-        .pill.all-btn.active { background: var(--accent); color: #000; }
 
         .month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
 
+        /* MAIN CONTENT */
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #020617; }
         .fixed-header-group { flex-shrink: 0; background: var(--glass); backdrop-filter: blur(15px); border-bottom: 1px solid var(--border); z-index: 100; }
         
-        .top-bar { padding: 12px 25px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .top-bar { padding: 12px 25px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
+        .mobile-menu-btn { display: none; background: var(--accent); border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; color: #000; font-size: 12px; }
+        @media (max-width: 1024px) { .mobile-menu-btn { display: block; } }
+
         .date-picker-wrap { display: flex; align-items: center; gap: 8px; background: rgba(56,189,248,0.1); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--accent); }
         .date-picker-wrap input { background: transparent; border: none; color: var(--accent); font-family: inherit; font-weight: 800; font-size: 11px; outline: none; cursor: pointer; color-scheme: dark; }
         
         .search-input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px 15px; border-radius: 8px; font-size: 13px; outline: none; }
 
         .info-panel { padding: 15px 25px; display: grid; grid-template-columns: auto 1fr auto; gap: 30px; align-items: center; }
-        .sro-box { background: #1e293b; border: 1px solid var(--accent); padding: 10px 20px; border-radius: 10px; min-width: 200px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .sro-box { background: #1e293b; border: 1px solid var(--accent); padding: 10px 20px; border-radius: 10px; min-width: 200px; }
         .sro-label { font-size: 9px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
         .sro-name { font-size: 16px; font-weight: 700; color: #fff; }
 
+        /* PROGRESS BAR */
         .timeline-container { background: rgba(0,0,0,0.2); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border); }
-        .timeline-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .timeline-track { height: 6px; background: #334155; border-radius: 10px; position: relative; }
-        .timeline-fill { height: 100%; background: linear-gradient(90deg, var(--v1), var(--accent)); border-radius: 10px; width: 0%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-        .m-dot { position: absolute; top: -4px; width: 14px; height: 14px; border-radius: 50%; background: #1e293b; border: 2px solid var(--border); transform: translateX(-50%); }
-        .m-dot.active { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-        .m-label { position: absolute; top: 18px; font-size: 8px; font-weight: 800; color: var(--text-dim); transform: translateX(-50%); white-space: nowrap; }
-
-        .workspace { flex: 1; padding: 25px; overflow-y: auto; scrollbar-width: thin; }
-        .table-wrap { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .timeline-track { height: 6px; background: #334155; border-radius: 10px; position: relative; margin-top: 10px; }
+        .timeline-fill { height: 100%; background: linear-gradient(90deg, var(--v1), var(--accent)); border-radius: 10px; width: 0%; transition: width 0.8s ease; }
         
-        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1100px; }
+        /* TABLE WORKSPACE */
+        .workspace { flex: 1; padding: 20px; overflow-y: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+        .table-wrap { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px; }
         th { background: var(--header-dark); color: var(--accent); font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 18px 15px; text-align: left; border-bottom: 3px solid var(--accent); position: sticky; top:0; z-index: 10; }
-        td { padding: 14px 15px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
-        tr:hover td { background: rgba(56, 189, 248, 0.04); color: #fff; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
         
-        .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
         .badge-done { background: rgba(16, 185, 129, 0.15); color: var(--v1); border: 1px solid var(--v1); }
         .badge-pending { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); border: 1px solid var(--border); }
         .badge-late { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
-        .badge-future { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid var(--warning); }
 
-        .fsu-badge { font-family: 'Monaco', monospace; font-weight: 800; color: #fff; background: rgba(56, 189, 248, 0.15); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); }
-        .input-field { background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; font-size: 11px; width: 100%; outline: none; color-scheme: dark; }
+        .fsu-badge { font-family: 'Monaco', monospace; font-weight: 800; color: #fff; background: rgba(56, 189, 248, 0.15); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .input-field { background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; font-size: 11px; width: 100%; outline: none; }
         
-        #loginModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index: 10000; align-items:center; justify-content:center; backdrop-filter: blur(8px); }
-
-        #loadingOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(2, 6, 23, 0.85);
-            backdrop-filter: blur(5px);
-            z-index: 20000;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent);
-        }
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 5px solid rgba(56, 189, 248, 0.1);
-            border-left-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
+        /* MODALS & LOADERS */
+        #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; color: var(--accent); }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(56, 189, 248, 0.1); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
@@ -111,36 +105,45 @@
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div id="loadingText" style="font-weight: 800; letter-spacing: 3px; font-size: 12px; text-transform: uppercase;">PLEASE WAIT...</div>
+    <div id="loadingText" style="font-weight: 800; letter-spacing: 2px; font-size: 11px;">SYNCING...</div>
 </div>
 
-<div id="loginModal">
-    <div class="modal-box" style="background:var(--sidebar); padding:40px; border-radius:20px; border:1px solid var(--border); text-align:center; width:360px;">
-        <h2 style="color:var(--accent); margin-top:0">PLFS AUTH</h2>
-        <input type="password" id="passInput" class="input-field" placeholder="ACCESS CODE" style="margin-bottom: 20px; text-align: center; font-size: 20px; letter-spacing: 4px;">
-        <button class="btn" style="width:100%; background:var(--accent); border:none; padding:12px; border-radius:8px; font-weight:800; cursor:pointer;" onclick="verifyAdmin()">UNLOCK</button>
+<div class="overlay-mask" id="mask" onclick="toggleMenu()"></div>
+
+<div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index: 10001; align-items:center; justify-content:center; backdrop-filter: blur(8px);">
+    <div style="background:var(--sidebar); padding:40px; border-radius:20px; border:1px solid var(--border); text-align:center; width:320px;">
+        <h3 style="color:var(--accent); margin-bottom:20px">ADMIN ACCESS</h3>
+        <input type="password" id="passInput" class="input-field" placeholder="PASSCODE" style="text-align: center; font-size: 18px; letter-spacing: 5px; margin-bottom:20px;">
+        <button onclick="verifyAdmin()" style="width:100%; background:var(--accent); border:none; padding:12px; border-radius:8px; font-weight:800; cursor:pointer;">UNLOCK</button>
+        <button onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:15px; background:transparent; color:var(--text-dim); border:none; cursor:pointer;">Cancel</button>
     </div>
 </div>
 
-<aside class="sidebar">
-    <div class="sidebar-header">PLFS COMMAND</div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header" style="display:flex; justify-content:space-between; align-items:center;">
+        PLFS COMMAND
+        <span onclick="toggleMenu()" style="cursor:pointer; font-size:20px;" class="mobile-menu-btn">✕</span>
+    </div>
     <div class="nav-scroll" id="navScroll"></div>
-    <div style="padding:20px; border-top:1px solid var(--border);">
-        <button id="adminBtn" class="btn" style="background:var(--card); color:#fff; width:100%; border:none; padding:10px; border-radius:8px; cursor:pointer;" onclick="document.getElementById('loginModal').style.display='flex'">🔐 Admin Access</button>
-        <label class="btn admin-locked" style="display:none; width:100%; background:var(--accent); padding:10px; color:#000; border-radius:8px; font-weight:700; cursor:pointer; text-align:center;">📂 Import Master <input type="file" hidden onchange="handleExcel(this)"></label>
+    <div style="padding:15px; border-top:1px solid var(--border);">
+        <button id="adminBtn" class="btn" style="background:var(--card); color:#fff; width:100%; border:none; padding:10px; border-radius:8px; cursor:pointer; font-size:12px;" onclick="document.getElementById('loginModal').style.display='flex'">🔐 Admin Access</button>
+        <label class="admin-locked" style="display:none; width:100%; background:var(--accent); padding:10px; color:#000; border-radius:8px; font-weight:700; cursor:pointer; text-align:center; font-size:12px;">📂 Import Master <input type="file" hidden onchange="handleExcel(this)"></label>
     </div>
 </aside>
 
 <main class="main">
     <div class="fixed-header-group">
         <header class="top-bar">
+            <button class="mobile-menu-btn" onclick="toggleMenu()">☰ MENU</button>
             <div class="date-picker-wrap">
-                <span>📅 Obs Date:</span>
+                <span class="mobile-hide">📅 Obs Date:</span>
                 <input type="date" id="sysCalendar" onchange="updateSysDate(this.value)">
             </div>
-            <input type="text" class="search-input" placeholder="🔍 Search FSU, Loc or Worker..." onkeyup="doSearch(this.value)">
-            <button class="btn" style="background:transparent; border:1px solid var(--v1); color:var(--v1); padding:8px 15px; border-radius:6px; cursor:pointer;" onclick="exportCSV()">📥 CSV</button>
-            <button class="btn" style="background:var(--accent); border:none; color:#000; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;" onclick="syncToCloud()">☁️ Sync</button>
+            <input type="text" class="search-input" placeholder="🔍 Search FSU, Location..." onkeyup="doSearch(this.value)">
+            <div style="display:flex; gap:8px;">
+                <button class="btn" style="background:transparent; border:1px solid var(--v1); color:var(--v1); padding:8px 12px; border-radius:6px; cursor:pointer;" onclick="exportCSV()">📥</button>
+                <button class="btn" style="background:var(--accent); border:none; color:#000; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;" onclick="syncToCloud()">☁️ Sync</button>
+            </div>
         </header>
 
         <div class="info-panel" id="activeHeader" style="visibility: hidden;">
@@ -150,19 +153,13 @@
             </div>
 
             <div class="timeline-container">
-                <div class="timeline-header"><span class="sro-label">Completion Progress</span><span id="targetStatus" style="font-size: 10px; font-weight: 800; color: var(--v1);">ON TRACK</span></div>
-                <div class="timeline-track">
-                    <div id="progFill" class="timeline-fill"></div>
-                    <div class="m-dot" id="m25" style="left: 25%"><div class="m-label">25% (Day 7)</div></div>
-                    <div class="m-dot" id="m50" style="left: 50%"><div class="m-label">50% (Day 14)</div></div>
-                    <div class="m-dot" id="m75" style="left: 75%"><div class="m-label">75% (Day 21)</div></div>
-                    <div class="m-dot" id="m100" style="left: 100%"><div class="m-label">100%</div></div>
-                </div>
+                <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; color:var(--v1);">PROGRESS TRACKER <span id="targetStatus">ON TRACK</span></div>
+                <div class="timeline-track"><div id="progFill" class="timeline-fill"></div></div>
             </div>
             
             <div style="display:flex; background:rgba(0,0,0,0.3); border-radius:10px; padding:4px; border:1px solid var(--border);">
-                <button id="btnV1" class="btn" style="background:var(--accent); color:#000; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;" onclick="setVisit(1)">Visit 1</button>
-                <button id="btnV2" class="btn" style="background:transparent; color:#fff; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;" onclick="setVisit(2)">Revisits</button>
+                <button id="btnV1" style="flex:1; background:var(--accent); color:#000; padding:10px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;" onclick="setVisit(1)">Visit 1</button>
+                <button id="btnV2" style="flex:1; background:transparent; color:#fff; padding:10px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;" onclick="setVisit(2)">Revisits</button>
             </div>
         </div>
     </div>
@@ -179,10 +176,15 @@
     firebase.initializeApp(config); const db = firebase.database();
 
     let master = [], selSt = null, selSro = null, selMo = 0, selVis = 1, query = "";
-    let systemDateString = "2026-01-12"; let systemDay = 12;
+    let systemDateString = "2026-01-12";
 
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const nsoZones = { "NORTH": ["HIMACHAL PRADESH", "PUNJAB", "HARYANA", "RAJASTHAN", "DELHI", "JAMMU & KASHMIR", "LADAKH", "CHANDIGARH"], "SOUTH": ["ANDHRA PRADESH", "KARNATAKA", "KERALA", "TAMIL NADU", "TELANGANA", "PUDUCHERRY"], "EAST": ["BIHAR", "JHARKHAND", "ODISHA", "WEST BENGAL"], "WEST": ["GOA", "GUJARAT", "MAHARASHTRA", "DADRA NAGAR HAVELI"], "CENTRAL": ["CHHATTISGARH", "MADHYA PRADESH", "UTTARAKHAND", "UTTAR PRADESH"], "NE": ["ASSAM", "ARUNACHAL PRADESH", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "SIKKIM", "TRIPURA"] };
+
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('mask').classList.toggle('active');
+    }
 
     function toggleLoader(show, text = "PLEASE WAIT...") {
         const loader = document.getElementById('loadingOverlay');
@@ -190,13 +192,13 @@
         loader.style.display = show ? 'flex' : 'none';
     }
 
-    function updateSysDate(val) { systemDateString = val; systemDay = new Date(val).getDate(); refresh(); }
+    function updateSysDate(val) { systemDateString = val; refresh(); }
     
     function getStatus(targetDate, isComplete, currentObsDate) {
         if (!targetDate || targetDate === "V1 Pending") return '<span class="status-badge badge-pending">Pending</span>';
         if (isComplete) return '<span class="status-badge badge-done">Complete</span>';
         if (targetDate <= currentObsDate) return '<span class="status-badge badge-late">Late</span>';
-        return '<span class="status-badge badge-future">Scheduled</span>';
+        return '<span class="status-badge badge-future" style="color:var(--warning); border:1px solid var(--warning); background:rgba(245,158,11,0.1); padding:4px 10px; border-radius:4px; font-size:9px;">Scheduled</span>';
     }
 
     function addDays(dateStr, days) {
@@ -217,17 +219,20 @@
                 let fsu = cols[4], mCode = cols[5], sro = String(cols[6]||'NSO'), loc = cols[10];
                 if(fsu) {
                     const startM = (parseInt(mCode) >= 13) ? (parseInt(mCode) - 13) : (parseInt(mCode)-1);
-                    // FIXED: Only 3 revisits (Visit 1 to 4)
                     for(let i=0; i<4; i++) master.push({ uid: `${stName}_${fsu}_V${i+1}`, fsu, state: stName, sro, monthIdx: (startM + i)%12, location: loc||"---", visitNum: i+1 });
                 }
-            }); renderNav(); alert("Data Processed.");
+            }); renderNav(); alert("Data Processed Locally.");
         } finally { toggleLoader(false); }
     }
 
     function refresh() {
         const body = document.getElementById('dataBody');
         const h1 = document.getElementById('btnV1'), h2 = document.getElementById('btnV2');
-        if(!selSt || !selSro) { body.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:150px; opacity:0.3;'>SELECT REGION</td></tr>"; document.getElementById('activeHeader').style.visibility='hidden'; return; }
+        if(!selSt || !selSro) { 
+            body.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:100px; opacity:0.3; font-weight:700;'>PLEASE SELECT A REGION FROM THE MENU</td></tr>"; 
+            document.getElementById('activeHeader').style.visibility='hidden'; 
+            return; 
+        }
         
         document.getElementById('activeHeader').style.visibility='visible';
         document.getElementById('vSt').innerText = selSt; document.getElementById('vSro').innerText = selSro; 
@@ -247,38 +252,35 @@
         document.getElementById('progFill').style.width = perc+'%';
 
         if (selVis === 1) {
-            document.getElementById('tableHeader').innerHTML = `<th>Status</th><th>FSU</th><th>Location</th><th>ENM ID</th><th>Field Worker</th><th>Start Date</th><th>End Date</th>`;
+            document.getElementById('tableHeader').innerHTML = `<th>Status</th><th>FSU</th><th>Location</th><th>ENM ID</th><th>Worker</th><th>Start</th><th>End</th>`;
         } else {
-            // REMOVED: Completed Date Header
-            document.getElementById('tableHeader').innerHTML = `<th>Status</th><th>FSU</th><th>Location</th><th>ENM ID</th><th>Field Worker</th><th>Type</th><th>Suggested (+30d)</th>`;
+            document.getElementById('tableHeader').innerHTML = `<th>Status</th><th>FSU</th><th>Location</th><th>ENM ID</th><th>Worker</th><th>Visit</th><th>Suggested</th>`;
         }
 
         body.innerHTML = filtered.map(d => {
             const v1Item = master.find(x => x.fsu === d.fsu && x.state === d.state && x.visitNum === 1) || {};
-            let displayStatus = ""; let suggestDateStr = "V1 Pending";
+            let suggestDateStr = "V1 Pending";
 
-            if (selVis === 1) {
-                displayStatus = getStatus(d.endDate, (d.endDate && d.endDate <= systemDateString), systemDateString);
-            } else {
-                if (v1Item.endDate) {
-                   const offsetDays = (d.visitNum - 1) * 30;
-                   suggestDateStr = addDays(v1Item.endDate, offsetDays);
-                }
-                displayStatus = getStatus(suggestDateStr, (d.endDate && d.endDate <= systemDateString), systemDateString);
+            if (selVis > 1 && v1Item.endDate) {
+                suggestDateStr = addDays(v1Item.endDate, (d.visitNum - 1) * 30);
             }
+
+            let displayStatus = selVis === 1 
+                ? getStatus(d.endDate, (d.endDate && d.endDate <= systemDateString), systemDateString)
+                : getStatus(suggestDateStr, (d.endDate && d.endDate <= systemDateString), systemDateString);
 
             return `<tr>
                 <td>${displayStatus}</td>
                 <td><span class="fsu-badge">${d.fsu}</span></td>
-                <td style="font-size:11px">${d.location}</td>
+                <td><div style="width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${d.location}</div></td>
                 <td><input class="input-field" style="width:70px" value="${d.enmId || v1Item.enmId || ''}" onchange="upd('${d.uid}','eid',this.value)"></td>
-                <td><input class="input-field" value="${d.enumerator || v1Item.enumerator || ''}" onchange="upd('${d.uid}','en',this.value)"></td>
+                <td><input class="input-field" style="width:100px" value="${d.enumerator || v1Item.enumerator || ''}" onchange="upd('${d.uid}','en',this.value)"></td>
                 ${selVis === 1 ? `
                     <td><input type="date" class="input-field" value="${d.startDate||''}" onchange="upd('${d.uid}','sd',this.value)"></td>
                     <td><input type="date" class="input-field" value="${d.endDate||''}" onchange="upd('${d.uid}','ed',this.value)"></td>
                 ` : `
-                    <td><b style="color:var(--accent)">Visit ${d.visitNum}</b></td>
-                    <td><div style="color:var(--accent); font-weight:700; font-size:11px;">📅 ${suggestDateStr || 'Pending V1'}</div></td>
+                    <td><b style="color:var(--accent)">V${d.visitNum}</b></td>
+                    <td style="color:var(--accent); font-weight:700;">${suggestDateStr}</td>
                 `}
             </tr>`;
         }).join('');
@@ -298,7 +300,7 @@
         toggleLoader(true, "SYNCING...");
         try {
             const data = {}; master.filter(m => m.state === selSt).forEach(m => data[m.uid] = m);
-            await db.ref(`plfs_roster/${selSt}`).set(data); alert("Synced.");
+            await db.ref(`plfs_roster/${selSt}`).set(data); alert("Cloud Synchronized.");
         } finally { toggleLoader(false); }
     }
 
@@ -319,22 +321,9 @@
                 html += `<div class="st-btn ${selSt===st?'active':''} ${master.some(x=>x.state===st)?'has-data':''}" onclick="selectState('${st}')"><div class="st-label">${st}</div></div>`;
                 if (selSt === st) {
                     const sros = [...new Set(master.filter(x => x.state === st).map(x => x.sro))].sort();
-                    html += `<div class="sub-menu-container">`;
-                    html += `<div class="pill-grid">`;
-                    html += `<div class="pill all-btn ${selSro==='ALL SROs'?'active':''}" onclick="event.stopPropagation(); selSro='ALL SROs'; renderNav(); refresh();">🌍 ALL SRO's</div>`;
-                    if(sros.length > 0) {
-                        sros.forEach(s => {
-                            html += `<div class="pill ${selSro===s?'active':''}" onclick="event.stopPropagation(); selSro='${s}'; renderNav(); refresh();">${s}</div>`;
-                        });
-                    } else {
-                        html += `<div style="font-size:9px; opacity:0.3; text-align:center; grid-column:span 2">No Data</div>`;
-                    }
-                    html += `</div>`;
-
-                    if(selSro) {
-                        html += `<div class="month-grid">` + months.map((m, i) => `<div class="pill ${selMo===i?'active':''}" onclick="event.stopPropagation(); selMo=${i}; renderNav(); refresh();">${m.substring(0,3)}</div>`).join('') + `</div>`;
-                    }
-                    html += `</div>`;
+                    html += `<div class="sub-menu-container"><div class="pill-grid"><div class="pill all-btn ${selSro==='ALL SROs'?'active':''}" onclick="event.stopPropagation(); selSro='ALL SROs'; renderNav(); refresh();">🌍 ALL SRO's</div>`;
+                    sros.forEach(s => html += `<div class="pill ${selSro===s?'active':''}" onclick="event.stopPropagation(); selSro='${s}'; renderNav(); refresh();">${s}</div>`);
+                    html += `</div><div class="month-grid">` + months.map((m, i) => `<div class="pill ${selMo===i?'active':''}" onclick="event.stopPropagation(); selMo=${i}; renderNav(); refresh();">${m.substring(0,3)}</div>`).join('') + `</div></div>`;
                 }
             }); html += `</div>`;
         } container.innerHTML = html;
