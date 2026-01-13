@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PLFS | Command Dashboard 2026</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -19,7 +19,7 @@
         }
         
         * { box-sizing: border-box; transition: all 0.2s ease; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; display: flex; overflow: hidden; }
 
         /* SIDEBAR */
         .sidebar { width: var(--sb-width); min-width: var(--sb-width); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1000; }
@@ -54,7 +54,7 @@
         .month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
 
         /* MAIN CONTENT */
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #020617; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #020617; height: 100vh; }
         .fixed-header-group { flex-shrink: 0; background: var(--glass); backdrop-filter: blur(15px); border-bottom: 1px solid var(--border); z-index: 100; }
         .top-bar { padding: 12px 25px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
         .mobile-menu-btn { display: none; background: var(--accent); border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; color: #000; font-size: 12px; }
@@ -84,13 +84,30 @@
         .perc-display { font-size: 24px; font-weight: 800; color: var(--text); line-height: 1; }
         .perc-label { font-size: 9px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; }
 
-        /* TABLE */
-        .workspace { flex: 1; padding: 20px; overflow-y: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
-        .table-wrap { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        /* TABLE FIXES FOR TABLET */
+        .workspace { 
+            flex: 1; 
+            padding: 20px; 
+            padding-bottom: 100px; /* Crucial: ensures the last row isn't blocked by browser bars */
+            overflow-y: auto; 
+            scrollbar-width: thin; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        .table-wrap { 
+            background: var(--card); 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            overflow-x: auto; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px; /* Breathing room for the shadow */
+        }
         table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px; }
         th { background: var(--header-dark); color: var(--accent); font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 18px 15px; text-align: left; border-bottom: 3px solid var(--accent); position: sticky; top:0; z-index: 10; }
         td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
         
+        /* Ensure the last row has a border and visibility */
+        tr:last-child td { border-bottom: 1px solid var(--border); }
+
         .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
         .badge-done { background: rgba(16, 185, 129, 0.15); color: var(--v1); border: 1px solid var(--v1); }
         .badge-pending { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); border: 1px solid var(--border); }
@@ -192,7 +209,7 @@
     firebase.initializeApp(config); const db = firebase.database();
 
     let master = [], selSt = null, selSro = "ALL SROs", selMo = 0, selVis = 1, query = "";
-    let systemDateString = "2026-01-12";
+    let systemDateString = "2026-01-13"; // Updated to current context date
 
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const nsoZones = { "NORTH": ["HIMACHAL PRADESH", "PUNJAB", "HARYANA", "RAJASTHAN", "DELHI", "JAMMU & KASHMIR", "LADAKH", "CHANDIGARH"], "SOUTH": ["ANDHRA PRADESH", "KARNATAKA", "KERALA", "TAMIL NADU", "TELANGANA", "PUDUCHERRY"], "EAST": ["BIHAR", "JHARKHAND", "ODISHA", "WEST BENGAL"], "WEST": ["GOA", "GUJARAT", "MAHARASHTRA", "DADRA NAGAR HAVELI"], "CENTRAL": ["CHHATTISGARH", "MADHYA PRADESH", "UTTARAKHAND", "UTTAR PRADESH"], "NE": ["ASSAM", "ARUNACHAL PRADESH", "MANIPUR", "MEGHALAYA", "MIZORAM", "NAGALAND", "SIKKIM", "TRIPURA"] };
@@ -361,7 +378,7 @@
     }
 
     window.onload = () => {
-        document.getElementById('sysCalendar').value = "2026-01-12";
+        document.getElementById('sysCalendar').value = "2026-01-13";
         autoFetch();
     };
 </script>
