@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover" />
-  <title>UFS | Weekly → Monthly (RO Shimla)</title>
+  <title>UFS | Weekly + Monthly (XLSX, SRO week-wise edits)</title>
 
-  <!-- Firebase (optional, for saving edits) -->
+  <!-- Firebase (for saving week-wise edits) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- SheetJS (read XLSX from same folder; no upload needed) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -15,41 +18,24 @@
     :root{
       --bg:#020617; --panel:#0f172a; --card:#1e293b; --border:#334155;
       --accent:#38bdf8; --v1:#10b981; --text:#f8fafc; --dim:#94a3b8;
-      --danger:#ef4444; --warn:#f59e0b;
+      --warn:#f59e0b; --danger:#ef4444;
     }
     *{ box-sizing:border-box; }
-    body{
-      margin:0; font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text);
-      height:100vh; height:100dvh; overflow:hidden;
-    }
-
-    /* Layout */
+    body{ margin:0; font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); height:100vh; height:100dvh; overflow:hidden; }
     .root{ height:100%; display:flex; overflow:hidden; }
+
     aside{
-      width:320px; min-width:320px; background:var(--panel); border-right:1px solid var(--border);
-      display:flex; flex-direction:column;
+      width:380px; min-width:380px; background:var(--panel);
+      border-right:1px solid var(--border); display:flex; flex-direction:column;
     }
     .aside-head{
-      padding:18px 18px 14px;
-      border-bottom:1px solid rgba(255,255,255,.06);
+      padding:16px; border-bottom:1px solid rgba(255,255,255,.06);
       display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
     }
-    .brand{
-      display:flex; flex-direction:column; gap:6px;
-    }
     .brand b{ color:var(--accent); letter-spacing:1px; }
-    .brand span{ font-size:11px; color:var(--dim); font-weight:700; line-height:1.35; }
-    .btn{
-      border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;
-      font-size:12px;
-    }
-    .btn-soft{ background:rgba(255,255,255,.10); color:#fff; border:1px solid rgba(255,255,255,.12); }
-    .btn-accent{ background:var(--accent); color:#000; }
-    .btn-warn{ background:var(--warn); color:#000; }
-    .btn-green{ background:var(--v1); color:#000; }
-    .btn-danger{ background:var(--danger); color:#fff; }
+    .brand div{ margin-top:6px; font-size:11px; color:rgba(248,250,252,.70); font-weight:700; line-height:1.35; }
+    .aside-body{ padding:14px 16px 16px; overflow:auto; display:grid; gap:12px; }
 
-    .aside-body{ padding:14px 18px 18px; overflow:auto; display:grid; gap:12px; }
     .card{
       background:rgba(30,41,59,.45);
       border:1px solid rgba(255,255,255,.10);
@@ -58,28 +44,33 @@
       box-shadow:0 12px 32px rgba(0,0,0,.25);
     }
     .card h3{
-      margin:0 0 10px; font-size:12px; letter-spacing:.8px;
-      color:rgba(248,250,252,.85); font-weight:900; text-transform:uppercase;
+      margin:0 0 10px; font-size:12px; font-weight:1000; letter-spacing:.8px;
+      text-transform:uppercase; color:rgba(248,250,252,.85);
     }
     .muted{ font-size:11px; color:rgba(248,250,252,.65); font-weight:700; line-height:1.45; }
     .row{ display:grid; gap:8px; }
-    .input{
-      width:100%;
-      background:#000;
-      border:1px solid rgba(255,255,255,.12);
-      color:#fff;
-      padding:10px 10px;
-      border-radius:10px;
-      outline:none;
-      font-weight:900;
-      font-size:12px;
+
+    .input, select{
+      width:100%; background:#000; border:1px solid rgba(255,255,255,.12);
+      color:#fff; padding:10px; border-radius:10px; outline:none; font-weight:900; font-size:12px;
     }
-    .tag{
-      font-size:11px; font-weight:900;
-      padding:8px 10px; border-radius:10px;
-      border:1px dashed rgba(255,255,255,.18);
+    .btn{
+      border:none; border-radius:10px; padding:10px 12px;
+      font-weight:1000; cursor:pointer; font-size:12px;
+    }
+    .btn-soft{ background:rgba(255,255,255,.10); color:#fff; border:1px solid rgba(255,255,255,.12); }
+    .btn-accent{ background:var(--accent); color:#000; }
+    .btn-warn{ background:var(--warn); color:#000; }
+    .btn-green{ background:var(--v1); color:#000; }
+    .btn-danger{ background:var(--danger); color:#fff; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.22);
       color:rgba(248,250,252,.85);
-      background:rgba(0,0,0,.15);
+      font-size:11px; font-weight:1000;
     }
 
     main{ flex:1; display:flex; flex-direction:column; overflow:hidden; }
@@ -89,14 +80,28 @@
       border-bottom:1px solid var(--border);
       display:flex; align-items:center; gap:10px;
     }
-    header .title{
-      font-weight:1000; letter-spacing:1px;
-      color:var(--accent);
-    }
+    header .title{ font-weight:1000; letter-spacing:1px; color:var(--accent); }
     header .grow{ flex:1; }
     header input[type="date"]{ color-scheme:dark; }
 
-    .workspace{ flex:1; padding:16px; overflow:auto; }
+    .tabs{
+      display:flex; gap:8px; padding:12px 16px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      background:rgba(15,23,42,.70);
+    }
+    .tab{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      color:rgba(248,250,252,.85);
+      font-weight:1000; font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab.active{ background:var(--accent); color:#000; border-color:rgba(56,189,248,.6); }
+
+    .workspace{ flex:1; padding:14px 16px 18px; overflow:auto; }
     .table-wrap{
       background:var(--card);
       border:1px solid var(--border);
@@ -104,12 +109,7 @@
       overflow:auto;
       box-shadow:0 16px 40px rgba(0,0,0,.35);
     }
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      min-width:1200px;
-    }
+    table{ width:100%; border-collapse:separate; border-spacing:0; min-width:1200px; }
     th{
       position:sticky; top:0; z-index:10;
       background:#0b1220;
@@ -130,6 +130,7 @@
       font-size:12px;
       vertical-align:top;
     }
+
     .cell input{
       width:100%;
       background:#000;
@@ -141,17 +142,10 @@
       font-weight:900;
       font-size:12px;
     }
-    .locked input{
-      opacity:.65;
-      border:1px dashed rgba(56,189,248,.35);
-    }
+    .locked input{ opacity:.70; border:1px dashed rgba(56,189,248,.35); }
     .readonly input{ opacity:.55; }
-    .rowlabel{
-      font-weight:1000; color:#fff;
-      white-space:nowrap;
-    }
+    .editable input{ border:1px solid rgba(16,185,129,.45); box-shadow:0 0 0 2px rgba(16,185,129,.12) inset; }
 
-    /* Loader */
     #loadingOverlay{
       display:none; position:fixed; inset:0;
       background:rgba(2,6,23,.92);
@@ -169,10 +163,22 @@
       margin-bottom:12px;
     }
     @keyframes spin{ to{ transform:rotate(360deg); } }
+
+    .note{
+      border:1px dashed rgba(255,255,255,.16);
+      border-radius:12px;
+      padding:10px;
+      background:rgba(0,0,0,.18);
+      color:rgba(248,250,252,.75);
+      font-size:11px;
+      font-weight:800;
+      line-height:1.45;
+    }
+    code{ background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px; }
   </style>
 </head>
-<body>
 
+<body>
 <div id="loadingOverlay">
   <div class="spin"></div>
   <div id="loadingText" style="font-weight:1000; letter-spacing:2px; font-size:12px;">LOADING...</div>
@@ -183,25 +189,32 @@
   <aside>
     <div class="aside-head">
       <div class="brand">
-        <b>UFS WEEKLY → MONTHLY</b>
-        <span>RO Shimla | SRO-wise | Weekly auto-fill locked<br>No CSV upload in future (auto-pick files)</span>
+        <b>UFS (WEEKLY + MONTHLY)</b>
+        <div>
+          XLSX auto-pick (no upload). Weekly shows edits (week-wise) per SRO.<br>
+          Monthly auto-built from Weekly + Monthly Template (read-only).
+        </div>
       </div>
       <button class="btn btn-soft" onclick="reloadAll()">↻</button>
     </div>
 
     <div class="aside-body">
       <div class="card">
-        <h3>Auto-Picked Files</h3>
-        <div class="muted">
-          Keep these files in the <b>same folder</b> as this HTML (GitHub Pages/hosting):
-          <br>• <b>Weekly MPR RO Shimla Level - Sheet1.csv</b>
-          <br>• <b>UFS MPR Monthly RO Shimla - MONTHLY MPR.csv</b>
+        <h3>Files (same folder)</h3>
+        <div class="note">
+          Put these files in the <b>same folder</b> as this HTML (GitHub Pages):<br>
+          • <code>Weekly MPR RO Shimla Level.xlsx</code><br>
+          • <code>UFS MPR Monthly RO Shimla.xlsx</code>
         </div>
       </div>
 
       <div class="card">
-        <h3>Select SRO (No Password)</h3>
+        <h3>Week + SRO</h3>
         <div class="row">
+          <label class="muted">Week Ending Date (key for saving edits)</label>
+          <input id="weekEnding" class="input" type="date" />
+
+          <label class="muted">Select SRO (no password)</label>
           <select id="sroSelect" class="input" onchange="setSroUser(this.value)">
             <option value="">-- Select SRO --</option>
             <option value="Shimla">Shimla</option>
@@ -209,42 +222,58 @@
             <option value="Mandi">Mandi</option>
             <option value="Hamirpur">Hamirpur</option>
           </select>
-          <div id="sroUserTag" class="tag">Not selected</div>
-          <div class="muted">Only your SRO row becomes editable (weekly-missing fields only).</div>
+
+          <div class="pill" id="whoPill">SRO: Not selected</div>
+          <div class="muted">
+            Weekly edit allowed only for selected SRO + selected week. (No password)
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>What is editable?</h3>
+        <div class="muted" id="editableHint">
+          Only <b>“during week”</b> metrics in Weekly are editable per SRO (recommended).
         </div>
       </div>
 
       <div class="card">
         <h3>Actions</h3>
         <div class="row">
-          <button class="btn btn-accent" onclick="reloadAll()">🔄 Reload Weekly+Monthly</button>
-          <button class="btn btn-warn" onclick="downloadMonthly()">⬇️ Download Updated Monthly CSV</button>
-          <button class="btn btn-green" onclick="saveMergedMonthlySnapshot()">☁️ Save Monthly Snapshot (Firebase)</button>
+          <button class="btn btn-accent" onclick="reloadAll()">🔄 Reload Weekly + Monthly</button>
+          <button class="btn btn-warn" onclick="downloadXlsx('weekly')">⬇️ Export Weekly (XLSX)</button>
+          <button class="btn btn-warn" onclick="downloadXlsx('monthly')">⬇️ Export Monthly (XLSX)</button>
+          <button class="btn btn-green" onclick="saveMonthlySnapshot()">☁️ Save Monthly Snapshot (Firebase)</button>
+          <button class="btn btn-soft" onclick="clearEditsForThisWeek()">🧹 Clear THIS week edits (selected SRO)</button>
         </div>
       </div>
 
       <div class="card">
         <h3>Search</h3>
-        <input id="q" class="input" placeholder="Search row text..." oninput="renderTable()" />
+        <input id="q" class="input" placeholder="Search in active table..." oninput="renderActive()" />
       </div>
     </div>
   </aside>
 
-  <!-- RIGHT TABLE -->
+  <!-- RIGHT -->
   <main>
     <header>
-      <div class="title">UFS Monthly MPR (Template + Weekly Auto + SRO Edits)</div>
+      <div class="title">UFS Weekly & Monthly</div>
       <div class="grow"></div>
+      <span class="pill" id="monthPill">Month: --</span>
       <input type="date" id="sysDate" />
-      <button class="btn btn-soft" onclick="clearSroSelection()">Clear SRO</button>
+      <button class="btn btn-soft" onclick="setToday()">Today</button>
     </header>
+
+    <div class="tabs">
+      <button class="tab active" id="tabWeekly" onclick="setTab('weekly')">Weekly (editable)</button>
+      <button class="tab" id="tabMonthly" onclick="setTab('monthly')">Monthly (auto)</button>
+    </div>
 
     <div class="workspace">
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr id="tableHeader"></tr>
-          </thead>
+          <thead><tr id="tableHeader"></tr></thead>
           <tbody id="dataBody"></tbody>
         </table>
       </div>
@@ -254,13 +283,14 @@
 
 <script>
 /* =========================
-   CONFIG
+   FILES (XLSX in same folder)
 ========================== */
-// Put these files in SAME folder as this HTML
-const UFS_WEEKLY_CSV_URL = "Weekly MPR RO Shimla Level - Sheet1.csv";
-const UFS_MONTHLY_TEMPLATE_URL = "UFS MPR Monthly RO Shimla - MONTHLY MPR.csv";
+const WEEKLY_XLSX_URL  = "Weekly MPR RO Shimla Level.xlsx";
+const MONTHLY_XLSX_URL = "UFS MPR Monthly RO Shimla.xlsx";
 
-// Firebase (optional)
+/* =========================
+   FIREBASE
+========================== */
 const firebaseConfig = {
   apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI",
   authDomain: "action-plan-62fae.firebaseapp.com",
@@ -273,18 +303,59 @@ const db = firebase.database();
 /* =========================
    STATE
 ========================== */
+const STATE_NAME = "HIMACHAL PRADESH";
 const UFS_SRO_LIST = ["Shimla","Dharamshala","Mandi","Hamirpur"];
-let currentSroUser = "";
-let monthlyTemplateGrid = null; // 2D array
-let monthlyGrid = null;         // 2D array (computed + edits)
-let weeklyRows = [];            // parsed weekly rows (SRO-wise)
-let mergedEdits = {};           // firebase edits for month
-let sysDateStr = new Date().toISOString().slice(0,10);
-let selectedMonthIdx = new Date().getMonth(); // 0-based
 
-// Monthly columns that are auto-filled from Weekly => LOCKED
-// IMPORTANT: If your monthly template structure changes, update these indexes.
-const AUTO_COLS = new Set([2,3,6,7,8,9,10,23,24,25,26]);
+let activeTab = "weekly";
+let currentSroUser = "";
+let sysDateStr = new Date().toISOString().slice(0,10);
+
+let weeklyWb = null, weeklySheetName = null, weeklyGridRaw = null;
+let monthlyWb = null, monthlySheetName = null, monthlyGridTemplate = null;
+
+let weeklyHeaderRowIdx = null;
+let weeklyHeader = [];          // header array
+let weeklyDataRows = [];        // array of { rIndex, rowArr, sroName, isData }
+let weeklyColMap = {};          // semantic -> col index
+
+let weeklyEdits = {};           // loaded from firebase for selected week: key = `${sro}::${r}_${c}` -> value
+let monthlyGridComputed = null; // computed 2D
+
+// Default weekly columns if header detection fails (based on your earlier structure)
+const WEEKLY_FALLBACK = {
+  sl: 0,
+  sro: 1,
+  townsPhase: 2,
+  townsDuring: 3,
+  completedSince: 4,
+  underSurvey: 5,
+  pct: 6,
+  blocksDuring: 7,
+  blocksSince: 8,
+  allRespectDuring: 9,
+  allRespectSince: 10,
+  dispatchedDuring: 11,
+  dispatchedSince: 12
+};
+
+// Weekly columns that are editable (week-wise) for each SRO
+// We choose "during week" values only (best practice)
+let WEEKLY_EDITABLE_COLS = new Set(); // filled after header map ready
+
+// Monthly columns (template positions) to fill (0-index)
+const MONTHLY_MAP_COLS = {
+  townsPhase: 2,
+  townsDuringMonth: 3,     // sum of weekly during
+  completedSince: 6,       // latest weekly since
+  underSurvey: 7,          // latest weekly since
+  pct: 8,                  // calc
+  blocksDuringMonth: 9,    // sum of weekly during
+  blocksSince: 10,         // latest weekly since
+  allRespectDuringMonth: 23,
+  allRespectSince: 24,
+  dispatchedDuringMonth: 25,
+  dispatchedSince: 26
+};
 
 /* =========================
    UI HELPERS
@@ -294,173 +365,363 @@ function toggleLoader(show, text="PLEASE WAIT..."){
   document.getElementById("loadingText").innerText = text;
   o.style.display = show ? "flex" : "none";
 }
+function setToday(){
+  sysDateStr = new Date().toISOString().slice(0,10);
+  document.getElementById("sysDate").value = sysDateStr;
+  updateMonthPill();
+  renderActive();
+}
+function updateMonthPill(){
+  const d = new Date(sysDateStr);
+  const m = d.toLocaleString("en", { month:"long" });
+  const y = d.getFullYear();
+  document.getElementById("monthPill").innerText = `Month: ${m} ${y}`;
+}
 function escapeHtml(s){
   return (s ?? "").toString()
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function escapeAttr(s){ return escapeHtml(s); }
+function safeText(s){ return (s ?? "").toString().trim(); }
 
+function setTab(tab){
+  activeTab = tab;
+  document.getElementById("tabWeekly").classList.toggle("active", tab==="weekly");
+  document.getElementById("tabMonthly").classList.toggle("active", tab==="monthly");
+  renderActive();
+}
 function setSroUser(val){
   currentSroUser = (val || "").trim();
-  document.getElementById("sroUserTag").innerText = currentSroUser ? ("Selected: " + currentSroUser) : "Not selected";
-  renderTable();
+  document.getElementById("whoPill").innerText = currentSroUser ? `SRO: ${currentSroUser}` : "SRO: Not selected";
+  renderActive();
 }
-function clearSroSelection(){
-  currentSroUser = "";
-  document.getElementById("sroSelect").value = "";
-  document.getElementById("sroUserTag").innerText = "Not selected";
-  renderTable();
+
+function getWeekKey(){
+  const v = document.getElementById("weekEnding").value;
+  return v || "";
 }
-function getMonthKey(){
-  const year = (sysDateStr || new Date().toISOString().slice(0,10)).slice(0,4);
-  const mm = String(selectedMonthIdx + 1).padStart(2,"0");
-  return `${year}-${mm}`;
+function requireWeekKey(){
+  const wk = getWeekKey();
+  if(!wk){
+    alert("Select Week Ending Date first.");
+    return null;
+  }
+  return wk;
+}
+function numeric(x){
+  const t = (x ?? "").toString().replace(/[%\s,]/g,"").trim();
+  if(!t) return 0;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : 0;
 }
 
 /* =========================
-   CSV PARSE / FETCH
+   XLSX LOADERS (NO UPLOAD)
 ========================== */
-function parseCSV(text){
-  const rows = [];
-  let row = [], cur = "", inQ = false;
-  for(let i=0;i<text.length;i++){
-    const ch = text[i];
-    if(ch === '"'){
-      if(inQ && text[i+1] === '"'){ cur += '"'; i++; }
-      else inQ = !inQ;
-    } else if(ch === ',' && !inQ){
-      row.push(cur); cur = "";
-    } else if((ch === '\n' || ch === '\r') && !inQ){
-      if(ch === '\r' && text[i+1] === '\n') i++;
-      row.push(cur); rows.push(row);
-      row = []; cur = "";
-    } else cur += ch;
-  }
-  if(cur.length || row.length){ row.push(cur); rows.push(row); }
-  return rows;
-}
-async function fetchCsvGrid(url){
+async function fetchArrayBuffer(url){
   const res = await fetch(url, { cache:"no-store" });
-  if(!res.ok) throw new Error("CSV not found: " + url);
-  const text = await res.text();
-  return parseCSV(text);
+  if(!res.ok) throw new Error(`File not found: ${url}`);
+  return await res.arrayBuffer();
 }
-function toCSV(grid){
-  return grid.map(r => r.map(v => {
-    const s = (v ?? "").toString();
-    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-  }).join(",")).join("\n");
+function sheetToGrid(wb, sheetName){
+  const sheet = wb.Sheets[sheetName];
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
+}
+async function loadXlsxFiles(){
+  toggleLoader(true, "LOADING XLSX...");
+
+  try{
+    const wb1 = XLSX.read(await fetchArrayBuffer(WEEKLY_XLSX_URL), { type:"array" });
+    const wb2 = XLSX.read(await fetchArrayBuffer(MONTHLY_XLSX_URL), { type:"array" });
+
+    weeklyWb = wb1; weeklySheetName = wb1.SheetNames[0];
+    monthlyWb = wb2; monthlySheetName = wb2.SheetNames[0];
+
+    weeklyGridRaw = sheetToGrid(weeklyWb, weeklySheetName);
+    monthlyGridTemplate = sheetToGrid(monthlyWb, monthlySheetName);
+
+    prepareWeeklyStructure();
+    prepareWeeklyEditableCols();
+  } finally {
+    toggleLoader(false);
+  }
 }
 
 /* =========================
-   WEEKLY EXTRACT (SRO-WISE)
+   WEEKLY: HEADER DETECT + MAP
 ========================== */
-function extractWeeklyRows(grid){
-  // Expected data row:
-  // 0 slno, 1 SRO Office, 2 towns phase,
-  // 3 towns in field during week, 4 completed since start, 5 under survey, 6 %, 7 blocks formed during,
-  // 8 blocks formed since, 9 towns all respect during, 10 since, 11 dispatched during, 12 since.
-  const out = [];
-  const num = (x)=>{
-    const t = (x ?? "").toString().replace(/[%\s]/g,"").trim();
-    const n = Number(t);
-    return Number.isFinite(n) ? n : 0;
+function findWeeklyHeaderRow(grid){
+  // Find a row that contains both "SRO" and "Towns" (or similar)
+  let best = -1, bestScore = -1;
+  for(let r=0;r<Math.min(grid.length, 40);r++){
+    const row = grid[r] || [];
+    const joined = row.map(x => (x ?? "").toString().toLowerCase()).join(" | ");
+    let score = 0;
+    if(joined.includes("sro")) score += 3;
+    if(joined.includes("town")) score += 3;
+    if(joined.includes("block")) score += 2;
+    if(joined.includes("dispatch")) score += 2;
+    if(joined.includes("since")) score += 1;
+    if(score > bestScore){
+      bestScore = score; best = r;
+    }
+  }
+  return best >= 0 ? best : 0;
+}
+
+function buildColMapFromHeader(header){
+  // Try to map semantic keys using header text
+  const idxOf = (preds) => {
+    for(let i=0;i<header.length;i++){
+      const h = (header[i] ?? "").toString().toLowerCase();
+      if(!h) continue;
+      if(preds.some(p => h.includes(p))) return i;
+    }
+    return -1;
   };
 
-  for(const r of grid){
-    const sl = (r[0] ?? "").toString().trim();
-    const sroOffice = (r[1] ?? "").toString().trim();
-    if(!/^\d+$/.test(sl)) continue;
-    if(!sroOffice) continue;
+  const m = {};
+  m.sl = idxOf(["sl", "s.no", "sno", "sr no", "s. no"]);
+  m.sro = idxOf(["sro"]);
+  m.townsPhase = idxOf(["towns phase", "phase towns", "towns in phase", "towns (phase)"]);
+  m.townsDuring = idxOf(["towns in field", "during week", "during the week", "during"]);
+  m.completedSince = idxOf(["completed since", "since start", "completed (since"]);
+  m.underSurvey = idxOf(["under survey", "under-survey"]);
+  m.pct = idxOf(["%", "percent"]);
+  m.blocksDuring = idxOf(["blocks formed during", "blocks during", "during blocks"]);
+  m.blocksSince = idxOf(["blocks formed since", "blocks since", "since blocks"]);
+  m.allRespectDuring = idxOf(["all respect during", "all-respect during", "all respect (during"]);
+  m.allRespectSince = idxOf(["all respect since", "all-respect since", "all respect (since"]);
+  m.dispatchedDuring = idxOf(["dispatched during", "dispatch during", "dispatches during"]);
+  m.dispatchedSince = idxOf(["dispatched since", "dispatch since", "dispatches since"]);
 
-    out.push({
-      sroOffice,
-      townsPhase: num(r[2]),
-      townsInFieldDuring: num(r[3]),
-      completedSinceStart: num(r[4]),
-      underSurvey: num(r[5]),
-      pctCompleted: num(r[6]),
-      blocksFormedDuring: num(r[7]),
-      blocksFormedSince: num(r[8]),
-      townsAllRespectDuring: num(r[9]),
-      townsAllRespectSince: num(r[10]),
-      dispatchedDuring: num(r[11]),
-      dispatchedSince: num(r[12]),
+  // Fill missing with fallback
+  for(const k of Object.keys(WEEKLY_FALLBACK)){
+    if(!(k in m) || m[k] === -1) m[k] = WEEKLY_FALLBACK[k];
+  }
+  return m;
+}
+
+function prepareWeeklyStructure(){
+  weeklyHeaderRowIdx = findWeeklyHeaderRow(weeklyGridRaw);
+  weeklyHeader = (weeklyGridRaw[weeklyHeaderRowIdx] || []).map(x => (x ?? "").toString().trim());
+
+  weeklyColMap = buildColMapFromHeader(weeklyHeader);
+
+  // Extract data rows (we assume after header row)
+  weeklyDataRows = [];
+  for(let r=weeklyHeaderRowIdx+1;r<weeklyGridRaw.length;r++){
+    const row = weeklyGridRaw[r] || [];
+    // Data row condition: first cell numeric or SRO present
+    const slCell = safeText(row[weeklyColMap.sl]);
+    const sroCell = safeText(row[weeklyColMap.sro]);
+    const isData = (/^\d+$/.test(slCell) && !!sroCell);
+
+    if(isData){
+      weeklyDataRows.push({
+        rIndex: r,
+        rowArr: row,
+        sroName: sroCell,
+        isData: true
+      });
+    }
+  }
+}
+
+function prepareWeeklyEditableCols(){
+  // Editable = "during week" columns. Use header map.
+  const cols = [
+    weeklyColMap.townsDuring,
+    weeklyColMap.blocksDuring,
+    weeklyColMap.allRespectDuring,
+    weeklyColMap.dispatchedDuring
+  ].filter(i => Number.isFinite(i));
+  WEEKLY_EDITABLE_COLS = new Set(cols);
+
+  const hint = `Editable weekly columns: ${
+    cols.map(i => weeklyHeader[i] || `Col ${i+1}`).join(", ")
+  }`;
+  document.getElementById("editableHint").innerText = hint;
+}
+
+/* =========================
+   FIREBASE: WEEKLY EDITS (per week, per SRO)
+========================== */
+async function loadWeeklyEditsForSelectedWeek(){
+  weeklyEdits = {};
+  const wk = getWeekKey();
+  if(!wk) return;
+
+  toggleLoader(true, "LOADING WEEK EDITS...");
+  try{
+    const snap = await db.ref(`ufs_weekly_edits/${STATE_NAME}/${wk}`).once("value");
+    if(!snap.exists()) return;
+
+    snap.forEach(sroNode => {
+      const sro = sroNode.key;
+      const obj = sroNode.val() || {};
+      Object.entries(obj).forEach(([cellKey,val])=>{
+        weeklyEdits[`${sro}::${cellKey}`] = val;
+      });
     });
+  } finally {
+    toggleLoader(false);
   }
-  return out;
+}
+
+function getEditedValue(sro, rIndex, cIndex){
+  const k = `${sro}::${rIndex}_${cIndex}`;
+  if(k in weeklyEdits) return weeklyEdits[k];
+  return null;
+}
+
+async function saveWeeklyEdit(sro, rIndex, cIndex, val){
+  const wk = requireWeekKey();
+  if(!wk) return;
+  const path = `ufs_weekly_edits/${STATE_NAME}/${wk}/${sro}/${rIndex}_${cIndex}`;
+  await db.ref(path).set(val);
+  weeklyEdits[`${sro}::${rIndex}_${cIndex}`] = val;
+}
+
+async function clearEditsForThisWeek(){
+  const wk = requireWeekKey();
+  if(!wk) return;
+  if(!currentSroUser){
+    alert("Select SRO first.");
+    return;
+  }
+  if(!confirm(`Clear edits for ${currentSroUser} for week ${wk}?`)) return;
+
+  toggleLoader(true, "CLEARING...");
+  try{
+    await db.ref(`ufs_weekly_edits/${STATE_NAME}/${wk}/${currentSroUser}`).remove();
+    // purge local keys
+    Object.keys(weeklyEdits).forEach(k=>{
+      if(k.startsWith(currentSroUser + "::")) delete weeklyEdits[k];
+    });
+    renderActive();
+  } finally {
+    toggleLoader(false);
+  }
 }
 
 /* =========================
-   MONTHLY COMPUTE (Template + Weekly)
+   MONTHLY: BUILD FROM TEMPLATE + WEEKLY (WITH EDITS)
+   - Monthly display is read-only
 ========================== */
-function computeMonthly(templateGrid, weeklyRows){
-  const grid = templateGrid.map(r => r.slice()); // deep copy
+function cloneGrid(grid){ return grid.map(r => (r||[]).slice()); }
+
+function findMonthlyHeaderRow(grid){
+  // Often row 0 is header; if not, pick first row with many non-empty cells
+  let best = 0, bestCount = -1;
+  for(let r=0;r<Math.min(grid.length, 20);r++){
+    const row = grid[r] || [];
+    const count = row.filter(x => safeText(x) !== "").length;
+    if(count > bestCount){ bestCount = count; best = r; }
+  }
+  return best;
+}
+
+function normalizeSroName(s){
+  const t = (s ?? "").toString().trim();
+  // Match your monthly template row labels: "Shimla", "Dharamshala", etc.
+  return t;
+}
+
+function weeklyRowValueWithEdits(rowObj, cIndex){
+  const base = rowObj.rowArr[cIndex];
+  const edited = getEditedValue(rowObj.sroName, rowObj.rIndex, cIndex);
+  return edited !== null ? edited : base;
+}
+
+function computeMonthlyFromWeekly(){
+  if(!monthlyGridTemplate || !weeklyDataRows?.length) return null;
+
+  const grid = cloneGrid(monthlyGridTemplate);
+  const headerRowIdx = findMonthlyHeaderRow(grid);
+
+  // Aggregate weekly by SRO (for this week ending only; but monthly wants month totals)
+  // Best approach without extra weekly history files:
+  // - treat weekly sheet as "current week snapshot" for "since start" fields
+  // - for "during month" totals: sum of weekly "during week" in the file (usually one row per SRO)
   const agg = {};
-  const touch = (k)=> agg[k] ||= {
-    townsPhase:0, townsInFieldDuring:0, completedSinceStart:0, underSurvey:0, pctCompleted:0,
-    blocksFormedDuring:0, blocksFormedSince:0,
-    townsAllRespectDuring:0, townsAllRespectSince:0,
-    dispatchedDuring:0, dispatchedSince:0
+  const touch = (k) => agg[k] ||= {
+    townsPhase: 0,
+    townsDuringSum: 0,
+    completedSince: 0,
+    underSurvey: 0,
+    pct: 0,
+    blocksDuringSum: 0,
+    blocksSince: 0,
+    allRespectDuringSum: 0,
+    allRespectSince: 0,
+    dispatchedDuringSum: 0,
+    dispatchedSince: 0
   };
 
-  for(const w of weeklyRows){
-    const k = (w.sroOffice || "").trim();
-    if(!k) continue;
-    const a = touch(k);
+  for(const r of weeklyDataRows){
+    const sro = normalizeSroName(r.sroName);
+    const a = touch(sro);
 
-    a.townsPhase = w.townsPhase || a.townsPhase;
+    const townsPhase = numeric(weeklyRowValueWithEdits(r, weeklyColMap.townsPhase));
+    const townsDuring = numeric(weeklyRowValueWithEdits(r, weeklyColMap.townsDuring));
+    const completedSince = numeric(weeklyRowValueWithEdits(r, weeklyColMap.completedSince));
+    const underSurvey = numeric(weeklyRowValueWithEdits(r, weeklyColMap.underSurvey));
+    const pct = numeric(weeklyRowValueWithEdits(r, weeklyColMap.pct));
+    const blocksDuring = numeric(weeklyRowValueWithEdits(r, weeklyColMap.blocksDuring));
+    const blocksSince = numeric(weeklyRowValueWithEdits(r, weeklyColMap.blocksSince));
+    const allRespectDuring = numeric(weeklyRowValueWithEdits(r, weeklyColMap.allRespectDuring));
+    const allRespectSince = numeric(weeklyRowValueWithEdits(r, weeklyColMap.allRespectSince));
+    const dispatchedDuring = numeric(weeklyRowValueWithEdits(r, weeklyColMap.dispatchedDuring));
+    const dispatchedSince = numeric(weeklyRowValueWithEdits(r, weeklyColMap.dispatchedSince));
 
-    // If weekly file is one row per SRO, sums are same. Still safe:
-    a.townsInFieldDuring += (w.townsInFieldDuring||0);
-    a.blocksFormedDuring += (w.blocksFormedDuring||0);
-    a.townsAllRespectDuring += (w.townsAllRespectDuring||0);
-    a.dispatchedDuring += (w.dispatchedDuring||0);
+    // phase: keep last non-zero
+    a.townsPhase = townsPhase || a.townsPhase;
 
-    // snapshot fields
-    a.completedSinceStart = w.completedSinceStart||0;
-    a.underSurvey = w.underSurvey||0;
-    a.pctCompleted = w.pctCompleted||0;
-    a.blocksFormedSince = w.blocksFormedSince||0;
-    a.townsAllRespectSince = w.townsAllRespectSince||0;
-    a.dispatchedSince = w.dispatchedSince||0;
+    // during sums (if weekly file has one row per SRO, sum==value)
+    a.townsDuringSum += townsDuring;
+    a.blocksDuringSum += blocksDuring;
+    a.allRespectDuringSum += allRespectDuring;
+    a.dispatchedDuringSum += dispatchedDuring;
+
+    // since start: treat as snapshot (latest)
+    a.completedSince = completedSince;
+    a.underSurvey = underSurvey;
+    a.pct = pct;
+    a.blocksSince = blocksSince;
+    a.allRespectSince = allRespectSince;
+    a.dispatchedSince = dispatchedSince;
   }
 
-  function writeRow(label, a){
-    for(let r=0;r<grid.length;r++){
-      const rowLabel = (grid[r]?.[0] ?? "").toString().trim();
+  // Write into monthly template rows by matching first column label
+  function writeMonthlyRow(label, a){
+    for(let r=headerRowIdx+1;r<grid.length;r++){
+      const row = grid[r] || [];
+      const rowLabel = normalizeSroName(row[0]);
       if(rowLabel === label){
-        // Column positions (0-index) based on your monthly template:
-        // 2 towns phase
-        // 3 towns completed during month (mapped from townsInFieldDuring)
-        // 6 completed since start
-        // 7 under survey
-        // 8 % towns completed
-        // 9 blocks formed during month
-        // 10 blocks formed since start
-        // 23 towns completed all respect during month
-        // 24 towns completed all respect since start
-        // 25 dispatched during month
-        // 26 dispatched since start
-        grid[r][2]  = a.townsPhase;
-        grid[r][3]  = a.townsInFieldDuring;
-        grid[r][6]  = a.completedSinceStart;
-        grid[r][7]  = a.underSurvey;
-        grid[r][8]  = a.pctCompleted;
-        grid[r][9]  = a.blocksFormedDuring;
-        grid[r][10] = a.blocksFormedSince;
-        grid[r][23] = a.townsAllRespectDuring;
-        grid[r][24] = a.townsAllRespectSince;
-        grid[r][25] = a.dispatchedDuring;
-        grid[r][26] = a.dispatchedSince;
+        grid[r][MONTHLY_MAP_COLS.townsPhase] = a.townsPhase;
+        grid[r][MONTHLY_MAP_COLS.townsDuringMonth] = a.townsDuringSum;
+        grid[r][MONTHLY_MAP_COLS.completedSince] = a.completedSince;
+        grid[r][MONTHLY_MAP_COLS.underSurvey] = a.underSurvey;
+
+        // pct: calculate if possible from completedSince / townsPhase, else use weekly pct
+        const pctCalc = a.townsPhase ? Math.round((a.completedSince / a.townsPhase) * 100) : a.pct;
+        grid[r][MONTHLY_MAP_COLS.pct] = pctCalc;
+
+        grid[r][MONTHLY_MAP_COLS.blocksDuringMonth] = a.blocksDuringSum;
+        grid[r][MONTHLY_MAP_COLS.blocksSince] = a.blocksSince;
+        grid[r][MONTHLY_MAP_COLS.allRespectDuringMonth] = a.allRespectDuringSum;
+        grid[r][MONTHLY_MAP_COLS.allRespectSince] = a.allRespectSince;
+        grid[r][MONTHLY_MAP_COLS.dispatchedDuringMonth] = a.dispatchedDuringSum;
+        grid[r][MONTHLY_MAP_COLS.dispatchedSince] = a.dispatchedSince;
         return;
       }
     }
   }
 
   for(const sro of UFS_SRO_LIST){
-    writeRow(sro, agg[sro] || touch(sro));
+    writeMonthlyRow(sro, agg[sro] || touch(sro));
   }
 
   // Total row if exists
@@ -468,202 +729,254 @@ function computeMonthly(templateGrid, weeklyRows){
   for(const sro of UFS_SRO_LIST){
     const a = agg[sro] || touch(sro);
     total.townsPhase += Number(a.townsPhase||0);
-    total.townsInFieldDuring += Number(a.townsInFieldDuring||0);
-    total.completedSinceStart += Number(a.completedSinceStart||0);
+    total.townsDuringSum += Number(a.townsDuringSum||0);
+    total.completedSince += Number(a.completedSince||0);
     total.underSurvey += Number(a.underSurvey||0);
-    total.blocksFormedDuring += Number(a.blocksFormedDuring||0);
-    total.blocksFormedSince += Number(a.blocksFormedSince||0);
-    total.townsAllRespectDuring += Number(a.townsAllRespectDuring||0);
-    total.townsAllRespectSince += Number(a.townsAllRespectSince||0);
-    total.dispatchedDuring += Number(a.dispatchedDuring||0);
+    total.blocksDuringSum += Number(a.blocksDuringSum||0);
+    total.blocksSince += Number(a.blocksSince||0);
+    total.allRespectDuringSum += Number(a.allRespectDuringSum||0);
+    total.allRespectSince += Number(a.allRespectSince||0);
+    total.dispatchedDuringSum += Number(a.dispatchedDuringSum||0);
     total.dispatchedSince += Number(a.dispatchedSince||0);
   }
-  total.pctCompleted = total.townsPhase ? Math.round((total.completedSinceStart / total.townsPhase)*100) : 0;
-  writeRow("Total", total);
+  total.pct = total.townsPhase ? Math.round((total.completedSince / total.townsPhase) * 100) : 0;
+  writeMonthlyRow("Total", total);
 
   return grid;
 }
 
 /* =========================
-   FIREBASE: LOAD+APPLY EDITS (SRO ONLY)
+   RENDERING
 ========================== */
-async function loadEdits(){
-  mergedEdits = {};
-  const mKey = getMonthKey();
-
-  const snap = await db.ref(`ufs_monthly_edits/HIMACHAL PRADESH/${mKey}`).once("value");
-  if(!snap.exists()) return;
-
-  snap.forEach(sroNode=>{
-    const sroName = sroNode.key;
-    const obj = sroNode.val() || {};
-    Object.entries(obj).forEach(([cellKey,val])=>{
-      mergedEdits[`${sroName}::${cellKey}`] = val;
-    });
-  });
+function renderActive(){
+  if(activeTab === "weekly") renderWeekly();
+  else renderMonthly();
 }
 
-function applyEditsToMonthlyGrid(){
-  if(!monthlyGrid) return;
-  Object.entries(mergedEdits).forEach(([key,val])=>{
-    const parts = key.split("::");
-    if(parts.length!==2) return;
-    const sroName = parts[0];
-    const cellKey = parts[1];
-    const [rStr,cStr] = cellKey.split("_");
-    const r = parseInt(rStr,10), c = parseInt(cStr,10);
-    if(!Number.isFinite(r) || !Number.isFinite(c)) return;
-
-    const rowLabel = (monthlyGrid[r]?.[0] ?? "").toString().trim();
-    if(rowLabel === sroName){
-      monthlyGrid[r][c] = val;
-    }
-  });
-}
-
-async function editCell(r,c,val){
-  if(!monthlyGrid) return;
-
-  if(!currentSroUser){
-    alert("Select SRO first.");
-    renderTable();
-    return;
-  }
-
-  const rowLabel = (monthlyGrid[r]?.[0] ?? "").toString().trim();
-  if(rowLabel !== currentSroUser){
-    alert("You can edit only your own SRO row.");
-    renderTable();
-    return;
-  }
-
-  if(AUTO_COLS.has(c)){
-    alert("Locked (auto-filled from Weekly).");
-    renderTable();
-    return;
-  }
-
-  monthlyGrid[r][c] = val;
-  const mKey = getMonthKey();
-  await db.ref(`ufs_monthly_edits/HIMACHAL PRADESH/${mKey}/${currentSroUser}/${r}_${c}`).set(val);
-}
-
-/* =========================
-   RENDER TABLE
-========================== */
-function renderTable(){
+function renderWeekly(){
   const head = document.getElementById("tableHeader");
   const body = document.getElementById("dataBody");
   const q = (document.getElementById("q").value || "").toLowerCase();
 
-  if(!monthlyGrid || !monthlyGrid.length){
-    head.innerHTML = `<th>UFS</th>`;
-    body.innerHTML = `<tr><td style="padding:32px; opacity:.7;">No data loaded.</td></tr>`;
+  if(!weeklyGridRaw || weeklyHeaderRowIdx === null){
+    head.innerHTML = `<th>WEEKLY</th>`;
+    body.innerHTML = `<tr><td style="padding:28px; opacity:.7;">Weekly not loaded.</td></tr>`;
     return;
   }
 
-  const hdr = monthlyGrid[0] || [];
-  head.innerHTML = hdr.map(h=>`<th>${escapeHtml(h||"")}</th>`).join("");
+  head.innerHTML = weeklyHeader.map(h => `<th>${escapeHtml(h)}</th>`).join("");
+
+  const rows = [];
+  for(const r of weeklyDataRows){
+    const row = r.rowArr || [];
+    const sro = normalizeSroName(r.sroName);
+
+    // search filter
+    const rowText = row.map(x => (x ?? "").toString().toLowerCase()).join(" ");
+    if(q && !rowText.includes(q) && !sro.toLowerCase().includes(q)) continue;
+
+    let tr = "<tr>";
+    for(let c=0;c<weeklyHeader.length;c++){
+      const baseVal = row[c] ?? "";
+      const editedVal = getEditedValue(sro, r.rIndex, c);
+      const displayVal = (editedVal !== null) ? editedVal : baseVal;
+
+      // Editable if:
+      // - selected SRO matches this row SRO
+      // - col is in WEEKLY_EDITABLE_COLS
+      // - weekEnding selected
+      const canEdit = !!currentSroUser && currentSroUser === sro && WEEKLY_EDITABLE_COLS.has(c);
+
+      if(canEdit){
+        const wk = getWeekKey();
+        if(!wk){
+          tr += `<td class="cell readonly"><input value="${escapeAttr(displayVal)}" readonly title="Select week ending date to edit"></td>`;
+        } else {
+          tr += `<td class="cell editable"><input value="${escapeAttr(displayVal)}" onchange="onWeeklyCellChange('${escapeAttr(sro)}',${r.rIndex},${c},this.value)"></td>`;
+        }
+      } else {
+        // Lock "since start" and other cells by making them readonly (display only)
+        // We still show edited values if any (from Firebase)
+        const cls = (editedVal !== null && WEEKLY_EDITABLE_COLS.has(c)) ? "cell locked" : "cell readonly";
+        tr += `<td class="${cls}"><input value="${escapeAttr(displayVal)}" readonly></td>`;
+      }
+    }
+    tr += "</tr>";
+    rows.push(tr);
+  }
+
+  body.innerHTML = rows.join("") || `<tr><td colspan="${weeklyHeader.length}" style="padding:28px; opacity:.7;">No rows.</td></tr>`;
+}
+
+async function onWeeklyCellChange(sro, rIndex, cIndex, value){
+  // Sanity: keep numeric if user types
+  const v = (value ?? "").toString().trim();
+  await saveWeeklyEdit(sro, rIndex, cIndex, v);
+  // update monthly computed live if on monthly tab or for export
+  monthlyGridComputed = computeMonthlyFromWeekly();
+}
+
+function renderMonthly(){
+  const head = document.getElementById("tableHeader");
+  const body = document.getElementById("dataBody");
+  const q = (document.getElementById("q").value || "").toLowerCase();
+
+  if(!monthlyGridTemplate){
+    head.innerHTML = `<th>MONTHLY</th>`;
+    body.innerHTML = `<tr><td style="padding:28px; opacity:.7;">Monthly template not loaded.</td></tr>`;
+    return;
+  }
+
+  // Compute (with current weekly edits)
+  monthlyGridComputed = computeMonthlyFromWeekly();
+  const grid = monthlyGridComputed || monthlyGridTemplate;
+
+  const hdrRowIdx = findMonthlyHeaderRow(grid);
+  const hdr = (grid[hdrRowIdx] || []).map(x => (x ?? "").toString());
+
+  head.innerHTML = hdr.map(h => `<th>${escapeHtml(h)}</th>`).join("");
 
   let html = "";
-  for(let r=1;r<monthlyGrid.length;r++){
-    const row = monthlyGrid[r] || [];
-    if(row.every(x => (x ?? "").toString().trim()==="")) continue;
+  for(let r=hdrRowIdx+1;r<grid.length;r++){
+    const row = grid[r] || [];
+    if(row.every(x => safeText(x) === "")) continue;
 
     const rowText = row.map(x => (x ?? "").toString().toLowerCase()).join(" ");
     if(q && !rowText.includes(q)) continue;
 
-    const rowLabel = (row[0] ?? "").toString().trim();
-    const isSroRow = UFS_SRO_LIST.includes(rowLabel);
-
-    html += `<tr>`;
+    html += "<tr>";
     for(let c=0;c<hdr.length;c++){
-      const cell = row[c] ?? "";
-
-      if(c===0){
-        html += `<td class="rowlabel">${escapeHtml(cell)}</td>`;
-        continue;
-      }
-
-      if(AUTO_COLS.has(c)){
-        html += `<td class="cell locked"><input value="${escapeAttr(cell)}" readonly></td>`;
-        continue;
-      }
-
-      // non-weekly fields editable only for selected SRO row
-      const canEdit = isSroRow && currentSroUser && rowLabel === currentSroUser;
-      if(!canEdit){
-        html += `<td class="cell readonly"><input value="${escapeAttr(cell)}" readonly></td>`;
-        continue;
-      }
-
-      html += `<td class="cell"><input value="${escapeAttr(cell)}" onchange="editCell(${r},${c},this.value)"></td>`;
+      const val = row[c] ?? "";
+      html += `<td class="cell readonly"><input value="${escapeAttr(val)}" readonly></td>`;
     }
-    html += `</tr>`;
+    html += "</tr>";
   }
 
-  body.innerHTML = html || `<tr><td colspan="${hdr.length}" style="padding:32px; opacity:.7;">No matching rows.</td></tr>`;
+  body.innerHTML = html || `<tr><td colspan="${hdr.length}" style="padding:28px; opacity:.7;">No rows.</td></tr>`;
 }
 
 /* =========================
-   ACTIONS
+   EXPORT (XLSX)
+========================== */
+function gridToSheet(grid){
+  const ws = XLSX.utils.aoa_to_sheet(grid);
+  return ws;
+}
+
+function downloadXlsx(which){
+  if(which === "weekly"){
+    if(!weeklyGridRaw) return alert("Weekly not loaded.");
+    // Apply edits on a copy
+    const g = cloneGrid(weeklyGridRaw);
+    // Apply edits (only to displayed cells that have edits)
+    Object.entries(weeklyEdits).forEach(([k,v])=>{
+      const [sro, cellKey] = k.split("::");
+      if(!cellKey) return;
+      const [rStr, cStr] = cellKey.split("_");
+      const r = parseInt(rStr,10), c = parseInt(cStr,10);
+      if(Number.isFinite(r) && Number.isFinite(c)){
+        if(!g[r]) g[r] = [];
+        g[r][c] = v;
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, gridToSheet(g), "Weekly");
+    XLSX.writeFile(wb, `UFS_WEEKLY_${STATE_NAME}_${getWeekKey() || "NO_WEEK"}.xlsx`);
+  }
+
+  if(which === "monthly"){
+    if(!monthlyGridTemplate) return alert("Monthly not loaded.");
+    const g = monthlyGridComputed || computeMonthlyFromWeekly() || monthlyGridTemplate;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, gridToSheet(g), "Monthly");
+    XLSX.writeFile(wb, `UFS_MONTHLY_${STATE_NAME}_${sysDateStr}.xlsx`);
+  }
+}
+
+/* =========================
+   MONTHLY SNAPSHOT SAVE
+========================== */
+async function saveMonthlySnapshot(){
+  if(!monthlyGridTemplate) return alert("Monthly not loaded.");
+  const g = monthlyGridComputed || computeMonthlyFromWeekly() || monthlyGridTemplate;
+
+  toggleLoader(true, "SAVING SNAPSHOT...");
+  try{
+    // Save as JSON grid to firebase (lightweight). If you want file storage, do it separately.
+    await db.ref(`ufs_monthly_snapshot/${STATE_NAME}/${sysDateStr}`).set({
+      updatedAt: Date.now(),
+      weekKey: getWeekKey() || null,
+      grid: g
+    });
+    alert("Saved monthly snapshot to Firebase.");
+  } finally {
+    toggleLoader(false);
+  }
+}
+
+/* =========================
+   MAIN BOOTSTRAP
 ========================== */
 async function reloadAll(){
-  toggleLoader(true, "LOADING CSV...");
   try{
-    // Read date/month
-    const d = document.getElementById("sysDate").value || sysDateStr;
-    sysDateStr = d;
-    selectedMonthIdx = new Date(d).getMonth();
+    toggleLoader(true, "REFRESHING...");
+    // dates
+    sysDateStr = document.getElementById("sysDate").value || sysDateStr;
+    document.getElementById("sysDate").value = sysDateStr;
+    updateMonthPill();
 
-    monthlyTemplateGrid = await fetchCsvGrid(UFS_MONTHLY_TEMPLATE_URL);
-    const weeklyGrid = await fetchCsvGrid(UFS_WEEKLY_CSV_URL);
-    weeklyRows = extractWeeklyRows(weeklyGrid);
+    // default week ending = sysDate if blank
+    if(!document.getElementById("weekEnding").value){
+      document.getElementById("weekEnding").value = sysDateStr;
+    }
 
-    monthlyGrid = computeMonthly(monthlyTemplateGrid, weeklyRows);
+    // load xlsx
+    await loadXlsxFiles();
 
-    await loadEdits();
-    applyEditsToMonthlyGrid();
+    // load weekly edits for selected week
+    await loadWeeklyEditsForSelectedWeek();
 
-    renderTable();
+    // compute monthly
+    monthlyGridComputed = computeMonthlyFromWeekly();
+
+    renderActive();
   } catch(e){
-    alert("Auto-pick failed. Put both CSV files in same folder as this HTML.\n\n" + e.message);
+    alert(
+      "Failed to load XLSX.\n\n" +
+      "Make sure both XLSX files are in the SAME folder as this HTML:\n" +
+      "1) Weekly MPR RO Shimla Level.xlsx\n" +
+      "2) UFS MPR Monthly RO Shimla.xlsx\n\n" +
+      "Error: " + e.message
+    );
+    // render empty
+    document.getElementById("tableHeader").innerHTML = "<th>UFS</th>";
+    document.getElementById("dataBody").innerHTML = "<tr><td style='padding:28px;opacity:.7;'>Files not found / could not load.</td></tr>";
   } finally {
     toggleLoader(false);
   }
 }
 
-function downloadMonthly(){
-  if(!monthlyGrid) return alert("No monthly data.");
-  const csv = toCSV(monthlyGrid);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-  a.download = `UFS_MONTHLY_${getMonthKey()}_HIMACHAL.csv`;
-  a.click();
-}
-
-async function saveMergedMonthlySnapshot(){
-  if(!monthlyGrid) return alert("No monthly data.");
-  toggleLoader(true, "SAVING...");
-  try{
-    const key = getMonthKey();
-    const csv = toCSV(monthlyGrid);
-    await db.ref(`ufs_monthly_snapshot/HIMACHAL PRADESH/${key}`).set({
-      csv,
-      updatedAt: Date.now(),
-      note: "Template + Weekly auto-fill + SRO edits merged"
-    });
-    alert("Saved snapshot to Firebase.");
-  } finally {
-    toggleLoader(false);
+/* Load edits again when week changes */
+document.addEventListener("change", async (e)=>{
+  if(e.target && e.target.id === "weekEnding"){
+    await loadWeeklyEditsForSelectedWeek();
+    monthlyGridComputed = computeMonthlyFromWeekly();
+    renderActive();
   }
-}
+  if(e.target && e.target.id === "sysDate"){
+    sysDateStr = e.target.value || sysDateStr;
+    updateMonthPill();
+    monthlyGridComputed = computeMonthlyFromWeekly();
+    renderActive();
+  }
+});
 
-/* =========================
-   INIT
-========================== */
 window.onload = () => {
   document.getElementById("sysDate").value = sysDateStr;
+  updateMonthPill();
+  document.getElementById("weekEnding").value = sysDateStr;
   reloadAll();
 };
 </script>
