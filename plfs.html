@@ -1,434 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PLFS | Command Dashboard 2026</title>
+<meta charset="UTF-8">
+<title>PLFS | Command Dashboard 2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <style>
-    :root {
-      --bg: #020617; --sidebar: #0f172a; --card: #1e293b; --border: #334155;
-      --accent: #38bdf8; --v1: #10b981; --text: #f8fafc; --text-dim: #94a3b8;
-      --glass: rgba(15, 23, 42, 0.95); --sb-width: 300px;
-      --header-dark: #0f172a; --danger: #ef4444; --warning: #f59e0b;
+<!-- SheetJS -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
-      /* NEW: left rail width */
-      --rail: 72px;
-    }
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-    * { box-sizing: border-box; transition: all 0.2s ease; }
+<style>
+:root{
+  --bg:#020617;
+  --sidebar:#0f172a;
+  --card:#1e293b;
+  --border:#334155;
+  --accent:#38bdf8;
+  --green:#10b981;
+  --text:#f8fafc;
+  --text-dim:#94a3b8;
+  --rail:72px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  overflow:hidden;
+}
 
-    /* BODY no longer flex — we will flex inside .app-shell */
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
-    }
+/* LEFT RAIL */
+.left-rail{
+  position:fixed;
+  left:0;top:0;
+  width:var(--rail);
+  height:100vh;
+  background:#0f172a;
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+  padding-top:14px;
+}
+.left-rail a{
+  color:#fff;
+  text-decoration:none;
+  font-weight:800;
+  font-size:11px;
+  text-align:center;
+  width:56px;
+  padding:8px 6px;
+  border-radius:8px;
+}
+.left-rail a:hover{background:#1e293b}
+.left-rail .plfs{color:var(--green)}
+.left-rail .hub{color:var(--accent)}
 
-    /* ✅ NEW: LEFT RAIL (HUB/PLFS/UFS) */
-    .left-rail{
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: var(--rail);
-      background: #0f172a;
-      border-right: 1px solid #334155;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: 14px;
-      gap: 18px;
-      z-index: 9999;
-    }
-    .left-rail a{
-      color: #fff;
-      text-decoration: none;
-      font-weight: 800;
-      font-size: 11px;
-      text-align: center;
-      line-height: 1.2;
-      padding: 8px 6px;
-      border-radius: 10px;
-      width: 56px;
-      transition: all 0.25s ease;
-    }
-    .left-rail a:hover{
-      background: #1e293b;
-      transform: translateX(2px);
-    }
-    .left-rail a.hub{ color:#38bdf8; }
-    .left-rail a.plfs{ color:#10b981; }
+.app-shell{
+  margin-left:var(--rail);
+  height:100vh;
+  display:flex;
+}
 
-    /* ✅ NEW: app starts after rail */
-    .app-shell{
-      margin-left: var(--rail);
-      height: 100vh;
-      height: 100dvh;
-      display: flex;
-      overflow: hidden;
-      background: #020617;
-    }
+/* SIDEBAR */
+.sidebar{
+  width:280px;
+  background:var(--sidebar);
+  border-right:1px solid var(--border);
+  padding:16px;
+}
+.sidebar h3{
+  margin:0 0 10px;
+  color:var(--accent);
+}
+.zone-title{
+  font-size:10px;
+  font-weight:800;
+  margin:14px 0 6px;
+  color:var(--accent);
+}
+.pill-grid,.month-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:6px;
+}
+.month-grid{grid-template-columns:repeat(3,1fr)}
+.pill{
+  background:#020617;
+  border:1px solid var(--border);
+  padding:8px;
+  text-align:center;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+  border-radius:6px;
+  color:var(--text-dim);
+}
+.pill.active{
+  background:var(--green);
+  color:#000;
+  border-color:var(--green);
+}
 
-    /* ✅ MAIN (STATE) SIDEBAR — kept your original class .sidebar */
-    .sidebar {
-      width: var(--sb-width);
-      min-width: var(--sb-width);
-      background: var(--sidebar);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      z-index: 1000;
-      position: relative;
-    }
-
-    .sidebar-header {
-      padding: 25px;
-      font-weight: 800;
-      font-size: 18px;
-      color: var(--accent);
-      border-bottom: 1px solid var(--border);
-      letter-spacing: 1px;
-    }
-
-    .nav-scroll { flex: 1; overflow-y: auto; padding: 15px; scrollbar-width: thin; }
-
-    .overlay-mask {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      z-index: 900;
-      backdrop-filter: blur(4px);
-    }
-
-    @media (max-width: 1024px) {
-      .sidebar {
-        position: fixed;
-        left: calc(-100% - var(--rail)); /* rail ke bahar hide ho */
-        top: 0; bottom: 0;
-        width: 280px;
-        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 10000;
-      }
-      .sidebar.open { left: var(--rail); } /* rail ke baad open ho */
-      .overlay-mask.active { display: block; }
-    }
-
-    .zone-title {
-      font-size: 10px;
-      font-weight: 800;
-      color: var(--accent);
-      text-transform: uppercase;
-      margin: 20px 0 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      opacity: 0.6;
-    }
-    .zone-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-    .state-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .st-btn {
-      height: 42px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: rgba(30, 41, 59, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      text-align: center;
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text-dim);
-    }
-    .st-btn.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); color: #fff; }
-    .st-btn.has-data { border-left: 3px solid var(--v1); }
-
-    .sub-menu-container {
-      grid-column: span 2;
-      background: rgba(0,0,0,0.2);
-      border-radius: 12px;
-      padding: 12px;
-      margin-top: 5px;
-      border: 1px solid var(--border);
-    }
-    .pill-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-    .pill {
-      padding: 8px;
-      font-size: 9px;
-      font-weight: 700;
-      text-align: center;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      color: var(--text-dim);
-      background: var(--sidebar);
-    }
-    .pill.active { background: var(--v1); color: #fff; border-color: var(--v1); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
-    .pill.all-btn { grid-column: span 2; border-color: var(--accent); color: var(--accent); }
-    .month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
-
-    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #020617; height: 100vh; }
-    .fixed-header-group { flex-shrink: 0; background: var(--glass); backdrop-filter: blur(15px); border-bottom: 1px solid var(--border); z-index: 100; }
-    .top-bar { padding: 12px 25px; display: flex; align-items: center; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-    .date-picker-wrap { display: flex; align-items: center; gap: 8px; background: rgba(56,189,248,0.1); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--accent); }
-    .date-picker-wrap input { background: transparent; border: none; color: var(--accent); font-weight: 800; font-size: 11px; outline: none; cursor: pointer; color-scheme: dark; }
-    .search-input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 10px 15px; border-radius: 8px; font-size: 13px; outline: none; }
-
-    .info-panel { padding: 15px 25px; display: grid; grid-template-columns: auto 1fr auto; gap: 30px; align-items: center; }
-    .sro-box { background: #1e293b; border: 1px solid var(--accent); padding: 10px 20px; border-radius: 10px; min-width: 200px; }
-    .sro-label { font-size: 9px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
-    .sro-name { font-size: 16px; font-weight: 700; color: #fff; }
-
-    .timeline-container { background: rgba(15, 23, 42, 0.4); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); min-width: 350px; }
-    .line-group { margin-bottom: 8px; }
-    .line-label { display: flex; justify-content: space-between; font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
-    .line-track { height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px; position: relative; overflow: hidden; }
-    .line-fill { height: 100%; border-radius: 4px; position: absolute; left: 0; transition: width 1s ease; }
-
-    .visit-segmented { display: flex; background: rgba(0,0,0,0.4); border-radius: 14px; padding: 4px; border: 1px solid var(--border); min-width: 260px; }
-    .v-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 11px; color: var(--text-dim); background: transparent; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .v-btn.active-v1 { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
-    .v-btn.active-v2 { background: var(--v1); color: #000; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-
-    .workspace { flex: 1; padding: 20px; padding-bottom: 100px; overflow-y: auto; scrollbar-width: thin; }
-    .table-wrap { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px; }
-    th { background: var(--header-dark); color: var(--accent); font-size: 11px; font-weight: 800; text-transform: uppercase; padding: 18px 15px; text-align: left; border-bottom: 3px solid var(--accent); position: sticky; top:0; z-index: 10; }
-    td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-dim); }
-
-    .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; }
-    .badge-done { background: rgba(16, 185, 129, 0.1); color: var(--v1); border-color: var(--v1); }
-    .badge-pending { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); border-color: var(--border); }
-    .badge-late { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: var(--danger); }
-    .fsu-badge { font-family: 'Monaco', monospace; font-weight: 800; color: #fff; background: rgba(56, 189, 248, 0.1); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2); }
-
-    #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; color: var(--accent); }
-    .spinner { width: 40px; height: 40px; border: 4px solid rgba(56, 189, 248, 0.1); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* (Optional) your inputs if not defined elsewhere */
-    .input-field{
-      background:#000;
-      border:1px solid var(--border);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:8px;
-      outline:none;
-      width:100%;
-      font-weight:700;
-    }
-  </style>
+/* MAIN */
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+.header{
+  padding:12px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  gap:12px;
+}
+.header input{
+  background:#000;
+  border:1px solid var(--border);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:6px;
+}
+.workspace{
+  flex:1;
+  padding:20px;
+  overflow:auto;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:700px;
+}
+th,td{
+  border-bottom:1px solid var(--border);
+  padding:10px;
+  font-size:12px;
+}
+th{
+  background:#0f172a;
+  color:var(--accent);
+  text-align:left;
+}
+td input{
+  width:100%;
+  background:#000;
+  border:1px solid var(--border);
+  color:#fff;
+  padding:6px;
+  border-radius:4px;
+}
+</style>
 </head>
 
 <body>
 
-  <!-- ✅ LEFT RAIL -->
-  <nav class="left-rail">
-    <a href="index.html" class="hub">🏠 HUB</a>
-    <a href="plfs.html" class="plfs">📊 PLFS</a>
-    <a href="ufs_weekly.html">🗓️ UFS Weekly</a>
-    <a href="ufs_monthly.html">📅 UFS Monthly</a>
-  </nav>
+<!-- LEFT RAIL -->
+<nav class="left-rail">
+  <a href="index.html" class="hub">🏠 HUB</a>
+  <a href="plfs.html" class="plfs">📊 PLFS</a>
+  <a href="ufs_weekly.html">🗓️ UFS</a>
+</nav>
 
-  <!-- ✅ EVERYTHING ELSE STARTS AFTER RAIL -->
-  <div class="app-shell">
+<div class="app-shell">
 
-    <div id="loadingOverlay">
-      <div class="spinner"></div>
-      <div id="loadingText" style="font-weight: 800; letter-spacing: 2px; font-size: 11px;">SYNCING...</div>
-    </div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h3>PLFS – HIMACHAL</h3>
 
-    <div class="overlay-mask" id="mask" onclick="toggleMenu()"></div>
-
-    <div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index: 10001; align-items:center; justify-content:center; backdrop-filter: blur(8px);">
-      <div style="background:var(--sidebar); padding:40px; border-radius:20px; border:1px solid var(--border); text-align:center; width:320px;">
-        <h3 style="color:var(--accent); margin-bottom:20px">ADMIN ACCESS</h3>
-        <input type="password" id="passInput" class="input-field" placeholder="PASSCODE" style="text-align: center; font-size: 18px; letter-spacing: 5px; margin-bottom:20px;">
-        <button onclick="verifyAdmin()" style="width:100%; background:var(--accent); border:none; padding:12px; border-radius:8px; font-weight:800; cursor:pointer; color:#000;">UNLOCK</button>
-        <button onclick="document.getElementById('loginModal').style.display='none'" style="margin-top:15px; background:transparent; color:var(--text-dim); border:none; cursor:pointer;">Cancel</button>
-      </div>
-    </div>
-
-    <!-- ✅ MAIN SIDEBAR (STATES/SRO) — unchanged -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header" style="display:flex; justify-content:space-between; align-items:center;">
-        PLFS COMMAND
-        <span onclick="toggleMenu()" style="cursor:pointer; font-size:20px;" class="mobile-menu-btn">✕</span>
-      </div>
-      <div class="nav-scroll" id="navScroll"></div>
-      <div style="padding:15px; border-top:1px solid var(--border); display: grid; gap: 8px;">
-        <button id="adminBtn" class="btn" style="background:var(--card); color:#fff; width:100%; border:none; padding:10px; border-radius:8px; cursor:pointer; font-size:12px;" onclick="document.getElementById('loginModal').style.display='flex'">🔐 Global Admin</button>
-        <label class="admin-locked" style="display:none; width:100%; background:var(--accent); padding:10px; color:#000; border-radius:8px; font-weight:700; cursor:pointer; text-align:center; font-size:12px;">📂 Import Master <input type="file" hidden onchange="handleExcel(this)"></label>
-        <button onclick="lockSession()" style="background:var(--danger); color:#fff; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:700; font-size:11px;">🔒 LOCK SESSION</button>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div class="fixed-header-group">
-        <header class="top-bar">
-          <button class="mobile-menu-btn" style="display:none; background:var(--accent); border:none; padding:8px 12px; border-radius:6px; font-weight:800;" onclick="toggleMenu()">☰</button>
-          <div class="date-picker-wrap">
-            <input type="date" id="sysCalendar" onchange="updateSysDate(this.value)">
-          </div>
-          <input type="text" class="search-input" placeholder="🔍 Search FSU, Location..." onkeyup="doSearch(this.value)">
-          <div style="display:flex; gap:8px;">
-            <button class="btn" style="background:transparent; border:1px solid var(--v1); color:var(--v1); padding:8px 12px; border-radius:6px; cursor:pointer;" onclick="exportCSV()">📥</button>
-            <button class="btn" style="background:var(--accent); border:none; color:#000; padding:8px 15px; border-radius:6px; font-weight:700; cursor:pointer;" onclick="syncToCloud()">☁️ Sync</button>
-          </div>
-        </header>
-
-        <div class="info-panel" id="activeHeader" style="visibility: hidden;">
-          <div class="sro-box">
-            <div class="sro-label" id="vSt">STATE</div>
-            <div class="sro-name" id="vSro">SRO OFFICE</div>
-          </div>
-
-          <div class="timeline-container">
-            <div class="line-group">
-              <div class="line-label" style="color:var(--accent)"><span>Allotted Units</span><span id="txtAllotted">0</span></div>
-              <div class="line-track"><div id="allottedLine" class="line-fill" style="background:var(--accent); width:100%;"></div></div>
-            </div>
-            <div class="line-group">
-              <div class="line-label" style="color:var(--v1)"><span>Completed Tasks</span><span id="txtCompleted">0</span></div>
-              <div class="line-track"><div id="completedLine" class="line-fill" style="background:var(--v1); width:0%;"></div></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-              <span style="font-size:9px; color:var(--text-dim); font-weight:700;">LIVE PROGRESS</span>
-              <span id="targetStatus" style="font-size:18px; font-weight:800; color:var(--text);">0%</span>
-            </div>
-          </div>
-
-          <div class="visit-segmented">
-            <button id="btnV1" class="v-btn" onclick="setVisit(1)"><span>🎯</span> VISIT 1</button>
-            <button id="btnV2" class="v-btn" onclick="setVisit(2)"><span>🔄</span> REVISITS</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="workspace">
-        <div class="table-wrap">
-          <table><thead><tr id="tableHeader"></tr></thead><tbody id="dataBody"></tbody></table>
-        </div>
-      </div>
-    </main>
-
-  </div><!-- /app-shell -->
-
-  <script>
-    const config = { apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI", authDomain: "action-plan-62fae.firebaseapp.com", databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com", projectId: "action-plan-62fae" };
-    firebase.initializeApp(config); const db = firebase.database();
-
-    let master = [], selSt = null, selSro = "ALL SROs", selMo = 0, selVis = 1, query = "";
-    let systemDateString = "2026-01-18";
-    let unlockedSros = new Set();
-    let globalAdmin = false;
-
-    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    const nsoZones = {
-  "HIMACHAL PRADESH": ["HIMACHAL PRADESH"]
-};
-
-    function toggleMenu() {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('mask').classList.toggle('active');
-    }
-    function toggleLoader(show, text = "PLEASE WAIT...") {
-      const l = document.getElementById('loadingOverlay');
-      document.getElementById('loadingText').innerText = text;
-      l.style.display = show ? 'flex' : 'none';
-    }
-    function updateSysDate(val) { systemDateString = val; refresh(); }
-
-    function getStatus(targetDate, isComplete, currentObsDate) {
-      if (!targetDate || targetDate === "V1 Pending") return '<span class="status-badge badge-pending">Pending</span>';
-      if (isComplete) return '<span class="status-badge badge-done">Complete</span>';
-      if (targetDate <= currentObsDate) return '<span class="status-badge badge-late">Late</span>';
-      return '<span class="status-badge badge-future" style="color:var(--warning); border:1px solid var(--warning); padding:4px 10px; border-radius:4px; font-size:9px;">Scheduled</span>';
-    }
-
-    function addDays(dateStr, days) {
-      if (!dateStr || dateStr === "V1 Pending") return null;
-      const r = new Date(dateStr);
-      r.setDate(r.getDate() + days);
-      return r.toISOString().split('T')[0];
-    }
-
-    async function handleExcel(input) {
-      const file = input.files[0]; if(!file) return;
-      toggleLoader(true, "PROCESSING...");
-      try {
-        let stName = file.name.split('.')[0].split('_').pop().trim().toUpperCase();
-        const data = new Uint8Array(await file.arrayBuffer());
-        const wb = XLSX.read(data, {type:'array'});
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, range:7});
-        rows.slice(1).forEach(cols => {
-          let fsu = cols[4], mCode = cols[5], sro = String(cols[6]||'NSO'), loc = cols[10];
-          if(fsu) {
-            const startM = (parseInt(mCode) >= 13) ? (parseInt(mCode) - 13) : (parseInt(mCode)-1);
-            for(let i=0; i<4; i++) master.push({ uid: `${stName}_${fsu}_V${i+1}`, fsu, state: stName, sro, monthIdx: (startM + i)%12, location: loc||"---", visitNum: i+1 });
-          }
-        });
-       function renderNav() {
-  const container = document.getElementById('navScroll');
-
-  if (!master.length) {
-    container.innerHTML = "<div style='opacity:.5;padding:20px'>No data loaded</div>";
-    return;
-  }
-
-  // UNIQUE SRO LIST (from Himachal data)
-  const sros = [...new Set(master.map(x => x.sro))].sort();
-
-  let html = `
     <div class="zone-title">SRO OFFICES</div>
-    <div class="pill-grid">
-      <div class="pill all-btn ${selSro === 'ALL SROs' ? 'active' : ''}"
-           onclick="selectSroWithAuth('ALL SROs')">🌍 ALL SROs</div>
-  `;
+    <div class="pill-grid" id="sroList"></div>
 
-  sros.forEach(sro => {
-    html += `
-      <div class="pill ${selSro === sro ? 'active' : ''}"
-           onclick="selectSroWithAuth('${sro}')">${sro}</div>
-    `;
-  });
-
-  html += `</div>`;
-
-  // MONTH SELECTOR
-  html += `
     <div class="zone-title">MONTH</div>
-    <div class="month-grid">
-  `;
+    <div class="month-grid" id="monthList"></div>
+  </aside>
 
-  months.forEach((m, i) => {
-    html += `
-      <div class="pill ${selMo === i ? 'active' : ''}"
-           onclick="selMo=${i}; renderNav(); refresh();">
-        ${m.substring(0,3)}
-      </div>
-    `;
-  });
+  <!-- MAIN -->
+  <main class="main">
+    <div class="header">
+      <input type="date" id="sysDate">
+      <input type="text" placeholder="Search FSU / Location" onkeyup="doSearch(this.value)">
+    </div>
 
-  html += `</div>`;
+    <div class="workspace">
+      <table>
+        <thead>
+          <tr>
+            <th>FSU</th>
+            <th>Location</th>
+            <th>Enumerator</th>
+            <th>Start</th>
+            <th>End</th>
+          </tr>
+        </thead>
+        <tbody id="dataBody"></tbody>
+      </table>
+    </div>
+  </main>
 
-  container.innerHTML = html;
+</div>
+
+<script>
+/* FIREBASE */
+firebase.initializeApp({
+  apiKey:"AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI",
+  databaseURL:"https://action-plan-62fae-default-rtdb.firebaseio.com"
+});
+const db=firebase.database();
+
+/* STATE */
+let master=[];
+let selSro="ALL";
+let selMonth=0;
+let query="";
+
+const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* LOAD DATA */
+async function loadData(){
+  const snap=await db.ref("plfs_roster/HIMACHAL PRADESH").once("value");
+  master=[];
+  if(snap.exists()){
+    Object.values(snap.val()).forEach(v=>master.push(v));
+  }
+  renderNav();
+  refresh();
 }
 
-  </script>
+/* NAV */
+function renderNav(){
+  const sros=[...new Set(master.map(x=>x.sro))].sort();
+  const sroBox=document.getElementById("sroList");
+  sroBox.innerHTML=`<div class="pill ${selSro==="ALL"?"active":""}" onclick="selSro='ALL';renderNav();refresh()">ALL</div>`;
+  sros.forEach(s=>{
+    sroBox.innerHTML+=`<div class="pill ${selSro===s?"active":""}" onclick="selSro='${s}';renderNav();refresh()">${s}</div>`;
+  });
+
+  const mBox=document.getElementById("monthList");
+  mBox.innerHTML="";
+  months.forEach((m,i)=>{
+    mBox.innerHTML+=`<div class="pill ${selMonth===i?"active":""}" onclick="selMonth=${i};renderNav();refresh()">${m}</div>`;
+  });
+}
+
+/* TABLE */
+function refresh(){
+  const body=document.getElementById("dataBody");
+  body.innerHTML="";
+  master.filter(r=>{
+    return (selSro==="ALL"||r.sro===selSro) &&
+           (r.monthIdx===selMonth) &&
+           (r.fsu+""+r.location).toLowerCase().includes(query);
+  }).forEach(r=>{
+    body.innerHTML+=`
+      <tr>
+        <td>${r.fsu||""}</td>
+        <td>${r.location||""}</td>
+        <td><input value="${r.enumerator||""}"></td>
+        <td><input type="date" value="${r.startDate||""}"></td>
+        <td><input type="date" value="${r.endDate||""}"></td>
+      </tr>`;
+  });
+}
+
+function doSearch(v){query=v.toLowerCase();refresh();}
+
+window.onload=()=>{
+  document.getElementById("sysDate").value=new Date().toISOString().split("T")[0];
+  loadData();
+};
+</script>
 
 </body>
 </html>
