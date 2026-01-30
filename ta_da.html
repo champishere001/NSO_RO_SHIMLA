@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TA/DA Calculation Sheet (Multi Tour + 1 Page PDF + Excel)</title>
 
-<!-- Excel -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-
-<!-- ✅ PDF deps (reliable) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -26,7 +23,9 @@
 
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);font-family:Arial,system-ui;padding:10px}
-  .wrap{max-width:1200px;margin:auto}
+
+  /* ✅ responsive wrap (full usable width) */
+  .wrap{max-width:100%;margin:auto}
 
   /* Anything with .no-export will not be included in PDF */
   .pdf-export .no-export{display:none !important}
@@ -91,7 +90,6 @@
   }
   .rangesHead .title{font-weight:900;font-size:13px}
 
-  /* side-by-side */
   #rangesContainer{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
   .rangeRow{
     display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;
@@ -107,25 +105,31 @@
   #taDaSheet{
     background:var(--card);border:1px solid var(--border);
     padding:10px;border-radius:8px;
+    /* ✅ allow viewing on small screens without breaking layout */
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
   }
 
-  table{width:100%;border-collapse:collapse}
+  /* ✅ tighter table so it fits */
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+
   .header-grid td{
     border:1px solid var(--border);
-    padding:6px;
-    font-size:12px;
+    padding:5px;
+    font-size:11px;
   }
   .header-title{
-    text-align:center;font-weight:900;font-size:14px;background:var(--head);
+    text-align:center;font-weight:900;font-size:13px;background:var(--head);
   }
 
   .main th,.main td{
     border:1px solid var(--border);
     text-align:center;
-    padding:3px 4px;
-    font-size:11px;
-    line-height:1.1;
+    padding:2px 3px;          /* ✅ reduced */
+    font-size:10px;           /* ✅ reduced */
+    line-height:1.05;         /* ✅ tighter */
     vertical-align:middle;
+    white-space:nowrap;       /* ✅ prevents ugly wraps */
   }
   .main th{background:var(--head);font-weight:900}
 
@@ -134,23 +138,23 @@
     border:none;
     background:transparent;
     text-align:center;
-    font-size:11px;
+    font-size:10px;
     padding:0;
-    height:18px;
+    height:16px;              /* ✅ reduced */
     outline:none;
     color:#000;
     -webkit-text-fill-color:#000;
     opacity:1;
   }
-  .main td{height:22px}
+  .main td{height:20px}       /* ✅ reduced */
   .right{text-align:right}
 
   .footer{
     display:flex;justify-content:space-between;gap:10px;
-    margin-top:8px;font-size:11px;
+    margin-top:8px;font-size:10px;
   }
   .line{
-    border-bottom:1px solid #000;display:inline-block;min-width:180px;height:12px;vertical-align:bottom;
+    border-bottom:1px solid #000;display:inline-block;min-width:160px;height:12px;vertical-align:bottom;
   }
 
   /* Compact while capturing PDF */
@@ -161,13 +165,20 @@
   .pdf-compact .main input,.pdf-compact .main select{height:14px;font-size:9px}
   .pdf-compact .footer{font-size:9px;margin-top:6px}
   .pdf-compact .line{min-width:150px}
+
+  /* ✅ super small devices: reduce padding a bit more */
+  @media (max-width: 520px){
+    body{padding:6px}
+    #taDaSheet{padding:8px}
+    .main th,.main td{font-size:9px;padding:2px 2px}
+    .main input,.main select{font-size:9px}
+  }
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-  <!-- ✅ toolbar is NOT exported -->
   <div class="toolbar no-export">
     <div class="field">
       <label>नाम / Name</label>
@@ -227,14 +238,12 @@
     <button class="btn gray" onclick="addRow()">+ Add Row</button>
     <button class="btn gray" onclick="clearAll()">Clear</button>
 
-    <!-- ✅ PDF button fixed -->
     <button class="btn primary" onclick="exportPDFSinglePage()">⬇️ PDF (1 Page)</button>
     <button class="btn primary" onclick="exportExcel()">⬇️ Excel</button>
 
     <div class="hint">✅ PDF = only sheet (no toolbar) • ✅ Always landscape, 1 page • ✅ Blank stays blank</div>
   </div>
 
-  <!-- ===== EXPORT AREA ===== -->
   <div id="taDaSheet">
     <table class="header-grid">
       <tr>
@@ -259,15 +268,16 @@
     <table class="main" id="tadaTable">
       <thead>
         <tr>
-          <th style="width:110px">Date</th>
-          <th style="width:85px">No. of DA</th>
-          <th style="width:80px">DA</th>
-          <th style="width:90px">Hotel Bill</th>
-          <th style="width:95px">Total DA</th>
-          <th style="width:90px">Mode</th>
-          <th style="width:85px">K.M.</th>
-          <th style="width:95px">Total Fare</th>
-          <th style="width:95px">Grand Total</th>
+          <!-- ✅ tighter column widths -->
+          <th style="width:92px">Date</th>
+          <th style="width:70px">No. of DA</th>
+          <th style="width:65px">DA</th>
+          <th style="width:75px">Hotel Bill</th>
+          <th style="width:78px">Total DA</th>
+          <th style="width:76px">Mode</th>
+          <th style="width:62px">K.M.</th>
+          <th style="width:78px">Total Fare</th>
+          <th style="width:82px">Grand Total</th>
         </tr>
       </thead>
 
@@ -711,16 +721,14 @@ function makeFileName(prefix, ext){
   const des = (document.getElementById("designation").value || "").trim().replace(/\s+/g,"_");
   return `${prefix}_${nm}${des?("_"+des):""}.${ext}`;
 }
-/* ✅ PDF: A4 landscape, STRICTLY 1 page (fit-to-page) */
+
 async function exportPDFSinglePage(){
   const sheet = document.getElementById("taDaSheet");
 
-  // hide toolbar etc + make compact
   document.body.classList.add("pdf-export");
   sheet.classList.add("pdf-compact");
 
   try{
-    // render DOM to canvas
     const canvas = await html2canvas(sheet, {
       scale: 2,
       useCORS: true,
@@ -731,10 +739,8 @@ async function exportPDFSinglePage(){
       windowHeight: document.documentElement.scrollHeight
     });
 
-    // jsPDF
     const { jsPDF } = window.jspdf;
 
-    // ✅ A4 LANDSCAPE
     const pdf = new jsPDF({
       orientation: "landscape",
       unit: "mm",
@@ -742,15 +748,12 @@ async function exportPDFSinglePage(){
       compress: true
     });
 
-    // A4 landscape size in mm (jsPDF gives correct values)
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
 
-    // convert canvas to image
     const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
-    // ✅ Fit image into A4 (1 page) with margins
-    const margin = 5; // mm
+    const margin = 5;
     const maxW = pageW - margin * 2;
     const maxH = pageH - margin * 2;
 
@@ -765,8 +768,6 @@ async function exportPDFSinglePage(){
     const y = (pageH - h) / 2;
 
     pdf.addImage(imgData, "JPEG", x, y, w, h, undefined, "FAST");
-
-    // ✅ Always single page (no addPage)
     pdf.save(makeFileName("TA_DA_A4_OnePage", "pdf"));
 
   } catch (e) {
@@ -777,7 +778,7 @@ async function exportPDFSinglePage(){
     document.body.classList.remove("pdf-export");
   }
 }
-/* ===== Excel ===== */
+
 function exportExcel(){
   const wb = XLSX.utils.book_new();
   const aoa = [];
