@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TA/DA Calculation Sheet (Auto + PDF + Excel)</title>
+<title>TA/DA Calculation Sheet (Multi Tour Range + PDF + Excel)</title>
 
 <!-- PDF + Excel libs (NO PRINT) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -18,6 +18,7 @@
     --btn:#0b5ed7;
     --btn2:#198754;
     --btn3:#6c757d;
+    --danger:#dc3545;
   }
 
   *{box-sizing:border-box}
@@ -55,9 +56,45 @@
   .btn.primary{background:var(--btn)}
   .btn.success{background:var(--btn2)}
   .btn.gray{background:var(--btn3)}
+  .btn.danger{background:var(--danger)}
   .btn:active{transform:translateY(1px)}
-  .hint{font-size:12px;color:#333;margin-left:auto;max-width:680px}
+  .hint{font-size:12px;color:#333;margin-left:auto;max-width:720px}
 
+  .rateBadge{
+    height:34px;display:flex;align-items:center;gap:8px;
+    padding:0 10px;border-radius:6px;border:1px dashed #9aa4b2;background:#fff;
+    font-size:12px;
+  }
+  .rateBadge b{font-size:12px}
+
+  /* Multi range area */
+  .ranges{
+    width:100%;
+    border:1px dashed #b8c0cc;
+    border-radius:8px;
+    padding:10px;
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .rangesHead{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .rangesHead .title{
+    font-weight:900;font-size:13px;
+  }
+  .rangeRow{
+    display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;
+    padding:8px;border:1px solid #e3e7ee;border-radius:8px;background:#fafbfc;
+  }
+  .rangeRow .field input{min-width:160px}
+  .rangeTag{
+    font-size:12px;font-weight:900;background:#eef2ff;border:1px solid #c7d2fe;
+    padding:6px 10px;border-radius:999px;height:34px;display:flex;align-items:center;
+  }
+
+  /* Sheet */
   #taDaSheet{
     background:var(--card);border:1px solid var(--border);
     padding:10px;border-radius:8px;
@@ -111,19 +148,13 @@
   .pdf-compact .main input,.pdf-compact .main select{height:16px;font-size:10px}
   .pdf-compact .main th{font-size:10px}
   .pdf-compact .main td{font-size:10px}
-
-  .rateBadge{
-    height:34px;display:flex;align-items:center;gap:8px;
-    padding:0 10px;border-radius:6px;border:1px dashed #9aa4b2;background:#fff;
-    font-size:12px;
-  }
-  .rateBadge b{font-size:12px}
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
+  <!-- ===== TOOLBAR ===== -->
   <div class="toolbar">
     <div class="field">
       <label>नाम / Name</label>
@@ -151,7 +182,7 @@
       <span><b>Auto rates</b> by designation</span>
     </div>
 
-    <div class="toggle" title="ON = Hotel auto fill (last day blank). Manual entry allowed.">
+    <div class="toggle" title="ON = Hotel auto fill (each range last day blank). Manual entry allowed.">
       <input id="autoHotel" type="checkbox" checked />
       <span><b>Auto Hotel</b> claim</span>
     </div>
@@ -170,13 +201,17 @@
       <b id="appliedRateText">DA 500 | Hotel 750</b>
     </div>
 
-    <div class="field small">
-      <label>From</label>
-      <input id="fromDate" type="date" />
-    </div>
-    <div class="field small">
-      <label>To</label>
-      <input id="toDate" type="date" />
+    <!-- MULTI RANGE PANEL -->
+    <div class="ranges">
+      <div class="rangesHead">
+        <div class="title">Multi Tour Ranges</div>
+        <button class="btn gray" type="button" onclick="addRangeUI()">+ Add Range</button>
+        <div style="font-size:12px;color:#333">
+          Tip: Same date can appear in multiple ranges → multiple rows (supports multiple journeys).
+        </div>
+      </div>
+
+      <div id="rangesContainer"></div>
     </div>
 
     <button class="btn success" onclick="generateRows()">Generate Rows</button>
@@ -187,10 +222,11 @@
     <button class="btn primary" onclick="exportExcel()">⬇️ Excel</button>
 
     <div class="hint">
-      ✅ Fixed To-Date row (timezone safe) • ✅ Blank stays blank • ✅ Auto totals • ✅ Designation-wise rates • ✅ Save/Restore
+      ✅ Multi tour ranges • ✅ End-date row fixed (timezone safe) • ✅ Blank stays blank • ✅ Save/Restore
     </div>
   </div>
 
+  <!-- ===== SHEET ===== -->
   <div id="taDaSheet">
     <table class="header-grid">
       <tr>
@@ -252,17 +288,17 @@
 
 <script>
 /* =========================
-   UPDATED FIXES:
-   ✅ To-Date row bug fixed (timezone safe) using toLocalISO()
-   ✅ Blank stays blank (vacant) if no entry
-   ✅ Hotel auto fill: only when No. of DA is entered, last day blank, manual override supported
-   ✅ Designation-wise rates (as provided)
-   ✅ All original buttons + save/restore + PDF + Excel
+   MULTI TOUR RANGE VERSION
+   - Multiple ranges UI
+   - Generate rows per range (duplicates allowed)
+   - Auto Hotel per range: last day blank
+   - Blank stays blank
+   - To-date timezone safe dates
    ========================= */
 
-const LS_KEY = "tada_sheet_v5_todate_fixed_blank";
+const LS_KEY = "tada_sheet_multi_ranges_v1";
 
-/* Designation-wise rates (as you provided) */
+/* Designation-wise rates */
 const DESIGNATION_RATES = {
   "Senior Statistical Officer": { da: 1000, hotel: 960 },
   "Survey Supervisor":         { da: 500,  hotel: 750 },
@@ -281,7 +317,7 @@ function fmtINR(n){ return Math.round(Number(n||0)).toString(); }
 function isBlank(v){ return String(v ?? "").trim() === ""; }
 function setValIfDifferent(el, v){ if(el.value !== v) el.value = v; }
 
-/* ✅ timezone-safe local ISO date */
+/* timezone-safe local ISO */
 function toLocalISO(d){
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,"0");
@@ -289,20 +325,21 @@ function toLocalISO(d){
   return `${y}-${m}-${day}`;
 }
 
+/* ===== header ===== */
 function setHeaderFromInputs(){
   const name = document.getElementById("name").value.trim() || "-";
   const desig = document.getElementById("designation").value || "-";
   const place = document.getElementById("place").value.trim() || "-";
-
   document.getElementById("hName").textContent = name;
   document.getElementById("hDesig").textContent = desig;
   document.getElementById("hPlace").textContent = place;
 
-  const from = document.getElementById("fromDate").value;
-  const d = from ? new Date(from + "T00:00:00") : new Date();
+  // month/year from first valid range-from; else today
+  const ranges = getRanges();
+  const firstFrom = (ranges.find(r=>r.from)?.from) || "";
+  const d = firstFrom ? new Date(firstFrom + "T00:00:00") : new Date();
   document.getElementById("hMonth").textContent = d.toLocaleString("en-US",{month:"long"});
   document.getElementById("hYear").textContent = d.getFullYear();
-
   updateRateBadge();
 }
 
@@ -314,7 +351,6 @@ function updateRateBadge(){
 
 function applyDesignationRates(){
   if(!document.getElementById("autoRates").checked) { updateRateBadge(); return; }
-
   const desig = document.getElementById("designation").value || "";
   const r = DESIGNATION_RATES[desig];
   if(!r){ updateRateBadge(); return; }
@@ -328,6 +364,75 @@ function applyDesignationRates(){
   updateRateBadge();
 }
 
+/* ===== ranges UI ===== */
+function uid(){
+  return Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
+function addRangeUI(prefill={from:"",to:""}){
+  const id = uid();
+  const wrap = document.createElement("div");
+  wrap.className = "rangeRow";
+  wrap.dataset.rangeId = id;
+
+  wrap.innerHTML = `
+    <div class="rangeTag">Range</div>
+    <div class="field small">
+      <label>From</label>
+      <input type="date" class="rg_from" value="${prefill.from||""}">
+    </div>
+    <div class="field small">
+      <label>To</label>
+      <input type="date" class="rg_to" value="${prefill.to||""}">
+    </div>
+    <button class="btn danger" type="button" title="Remove range">Remove</button>
+  `;
+
+  const btnRemove = wrap.querySelector(".btn.danger");
+  btnRemove.addEventListener("click", ()=>{
+    wrap.remove();
+    setHeaderFromInputs();
+    saveAll();
+  });
+
+  wrap.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("input", ()=>{ setHeaderFromInputs(); saveAll(); });
+    inp.addEventListener("change", ()=>{ setHeaderFromInputs(); saveAll(); });
+  });
+
+  document.getElementById("rangesContainer").appendChild(wrap);
+  setHeaderFromInputs();
+  saveAll();
+}
+
+function getRanges(){
+  return [...document.querySelectorAll("#rangesContainer .rangeRow")].map((row, idx)=>({
+    id: row.dataset.rangeId || String(idx+1),
+    from: row.querySelector(".rg_from").value || "",
+    to: row.querySelector(".rg_to").value || ""
+  }));
+}
+
+/* timezone-safe range list */
+function dateRange(from, to){
+  const out=[];
+  if(!from || !to) return out;
+
+  const d1 = new Date(from + "T00:00:00");
+  const d2 = new Date(to + "T00:00:00");
+  if(isNaN(d1) || isNaN(d2)) return out;
+
+  d1.setHours(0,0,0,0);
+  d2.setHours(0,0,0,0);
+  if(d2 < d1) return out;
+
+  for(let d=new Date(d1); d<=d2; d.setDate(d.getDate()+1)){
+    out.push(new Date(d));
+  }
+  return out;
+}
+
+/* ===== table rows ===== */
 function renderModeOptions(selected){
   const modes = ["", "Bus", "Taxi", "Train", "Own Vehicle", "Other"];
   return modes.map(m=>{
@@ -336,38 +441,12 @@ function renderModeOptions(selected){
   }).join("");
 }
 
-/* ===== Hotel auto helpers ===== */
-function isLastDay(dateISO){
-  const to = document.getElementById("toDate").value;
-  if(!to || !dateISO) return false;
-  return dateISO === to;
-}
-function shouldAutoHotel(tr){
-  return document.getElementById("autoHotel").checked && tr.dataset.hotelManual !== "1";
-}
-function applyAutoHotelIfNeeded(tr){
-  if(!shouldAutoHotel(tr)) return;
-
-  const rateHotel = parseNum(document.getElementById("rateHotel").value);
-  const dateISO = tr.querySelector(".r_date").value || "";
-  const noDAraw = tr.querySelector(".r_noDA").value;
-
-  // If noDA blank OR <=0 => keep hotel blank
-  if(isBlank(noDAraw) || parseNum(noDAraw) <= 0){
-    setValIfDifferent(tr.querySelector(".r_hotel"), "");
-    return;
-  }
-  // last day => hotel blank
-  if(isLastDay(dateISO)){
-    setValIfDifferent(tr.querySelector(".r_hotel"), "");
-    return;
-  }
-  // otherwise set hotel = rate
-  setValIfDifferent(tr.querySelector(".r_hotel"), String(rateHotel));
-}
-
 function makeRow(data={}){
   const tr = document.createElement("tr");
+
+  // link row to a range + range end date for "last day hotel blank"
+  tr.dataset.rangeId = data.rangeId || "";
+  tr.dataset.rangeEnd = data.rangeEnd || ""; // ISO yyyy-mm-dd
   tr.dataset.hotelManual = data.hotelManual ? "1" : "0";
 
   tr.innerHTML = `
@@ -384,7 +463,6 @@ function makeRow(data={}){
 
   const hotelInput = tr.querySelector(".r_hotel");
   hotelInput.addEventListener("input", ()=>{
-    // if user types any value => manual; if cleared => back to auto
     tr.dataset.hotelManual = isBlank(hotelInput.value) ? "0" : "1";
     recalcRow(tr); recalcTotals(); saveAll();
   });
@@ -399,12 +477,37 @@ function makeRow(data={}){
   return tr;
 }
 
-function recalcRow(tr){
-  const rateDA = parseNum(document.getElementById("rateDA").value);
+/* per-row last day (based on that row's rangeEnd) */
+function isRowLastDay(tr, dateISO){
+  const end = tr.dataset.rangeEnd || "";
+  if(!end || !dateISO) return false;
+  return dateISO === end;
+}
+function shouldAutoHotel(tr){
+  return document.getElementById("autoHotel").checked && tr.dataset.hotelManual !== "1";
+}
+function applyAutoHotelIfNeeded(tr){
+  if(!shouldAutoHotel(tr)) return;
 
+  const rateHotel = parseNum(document.getElementById("rateHotel").value);
+  const dateISO = tr.querySelector(".r_date").value || "";
   const noDAraw = tr.querySelector(".r_noDA").value;
 
-  // DA blank if noDA blank or 0
+  if(isBlank(noDAraw) || parseNum(noDAraw) <= 0){
+    setValIfDifferent(tr.querySelector(".r_hotel"), "");
+    return;
+  }
+  if(isRowLastDay(tr, dateISO)){
+    setValIfDifferent(tr.querySelector(".r_hotel"), "");
+    return;
+  }
+  setValIfDifferent(tr.querySelector(".r_hotel"), String(rateHotel));
+}
+
+function recalcRow(tr){
+  const rateDA = parseNum(document.getElementById("rateDA").value);
+  const noDAraw = tr.querySelector(".r_noDA").value;
+
   if(isBlank(noDAraw) || parseNum(noDAraw) <= 0){
     setValIfDifferent(tr.querySelector(".r_DA"), "");
   }else{
@@ -412,7 +515,6 @@ function recalcRow(tr){
     setValIfDifferent(tr.querySelector(".r_DA"), String(computedDA));
   }
 
-  // hotel auto (blank rules)
   applyAutoHotelIfNeeded(tr);
 
   const DAraw = tr.querySelector(".r_DA").value;
@@ -465,42 +567,31 @@ function addRow(prefill={}){
   saveAll();
 }
 
-/* ✅ timezone-safe dateRange (no UTC shift) */
-function dateRange(from, to){
-  const out=[];
-  if(!from || !to) return out;
-
-  const d1 = new Date(from + "T00:00:00");
-  const d2 = new Date(to + "T00:00:00");
-  if (isNaN(d1) || isNaN(d2)) return out;
-
-  d1.setHours(0,0,0,0);
-  d2.setHours(0,0,0,0);
-  if (d2 < d1) return out;
-
-  for(let d=new Date(d1); d<=d2; d.setDate(d.getDate()+1)){
-    out.push(new Date(d));
-  }
-  return out;
-}
-
+/* ===== generate rows for all ranges ===== */
 function generateRows(){
-  const from = document.getElementById("fromDate").value;
-  const to = document.getElementById("toDate").value;
-
-  const list = dateRange(from, to);
-  if (!list.length){
-    if (!document.querySelector("#rows tr")) addRow({hotelManual:0});
+  const ranges = getRanges().filter(r=>r.from && r.to);
+  if(!ranges.length){
+    if(!document.querySelector("#rows tr")) addRow({});
     setHeaderFromInputs();
     return;
   }
 
   document.getElementById("rows").innerHTML = "";
 
-  list.forEach(d=>{
-    const iso = toLocalISO(d);  // ✅ FIXED (no toISOString)
-    // default: 1 DA for each date (you can edit to blank anytime)
-    addRow({date: iso, noDA: 1, hotelManual: 0});
+  // IMPORTANT: duplicates allowed
+  ranges.forEach((rg, i)=>{
+    const list = dateRange(rg.from, rg.to);
+    const endISO = rg.to; // already yyyy-mm-dd
+    list.forEach(d=>{
+      const iso = toLocalISO(d);
+      addRow({
+        date: iso,
+        noDA: 1,              // default 1 (you can clear -> becomes blank)
+        rangeId: rg.id,
+        rangeEnd: endISO,
+        hotelManual: 0
+      });
+    });
   });
 
   document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
@@ -526,9 +617,8 @@ function saveAll(){
       autoHotel: document.getElementById("autoHotel").checked ? 1 : 0,
       rateDA: document.getElementById("rateDA").value || "500",
       rateHotel: document.getElementById("rateHotel").value || "750",
-      fromDate: document.getElementById("fromDate").value || "",
-      toDate: document.getElementById("toDate").value || ""
     },
+    ranges: getRanges(),
     rows: [...document.querySelectorAll("#rows tr")].map(tr=>({
       date: tr.querySelector(".r_date").value || "",
       noDA: tr.querySelector(".r_noDA").value || "",
@@ -540,6 +630,8 @@ function saveAll(){
       km: tr.querySelector(".r_km").value || "",
       fare: tr.querySelector(".r_fare").value || "",
       grand: tr.querySelector(".r_grand").value || "",
+      rangeId: tr.dataset.rangeId || "",
+      rangeEnd: tr.dataset.rangeEnd || ""
     }))
   };
   localStorage.setItem(LS_KEY, JSON.stringify(payload));
@@ -547,7 +639,7 @@ function saveAll(){
 
 function loadAll(){
   const raw = localStorage.getItem(LS_KEY);
-  if (!raw) return false;
+  if(!raw) return false;
   try{
     const data = JSON.parse(raw);
     const m = data.meta || {};
@@ -560,12 +652,37 @@ function loadAll(){
 
     document.getElementById("rateDA").value = m.rateDA || "500";
     document.getElementById("rateHotel").value = m.rateHotel || "750";
-    document.getElementById("fromDate").value = m.fromDate || "";
-    document.getElementById("toDate").value = m.toDate || "";
 
+    // ranges
+    const rc = document.getElementById("rangesContainer");
+    rc.innerHTML = "";
+    const ranges = data.ranges || [];
+    if(ranges.length){
+      ranges.forEach(r=> addRangeUI({from:r.from||"", to:r.to||""}));
+      // keep same ids? we regenerate new ids; not needed
+    }else{
+      addRangeUI();
+    }
+
+    // rows
     const tbody = document.getElementById("rows");
     tbody.innerHTML = "";
-    (data.rows || []).forEach(r=> tbody.appendChild(makeRow(r)));
+    (data.rows || []).forEach(r=>{
+      addRow({
+        date: r.date||"",
+        noDA: r.noDA ?? "",
+        DA: r.DA ?? "",
+        hotel: r.hotel ?? "",
+        totalDA: r.totalDA ?? "",
+        mode: r.mode ?? "",
+        km: r.km ?? "",
+        fare: r.fare ?? "",
+        grand: r.grand ?? "",
+        hotelManual: r.hotelManual ? 1 : 0,
+        rangeId: r.rangeId || "",
+        rangeEnd: r.rangeEnd || ""
+      });
+    });
 
     setHeaderFromInputs();
     document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
@@ -577,25 +694,20 @@ function loadAll(){
   }
 }
 
+/* ===== bindings ===== */
 function bindMeta(){
-  ["name","place","rateDA","rateHotel","fromDate","toDate"].forEach(id=>{
+  ["name","place","rateDA","rateHotel"].forEach(id=>{
     const el = document.getElementById(id);
     el.addEventListener("input", ()=>{
       setHeaderFromInputs();
-      if (id==="rateDA" || id==="rateHotel" || id==="toDate" || id==="fromDate"){
-        document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
-        recalcTotals();
-        updateRateBadge();
-      }
+      document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
+      recalcTotals();
       saveAll();
     });
     el.addEventListener("change", ()=>{
       setHeaderFromInputs();
-      if (id==="rateDA" || id==="rateHotel" || id==="toDate" || id==="fromDate"){
-        document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
-        recalcTotals();
-        updateRateBadge();
-      }
+      document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
+      recalcTotals();
       saveAll();
     });
   });
@@ -622,13 +734,8 @@ function bindMeta(){
 function makeFileName(prefix, ext){
   const nm = (document.getElementById("name").value || "User").trim().replace(/\s+/g,"_");
   const des = (document.getElementById("designation").value || "").trim().replace(/\s+/g,"_");
-  const fd = document.getElementById("fromDate").value;
-  const td = document.getElementById("toDate").value;
-  const range = (fd && td) ? `${fd}_to_${td}` : "";
-  const dtag = des ? ("_"+des) : "";
-  return `${prefix}_${nm}${dtag}${range?("_"+range):""}.${ext}`;
+  return `${prefix}_${nm}${des?("_"+des):""}.${ext}`;
 }
-
 function exportPDF(){
   const sheet = document.getElementById("taDaSheet");
   sheet.classList.add("pdf-compact");
@@ -659,11 +766,16 @@ function exportExcel(){
   const rateDA = parseNum(document.getElementById("rateDA").value);
   const rateHotel = parseNum(document.getElementById("rateHotel").value);
 
+  // add ranges summary
+  const ranges = getRanges().filter(r=>r.from && r.to);
+  const rangesText = ranges.length ? ranges.map((r,i)=>`R${i+1}:${r.from}→${r.to}`).join(" | ") : "-";
+
   aoa.push(["TA/DA CALCULATION SHEET"]);
   aoa.push([]);
   aoa.push(["Name", name, "", "", "Designation", desig]);
   aoa.push(["Place", place, "", "", "Month", month, "Year", year]);
   aoa.push(["Rates Applied", `DA: ${rateDA}`, `Hotel: ${rateHotel}`]);
+  aoa.push(["Tour Ranges", rangesText]);
   aoa.push([]);
   aoa.push(["Date","No. of DA","DA","Hotel Bill","Total DA","Mode","K.M.","Total Fare","Grand Total"]);
 
@@ -706,15 +818,17 @@ function exportExcel(){
 /* ===== INIT ===== */
 (function init(){
   bindMeta();
-  const ok = loadAll();
-  setHeaderFromInputs();
-  applyDesignationRates();
 
-  if (!ok){
-    addRow({hotelManual:0}); // 1 empty row
-    document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
+  const ok = loadAll();
+  if(!ok){
+    // start with 1 range row by default
+    addRangeUI();
+    // and 1 empty claim row
+    addRow({});
   }
 
+  setHeaderFromInputs();
+  applyDesignationRates();
   recalcTotals();
   updateRateBadge();
 })();
