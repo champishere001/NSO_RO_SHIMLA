@@ -38,6 +38,14 @@
   }
   .field.small input{min-width:120px}
   .field.tiny input{min-width:90px}
+  .field.tiny select{min-width:210px}
+
+  .toggle{
+    display:flex;align-items:center;gap:8px;
+    height:34px;padding:0 10px;border:1px solid #c7c7c7;border-radius:6px;background:#fff;
+    font-size:13px;
+  }
+  .toggle input{width:16px;height:16px;margin:0}
 
   .btn{
     height:34px;border:none;border-radius:6px;
@@ -47,7 +55,7 @@
   .btn.success{background:var(--btn2)}
   .btn.gray{background:var(--btn3)}
   .btn:active{transform:translateY(1px)}
-  .hint{font-size:12px;color:#333;margin-left:auto;max-width:520px}
+  .hint{font-size:12px;color:#333;margin-left:auto;max-width:560px}
 
   /* Sheet */
   #taDaSheet{
@@ -104,6 +112,14 @@
   .pdf-compact .main input,.pdf-compact .main select{height:16px;font-size:10px}
   .pdf-compact .main th{font-size:10px}
   .pdf-compact .main td{font-size:10px}
+
+  /* Mini rate badge */
+  .rateBadge{
+    height:34px;display:flex;align-items:center;gap:8px;
+    padding:0 10px;border-radius:6px;border:1px dashed #9aa4b2;background:#fff;
+    font-size:12px;
+  }
+  .rateBadge b{font-size:12px}
 </style>
 </head>
 
@@ -116,13 +132,28 @@
       <label>नाम / Name</label>
       <input id="name" placeholder="Name" />
     </div>
+
+    <!-- ✅ Designation dropdown (designation-wise rates) -->
     <div class="field">
       <label>पदनाम / Designation</label>
-      <input id="designation" placeholder="Designation" />
+      <select id="designation">
+        <option value="">Select</option>
+        <option value="Senior Statistical Officer">Senior Statistical Officer</option>
+        <option value="Survey Supervisor">Survey Supervisor</option>
+        <option value="Survey Enumerator">Survey Enumerator</option>
+        <option value="Other">Other</option>
+      </select>
     </div>
+
     <div class="field small">
       <label>स्थान / Place</label>
       <input id="place" placeholder="Place" />
+    </div>
+
+    <!-- ✅ Toggle: Auto apply rates by designation -->
+    <div class="toggle" title="Designation select karte hi DA/Hotel rates auto set honge">
+      <input id="autoRates" type="checkbox" checked />
+      <span><b>Auto rates</b> by designation</span>
     </div>
 
     <div class="field tiny">
@@ -132,6 +163,11 @@
     <div class="field tiny">
       <label>Hotel (₹)</label>
       <input id="rateHotel" type="number" value="750" />
+    </div>
+
+    <div class="rateBadge" id="rateBadge">
+      <span>Applied:</span>
+      <b id="appliedRateText">DA 500 | Hotel 750</b>
     </div>
 
     <div class="field small">
@@ -151,7 +187,7 @@
     <button class="btn primary" onclick="exportExcel()">⬇️ Excel</button>
 
     <div class="hint">
-      ✅ Rows auto-generate by date range • ✅ Auto totals • ✅ Editable fields • ✅ Save/Restore automatically
+      ✅ Date-range rows • ✅ Auto totals • ✅ Editable • ✅ Save/Restore • ✅ Designation-wise rate apply
     </div>
   </div>
 
@@ -217,42 +253,75 @@
 
 <script>
 /* =========================
-   ORIGINAL-STYLE LOGICS
-   - Auto rows by date range
-   - Auto calculation per row
-   - Auto grand totals
-   - Persistent save (localStorage)
-   - PDF + Excel buttons (no print)
+   YOUR ORIGINAL LOGICS + ADDED:
+   ✅ Designation-wise rates apply (toggle)
    ========================= */
 
-const LS_KEY = "tada_sheet_v1";
+const LS_KEY = "tada_sheet_v2_designation";
+
+/* ✅ Designation-wise rates (as you provided) */
+const DESIGNATION_RATES = {
+  "Senior Statistical Officer": { da: 1000, hotel: 960 },
+  "Survey Supervisor":         { da: 500,  hotel: 750 },
+  "Survey Enumerator":         { da: 400,  hotel: 750 },
+  "Other":                     { da: 500,  hotel: 750 } // fallback
+};
 
 function fmtINR(n){
   n = Number(n||0);
   return Math.round(n).toString();
 }
-
 function parseNum(v){
   const x = Number(String(v||"").replace(/[^0-9.\-]/g,""));
   return isNaN(x) ? 0 : x;
 }
 
+function getDesignationLabel(){
+  const v = document.getElementById("designation").value || "";
+  return v ? v : "-";
+}
+
 function setHeaderFromInputs(){
   const name = document.getElementById("name").value.trim() || "-";
-  const desig = document.getElementById("designation").value.trim() || "-";
+  const desig = getDesignationLabel();
   const place = document.getElementById("place").value.trim() || "-";
 
   document.getElementById("hName").textContent = name;
   document.getElementById("hDesig").textContent = desig;
   document.getElementById("hPlace").textContent = place;
 
-  // month/year from fromDate (if set), else today
   const from = document.getElementById("fromDate").value;
   const d = from ? new Date(from) : new Date();
   const m = d.toLocaleString("en-US",{month:"long"});
   const y = d.getFullYear();
   document.getElementById("hMonth").textContent = m;
   document.getElementById("hYear").textContent = y;
+
+  updateRateBadge();
+}
+
+/* ✅ Apply rates from designation if toggle ON */
+function applyDesignationRates(force=false){
+  const auto = document.getElementById("autoRates").checked;
+  if(!auto && !force) { updateRateBadge(); return; }
+
+  const desig = document.getElementById("designation").value || "";
+  const r = DESIGNATION_RATES[desig];
+  if(!r){ updateRateBadge(); return; }
+
+  document.getElementById("rateDA").value = r.da;
+  document.getElementById("rateHotel").value = r.hotel;
+
+  document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
+  recalcTotals();
+  saveAll();
+  updateRateBadge();
+}
+
+function updateRateBadge(){
+  const da = parseNum(document.getElementById("rateDA").value);
+  const ht = parseNum(document.getElementById("rateHotel").value);
+  document.getElementById("appliedRateText").textContent = `DA ${da} | Hotel ${ht}`;
 }
 
 function makeRow(data={}){
@@ -274,13 +343,11 @@ function makeRow(data={}){
     <td><input type="number" min="0" step="1" class="r_grand" value="${data.grand ?? 0}" readonly></td>
   `;
 
-  // attach events
   tr.querySelectorAll("input,select").forEach(el=>{
     el.addEventListener("input", ()=>{ recalcRow(tr); recalcTotals(); saveAll(); });
     el.addEventListener("change", ()=>{ recalcRow(tr); recalcTotals(); saveAll(); setHeaderFromInputs(); });
   });
 
-  // initial calc (in case)
   recalcRow(tr);
   return tr;
 }
@@ -296,33 +363,17 @@ function renderModeOptions(selected){
 
 function recalcRow(tr){
   const rateDA = parseNum(document.getElementById("rateDA").value);
-  const rateHotel = parseNum(document.getElementById("rateHotel").value);
-
   const noDA = parseNum(tr.querySelector(".r_noDA").value);
-  // DA field: auto = noDA*rateDA unless user typed custom (we keep it synced)
-  // If user clears DA, we auto-fill
-  let DA = parseNum(tr.querySelector(".r_DA").value);
 
-  // Keep DA synced to rate * count (this matches your repeated requirement)
   const computedDA = noDA * rateDA;
-  if (DA !== computedDA) {
-    // If user manually changed DA, still allow? We'll force sync for consistency.
-    DA = computedDA;
-    tr.querySelector(".r_DA").value = computedDA ? computedDA : 0;
-  }
+  tr.querySelector(".r_DA").value = computedDA ? computedDA : 0;
 
-  // Hotel: if blank and noDA>0, suggest rateHotel per day? Usually hotel is per night, not per DA.
-  // We'll keep user-entered value, but if empty string, use 0.
-  let hotel = parseNum(tr.querySelector(".r_hotel").value);
-  // If user wants fixed hotel automatically per day, uncomment next line:
-  // hotel = noDA>0 ? rateHotel : 0; tr.querySelector(".r_hotel").value = hotel;
-
-  const totalDA = DA + hotel;
+  const hotel = parseNum(tr.querySelector(".r_hotel").value);
+  const totalDA = computedDA + hotel;
   tr.querySelector(".r_totalDA").value = totalDA;
 
   const fare = parseNum(tr.querySelector(".r_fare").value);
-  const grand = totalDA + fare;
-  tr.querySelector(".r_grand").value = grand;
+  tr.querySelector(".r_grand").value = totalDA + fare;
 }
 
 function recalcTotals(){
@@ -372,7 +423,6 @@ function generateRows(){
 
   const list = dateRange(from, to);
   if (!list.length){
-    // No alert spam; just create one empty row if none
     if (!document.querySelector("#rows tr")) addRow();
     setHeaderFromInputs();
     return;
@@ -381,7 +431,6 @@ function generateRows(){
   document.getElementById("rows").innerHTML = "";
   list.forEach(d=>{
     const iso = d.toISOString().slice(0,10);
-    // default: 1 DA for each date; you can change default to 0 if needed
     addRow({date: iso, noDA: 1});
   });
 
@@ -402,6 +451,7 @@ function saveAll(){
       name: document.getElementById("name").value || "",
       designation: document.getElementById("designation").value || "",
       place: document.getElementById("place").value || "",
+      autoRates: document.getElementById("autoRates").checked ? 1 : 0,
       rateDA: document.getElementById("rateDA").value || "500",
       rateHotel: document.getElementById("rateHotel").value || "750",
       fromDate: document.getElementById("fromDate").value || "",
@@ -431,6 +481,8 @@ function loadAll(){
     document.getElementById("name").value = m.name || "";
     document.getElementById("designation").value = m.designation || "";
     document.getElementById("place").value = m.place || "";
+    document.getElementById("autoRates").checked = (m.autoRates ?? 1) ? true : false;
+
     document.getElementById("rateDA").value = m.rateDA || "500";
     document.getElementById("rateHotel").value = m.rateHotel || "750";
     document.getElementById("fromDate").value = m.fromDate || "";
@@ -439,8 +491,10 @@ function loadAll(){
     const tbody = document.getElementById("rows");
     tbody.innerHTML = "";
     (data.rows || []).forEach(r=> tbody.appendChild(makeRow(r)));
+
     setHeaderFromInputs();
     recalcTotals();
+    updateRateBadge();
     return true;
   }catch(e){
     return false;
@@ -448,13 +502,13 @@ function loadAll(){
 }
 
 function bindMeta(){
-  ["name","designation","place","rateDA","rateHotel","fromDate","toDate"].forEach(id=>{
+  ["name","place","rateDA","rateHotel","fromDate","toDate"].forEach(id=>{
     document.getElementById(id).addEventListener("input", ()=>{
       setHeaderFromInputs();
-      // Recalc all rows if rate changes
       if (id==="rateDA" || id==="rateHotel"){
         document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
         recalcTotals();
+        updateRateBadge();
       }
       saveAll();
     });
@@ -463,9 +517,21 @@ function bindMeta(){
       if (id==="rateDA" || id==="rateHotel"){
         document.querySelectorAll("#rows tr").forEach(tr=>recalcRow(tr));
         recalcTotals();
+        updateRateBadge();
       }
       saveAll();
     });
+  });
+
+  document.getElementById("designation").addEventListener("change", ()=>{
+    setHeaderFromInputs();
+    applyDesignationRates(false);
+    saveAll();
+  });
+
+  document.getElementById("autoRates").addEventListener("change", ()=>{
+    applyDesignationRates(false);
+    saveAll();
   });
 }
 
@@ -490,19 +556,17 @@ function exportPDF(){
 
 function makeFileName(prefix, ext){
   const nm = (document.getElementById("name").value || "User").trim().replace(/\s+/g,"_");
+  const des = (document.getElementById("designation").value || "").trim().replace(/\s+/g,"_");
   const fd = document.getElementById("fromDate").value;
   const td = document.getElementById("toDate").value;
   const range = (fd && td) ? `${fd}_to_${td}` : "";
-  return `${prefix}_${nm}${range?("_"+range):""}.${ext}`;
+  const dtag = des ? ("_"+des) : "";
+  return `${prefix}_${nm}${dtag}${range?("_"+range):""}.${ext}`;
 }
 
-/* ===== EXCEL EXPORT =====
-   Exports header + table data in a clean sheet.
-*/
+/* ===== EXCEL EXPORT ===== */
 function exportExcel(){
   const wb = XLSX.utils.book_new();
-
-  // Build AoA (array of arrays) to include header rows + table
   const aoa = [];
 
   const name = document.getElementById("hName").textContent;
@@ -511,16 +575,18 @@ function exportExcel(){
   const month = document.getElementById("hMonth").textContent;
   const year = document.getElementById("hYear").textContent;
 
+  const rateDA = parseNum(document.getElementById("rateDA").value);
+  const rateHotel = parseNum(document.getElementById("rateHotel").value);
+
   aoa.push(["TA/DA CALCULATION SHEET"]);
   aoa.push([]);
   aoa.push(["Name", name, "", "", "Designation", desig]);
   aoa.push(["Place", place, "", "", "Month", month, "Year", year]);
+  aoa.push(["Rates Applied", `DA: ${rateDA}`, `Hotel: ${rateHotel}`]);
   aoa.push([]);
 
-  // Table header
   aoa.push(["Date","No. of DA","DA","Hotel Bill","Total DA","Mode","K.M.","Total Fare","Grand Total"]);
 
-  // Rows
   document.querySelectorAll("#rows tr").forEach(tr=>{
     aoa.push([
       tr.querySelector(".r_date").value || "",
@@ -535,7 +601,6 @@ function exportExcel(){
     ]);
   });
 
-  // Grand total row
   aoa.push([]);
   aoa.push([
     "Grand Total",
@@ -550,8 +615,6 @@ function exportExcel(){
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-  // Simple column widths
   ws["!cols"] = [
     {wch:12},{wch:10},{wch:10},{wch:12},{wch:12},{wch:12},{wch:8},{wch:12},{wch:12}
   ];
@@ -565,11 +628,15 @@ function exportExcel(){
   bindMeta();
   const ok = loadAll();
   setHeaderFromInputs();
+
+  // apply designation rates if toggle ON
+  applyDesignationRates(false);
+
   if (!ok){
-    // start with 1 empty row so user sees table ready
     addRow();
   }
   recalcTotals();
+  updateRateBadge();
 })();
 </script>
 </body>
