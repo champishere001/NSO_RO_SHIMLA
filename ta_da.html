@@ -184,70 +184,48 @@
     font-weight:900;
   }
 
-/* ===== ONE PAGE PRINT (A4 Landscape) ===== */
+/* ===== COMPACT ROW HEIGHT (PRINT ONLY) ===== */
 @media print {
 
-  /* A4 landscape and tight margins */
-  @page {
-    size: A4 landscape;
-    margin: 6mm;
+  table {
+    border-collapse: collapse !important;
   }
 
-  body { margin: 0 !important; background: #fff !important; }
-
-  /* Hide controls/buttons in print */
-  .controls, .btn, .no-print, .actions, .toolbar, .print-hide {
-    display: none !important;
-  }
-
-  /* (Optional) Hide Saved Ranges + Applied Rates strip in print */
-  #savedRanges, .saved-ranges,
-  #claimDetails, .claim-details, .applied-rates, .rate-strip {
-    display: none !important;
-  }
-
-  /* Remove extra padding/margins that waste print area */
-  .container, .sheet, .page, .wrap {
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  /* Shrink everything to fit one page */
-  .page, .sheet, .container {
-    transform: scale(0.78);
-    transform-origin: top left;
-    width: 100% !important;
-  }
-
-  /* Make table compact so all rows fit */
-  table { width: 100% !important; border-collapse: collapse !important; }
-  th, td {
+  /* Header rows */
+  th {
     font-size: 9px !important;
     padding: 2px 3px !important;
     line-height: 1.1 !important;
+    height: 14px !important;
+    vertical-align: middle !important;
   }
 
-  /* Inputs/selects print like text and do not take extra height */
-  input, select {
-    border: none !important;
-    padding: 0 !important;
-    height: auto !important;
+  /* Data rows */
+  td {
     font-size: 9px !important;
+    padding: 1px 3px !important;
+    line-height: 1.1 !important;
+    height: 13px !important;
+    vertical-align: middle !important;
+  }
+
+  /* Inputs / selects inside table */
+  td input,
+  td select {
+    font-size: 9px !important;
+    height: 12px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+    border: none !important;
     background: transparent !important;
     appearance: none !important;
     -webkit-appearance: none !important;
   }
 
-  /* Force everything on one page (no breaking) */
-  * { page-break-inside: avoid !important; break-inside: avoid !important; }
+  /* Remove extra spacing caused by wrappers */
+  tr { margin: 0 !important; }
 
-  /* Ensure footer line stays visible */
-  .footer, .signature, #footerLine {
-    display: block !important;
-    margin-top: 2mm !important;
-  }
 }
 </style>
 </head>
