@@ -1,238 +1,671 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>TA / DA Calculation Sheet</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>NSO Scheme Hub 2026</title>
 
-<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
-<style>
-@page{ size:A4 landscape; margin:10mm; }
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --card1:#0f172a;
+      --card2:#111c33;
+      --border:#22304a;
 
-*{ box-sizing:border-box }
-body{
-  margin:0; padding:14px;
-  background:#f3f5f7;
-  font-family: Arial, Helvetica, sans-serif;
-}
-.sheet{
-  background:#fff;
-  border:1px solid #cfd6df;
-  padding:12px;
-}
-.title{
-  text-align:center;
-  font-weight:800;
-  font-size:15px;
-  margin-bottom:8px;
-}
-.meta{
-  display:grid;
-  grid-template-columns:1.2fr 1fr 1fr 1fr 0.7fr;
-  gap:6px;
-  margin-bottom:8px;
-}
-.field{
-  border:1px solid #000;
-  padding:5px 6px;
-  display:flex;
-  gap:6px;
-  align-items:center;
-}
-.label{ font-weight:700; font-size:12px; white-space:nowrap }
-.input,.select{
-  width:100%;
-  border:none;
-  outline:none;
-  font-size:12px;
-  background:transparent;
-}
+      --accent:#38bdf8;
+      --green:#10b981;
+      --amber:#f59e0b;
+      --pink:#fb7185;
+      --violet:#a78bfa;
 
-.controls{
-  margin:8px 0;
-  display:flex;
-  gap:6px;
-}
-button{
-  padding:6px 10px;
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-}
+      --text:#e5e7eb;
+      --muted:#94a3b8;
 
-table{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:fixed;
-  font-size:11px;
-}
-th,td{
-  border:1px solid #000;
-  padding:4px 5px;
-  text-align:center;
-  vertical-align:middle;
-}
-th{ font-weight:800; }
-.colnum th{ font-weight:700; background:#fff; }
+      --shadow: 0 24px 90px rgba(0,0,0,.62);
+      --shadow2: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 22px;
+    }
 
-td input, td select{
-  width:100%;
-  border:none;
-  outline:none;
-  font-size:11px;
-  background:transparent;
-  text-align:center;
-}
-.ro{ font-weight:800 }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:"Plus Jakarta Sans",system-ui,Segoe UI,Arial,sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x:hidden;
+    }
 
-tfoot td{ font-weight:900 }
+    /* ===== animated background ===== */
+    .bg{
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      background:
+        radial-gradient(1200px 520px at 18% 15%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(1000px 560px at 82% 22%, rgba(16,185,129,.12), transparent 60%),
+        radial-gradient(900px 520px at 50% 85%, rgba(167,139,250,.10), transparent 65%),
+        linear-gradient(180deg, #000814, #020617);
+    }
+    .noise{
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+      opacity:.16;
+      mix-blend-mode:overlay;
+      pointer-events:none;
+    }
 
-@media print{
-  body{ background:#fff; padding:0 }
-  .controls{ display:none }
-}
-</style>
+    /* floating blobs */
+    .blob{
+      position:fixed;
+      width:420px;
+      height:420px;
+      border-radius:50%;
+      filter: blur(50px);
+      opacity:.22;
+      z-index:-1;
+      animation: float 9s ease-in-out infinite;
+    }
+    .b1{ left:-120px; top:80px; background: rgba(56,189,248,.8); }
+    .b2{ right:-160px; top:140px; background: rgba(16,185,129,.8); animation-duration: 11s; }
+    .b3{ left:38%; bottom:-220px; background: rgba(167,139,250,.8); animation-duration: 13s; }
+    @keyframes float{
+      0%,100%{ transform: translate(0,0) scale(1); }
+      50%{ transform: translate(24px,-18px) scale(1.06); }
+    }
+
+    /* particles canvas sits on top of bg */
+    #fx{
+      position:fixed;
+      inset:0;
+      z-index:-0;
+      pointer-events:none;
+      opacity:.75;
+    }
+
+    /* ===== layout ===== */
+    .wrap{
+      max-width:1240px;
+      margin:0 auto;
+      padding:56px 18px 90px;
+    }
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom: 26px;
+    }
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .title{
+      margin:0;
+      font-size:38px;
+      font-weight:900;
+      letter-spacing:.8px;
+      line-height:1.05;
+    }
+    .title .a{ color: var(--accent); }
+    .title .b{ color: #cbeeff; }
+
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-weight:600;
+      font-size:14px;
+      line-height:1.5;
+      max-width: 720px;
+    }
+
+    .badge-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 6px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(34,48,74,.9);
+      background: rgba(2,6,23,.55);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      font-size:12px;
+      font-weight:800;
+      color: #dbeafe;
+    }
+    .pill i{ opacity:.9; font-style:normal; }
+
+    .clock{
+      text-align:right;
+      color: var(--muted);
+      font-weight:800;
+      font-size:12px;
+      padding-top: 6px;
+      white-space:nowrap;
+    }
+    .clock b{
+      color:#eaf6ff;
+      font-weight:900;
+      letter-spacing:.5px;
+    }
+
+    /* small “spark” line */
+    .spark{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
+      opacity:.55;
+      margin: 18px 0 0;
+    }
+
+    /* ===== NEW: Section headers (keeping same visualization) ===== */
+    .section{ margin-top: 18px; }
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      border:1px solid rgba(34,48,74,.9);
+      background: rgba(2,6,23,.45);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.30);
+    }
+    .section-title .left{
+      display:flex;align-items:center;gap:10px;
+      font-weight:900;letter-spacing:.3px;
+      color:#eaf6ff;
+    }
+    .section-title .left span{
+      width:34px;height:34px;border-radius:12px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+    }
+    .section-title .right{
+      font-size:12px;
+      font-weight:800;
+      color: rgba(148,163,184,.85);
+      white-space:nowrap;
+    }
+    .section-divider{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.45), transparent);
+      opacity:.7;
+      margin: 14px 0 18px;
+    }
+
+    /* ===== grid ===== */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:22px;
+      margin-top:18px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .clock{ display:none; }
+      .section-title .right{ display:none; }
+    }
+    @media (max-width: 640px){
+      .grid{ grid-template-columns: 1fr; }
+      .title{ font-size:30px; }
+      .wrap{ padding-top: 38px; }
+    }
+
+    /* ===== premium cards ===== */
+    .card{
+      position:relative;
+      border-radius: var(--radius);
+      padding: 24px 24px 20px;
+      background: linear-gradient(180deg, rgba(17,28,51,.92), rgba(15,23,42,.92));
+      border: 1px solid rgba(34,48,74,.9);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+      transform-style:preserve-3d;
+      cursor: pointer;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+
+    /* glow frame */
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(650px 260px at 15% 15%, rgba(56,189,248,.18), transparent 55%),
+        radial-gradient(540px 240px at 88% 18%, rgba(16,185,129,.12), transparent 55%);
+      opacity:.9;
+      pointer-events:none;
+    }
+
+    /* shine sweep */
+    .card::after{
+      content:"";
+      position:absolute;
+      top:-40%;
+      left:-60%;
+      width:60%;
+      height:180%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+      transform: rotate(18deg);
+      opacity:0;
+      transition: opacity .35s ease;
+      pointer-events:none;
+    }
+    .card:hover::after{ opacity:1; animation: sweep 1.2s ease; }
+    @keyframes sweep{
+      0%{ transform: translateX(0) rotate(18deg); }
+      100%{ transform: translateX(380%) rotate(18deg); }
+    }
+
+    .card:hover{
+      border-color: rgba(56,189,248,.55);
+      box-shadow: var(--shadow);
+      transform: translateY(-6px);
+    }
+
+    .card-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      position:relative;
+      z-index:1;
+      margin-bottom: 10px;
+    }
+
+    .ico{
+      width:42px;height:42px;
+      border-radius: 14px;
+      display:grid;
+      place-items:center;
+      font-size:20px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.35);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .ico.plfs{ background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.28); }
+    .ico.ufs{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.26); }
+    .ico.asuse{ background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.26); }
+    .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
+    .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
+    .ico.sum{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.22); }
+
+    .card h3{
+      margin:0;
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .card p{
+      margin:6px 0 16px;
+      color: var(--muted);
+      font-weight:600;
+      font-size:12.5px;
+      line-height:1.5;
+      position:relative;
+      z-index:1;
+    }
+
+    .btnrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:1;
+      margin-top: 10px;
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.3px;
+      color:#001019;
+      background: var(--accent);
+      box-shadow: 0 18px 35px rgba(56,189,248,.18);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      user-select:none;
+      transform: translateZ(25px);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .btn:hover{ transform: translateZ(25px) translateY(-2px); }
+
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      color:#e5e7eb;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:none;
+    }
+    .btn.secondary:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
+    .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
+    .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
+    .btn.pink{ background: var(--pink); color:#2b0011; box-shadow: 0 18px 35px rgba(251,113,133,.15); }
+
+    /* footer */
+    .foot{
+      margin-top: 26px;
+      color: rgba(148,163,184,.75);
+      font-weight:700;
+      font-size:11px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .foot b{ color:#dbeafe; }
+
+    /* Left Rail (global) */
+    .left-rail{
+      position:fixed; inset:0 auto 0 0;
+      width:72px;
+      background:#0f172a;
+      border-right:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center;
+      padding-top:14px; gap:18px;
+      z-index:9999;
+    }
+    .left-rail a{
+      width:56px;
+      text-align:center;
+      font-size:11px;
+      font-weight:900;
+      text-decoration:none;
+      color:#fff;
+      padding:8px 6px;
+      border-radius:12px;
+      line-height:1.2;
+      transition: .2s ease;
+    }
+    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
+    .left-rail a.hub{ color:var(--accent); }
+    .left-rail a.weekly{ color:var(--green); }
+    .left-rail a.monthly{ color:var(--green); }
+    .left-rail a.tada{ color:var(--amber); }
+
+    .wrap{ margin-left:72px; }
+    @media (max-width: 640px){
+      .wrap{ margin-left:72px; }
+    }
+  </style>
 </head>
 
 <body>
-<div class="sheet">
+  <nav class="left-rail">
+    <a href="index.html" class="hub">🏠 HUB</a>
+    <a href="plfs.html">📊 PLFS</a>
+    <a href="ufs_weekly.html" class="weekly">🗓️ Weekly</a>
+    <a href="ufs_monthly.html" class="monthly">📅 Monthly</a>
+    <a href="ta_da.html" class="tada">🧮 TA/DA</a>
+  </nav>
 
-<div class="title">
-  दौरा भत्ता / दैनिक भत्ता गणना शीट @ TA / DA CALCULATION SHEET
-</div>
+  <div class="bg"></div>
+  <canvas id="fx"></canvas>
+  <div class="noise"></div>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
 
-<!-- HEADER -->
-<div class="meta">
-  <div class="field"><span class="label">नाम/Name-</span><input class="input"></div>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <h1 class="title"><span class="a">NSO</span> <span class="b">SCHEME HUB 2026</span></h1>
+        <p class="subtitle">
+          One dashboard to open <b>PLFS</b>, <b>UFS</b> (Weekly + Monthly), and <b>ASUSE</b>.
+          Fast navigation, premium UI, and clean access for field operations.
+        </p>
+        <div class="badge-row">
+          <div class="pill"><i>⚡</i> Quick Launch</div>
+          <div class="pill"><i>🛰️</i> Live Tools</div>
+          <div class="pill"><i>🧠</i> Smart Workflow</div>
+          <div class="pill"><i>🔒</i> Secure Access</div>
+        </div>
+        <div class="spark"></div>
+      </div>
 
-  <div class="field">
-    <span class="label">पदनाम/Designation-</span>
-    <select class="select">
-      <option value=""></option>
-      <option>Senior Statistical Officer</option>
-      <option>Survey Supervisor</option>
-      <option>Survey Enumerator</option>
-    </select>
+      <div class="clock" id="clockBox">
+        <div><b id="nowTime">--:--</b></div>
+        <div id="nowDate">--</div>
+      </div>
+    </div>
+
+    <!-- =========================
+         SECTION 1: SCHEMES
+    ========================== -->
+    <div class="section">
+      <div class="section-title">
+        <div class="left">
+          <span>📊</span>
+          <div>Schemes</div>
+        </div>
+        <div class="right">PLFS • UFS • ASUSE</div>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="grid">
+        <!-- PLFS -->
+        <div class="card" onclick="go('plfs.html')" role="button" aria-label="Open PLFS">
+          <div class="card-head">
+            <div class="ico plfs">📊</div>
+            <h3>PLFS</h3>
+          </div>
+          <p>Command dashboard for sample tracking, visits, and field monitoring.</p>
+          <div class="btnrow">
+            <a class="btn" href="plfs.html" onclick="event.stopPropagation()">🚀 Open PLFS</a>
+            <a class="btn secondary" href="plfs.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+          </div>
+        </div>
+
+        <!-- UFS -->
+        <div class="card" onclick="go('ufs_weekly.html')" role="button" aria-label="Open UFS">
+          <div class="card-head">
+            <div class="ico ufs">🗓️</div>
+            <h3>UFS</h3>
+          </div>
+          <p>Open weekly and monthly progress tools in one place.</p>
+          <div class="btnrow">
+            <a class="btn green" href="ufs_weekly.html" onclick="event.stopPropagation()">📅 Weekly</a>
+            <a class="btn green" href="ufs_monthly.html" onclick="event.stopPropagation()">🗓️ Monthly</a>
+            <a class="btn secondary" href="ufs_weekly.html#reports" onclick="event.stopPropagation()">📈 Reports</a>
+          </div>
+        </div>
+
+        <!-- ASUSE -->
+        <div class="card" onclick="go('asuse.html')" role="button" aria-label="Open ASUSE">
+          <div class="card-head">
+            <div class="ico asuse">🧾</div>
+            <h3>ASUSE</h3>
+          </div>
+          <p>ASUSE operations: roster, monitoring, and quick analytics access.</p>
+          <div class="btnrow">
+            <a class="btn violet" href="asuse.html" onclick="event.stopPropagation()">✨ Open ASUSE</a>
+            <a class="btn secondary" href="asuse.html#settings" onclick="event.stopPropagation()">⚙️ Settings</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================
+         SECTION 2: TA/DA + BILL DOCUMENTS
+    ========================== -->
+    <div class="section">
+      <div class="section-title">
+        <div class="left">
+          <span>🧾</span>
+          <div>TA/DA Bills & Documents</div>
+        </div>
+        <div class="right">Sheet • Upload • Summary</div>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="grid">
+        <!-- TA/DA -->
+        <div class="card" onclick="go('ta_da.html')" role="button" aria-label="Open TA/DA">
+          <div class="card-head">
+            <div class="ico tada">🧮</div>
+            <h3>TA / DA Sheet</h3>
+          </div>
+          <p>Designation-wise TA/DA calculation with PDF & Excel export (one-page A4 landscape).</p>
+          <div class="btnrow">
+            <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
+            <a class="btn secondary" href="ta_da.html#pdf" onclick="event.stopPropagation()">⬇️ PDF Export</a>
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="card" onclick="go('tada_documents.html')" role="button" aria-label="Open TA/DA Documents">
+          <div class="card-head">
+            <div class="ico docs">📁</div>
+            <h3>Bill Documents</h3>
+          </div>
+          <p>Upload / view TA bills, hotel bills, tickets, scanned PDFs, and supporting files.</p>
+          <div class="btnrow">
+            <a class="btn pink" href="tada_documents.html" onclick="event.stopPropagation()">📂 Open Docs</a>
+            <a class="btn secondary" href="tada_documents.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card" onclick="go('tada_summary.html')" role="button" aria-label="Open Claim Summary">
+          <div class="card-head">
+            <div class="ico sum">📌</div>
+            <h3>Claim Summary</h3>
+          </div>
+          <p>Designation-wise totals + monthly summary to verify claims quickly.</p>
+          <div class="btnrow">
+            <a class="btn" href="tada_summary.html" onclick="event.stopPropagation()">📊 View Summary</a>
+            <a class="btn secondary" href="tada_summary.html#month" onclick="event.stopPropagation()">🗓️ Month</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div>Made for <b>NSO Field Operations</b> • 2026</div>
+      <div>Tip: Hover cards for glow ✨</div>
+    </div>
   </div>
 
-  <div class="field"><span class="label">स्थान/Place-</span><input class="input"></div>
-  <div class="field"><span class="label">माह/Month-</span><input class="input"></div>
-  <div class="field"><span class="label">वर्ष/Year-</span><input class="input"></div>
-</div>
+  <script>
+    // ===== Navigation helper (so card click works) =====
+    function go(url){ window.location.href = url; }
 
-<div class="controls">
-  <button onclick="addRow()">+ Row</button>
-  <button onclick="print()">Generate PDF</button>
-  <button onclick="exportExcel()">Export Excel</button>
-</div>
+    // ===== Clock =====
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function tick(){
+      const d = new Date();
+      const h = pad(d.getHours()), m = pad(d.getMinutes());
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      document.getElementById('nowTime').textContent = `${h}:${m}`;
+      document.getElementById('nowDate').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    tick(); setInterval(tick, 1000);
 
-<table id="tbl">
-<thead>
-<tr>
-  <th rowspan="3">Date</th>
-  <th rowspan="3">No. of DA</th>
-  <th colspan="3">DA Details</th>
-  <th colspan="3">Travelling Details</th>
-  <th rowspan="3">Total<br>(5+8)</th>
-</tr>
-<tr>
-  <th>DA</th>
-  <th>Hotel</th>
-  <th>Total DA<br>(3+4)</th>
-  <th>Mode</th>
-  <th>KM</th>
-  <th>Total Fare</th>
-</tr>
-<tr class="colnum">
-  <th>1</th><th>2</th><th>3</th><th>4</th>
-  <th>5</th><th>6</th><th>7</th><th>8</th><th>9</th>
-</tr>
-</thead>
+    // ===== Particles (lightweight, no library) =====
+    const c = document.getElementById('fx');
+    const ctx = c.getContext('2d');
+    let W,H,particles=[];
+    function resize(){
+      W = c.width = window.innerWidth;
+      H = c.height = window.innerHeight;
+      particles = Array.from({length: 70}, () => ({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: Math.random()*1.6 + 0.4,
+        vx: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
+        vy: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
+        a: Math.random()*0.35 + 0.15
+      }));
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-<tbody id="body"></tbody>
+    function draw(){
+      ctx.clearRect(0,0,W,H);
 
-<tfoot>
-<tr>
-  <td colspan="1">Grand Total</td>
-  <td id="g_daCnt"></td>
-  <td></td>
-  <td></td>
-  <td id="g_da"></td>
-  <td></td>
-  <td></td>
-  <td id="g_fare"></td>
-  <td id="g_total"></td>
-</tr>
-</tfoot>
-</table>
+      // dots
+      for(const p of particles){
+        p.x += p.vx; p.y += p.vy;
+        if(p.x < -20) p.x = W+20;
+        if(p.x > W+20) p.x = -20;
+        if(p.y < -20) p.y = H+20;
+        if(p.y > H+20) p.y = -20;
 
-<div style="margin-top:14px; font-size:12px">
-  दिनांक: _____________
-  <span style="float:right">संबन्धित क्षेत्र कर्मचारी के हस्ताक्षर</span>
-</div>
+        ctx.beginPath();
+        ctx.globalAlpha = p.a;
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle = "#cbeeff";
+        ctx.fill();
+      }
 
-</div>
+      // lines (nearby)
+      for(let i=0;i<particles.length;i++){
+        for(let j=i+1;j<particles.length;j++){
+          const a = particles[i], b = particles[j];
+          const dx = a.x-b.x, dy = a.y-b.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < 140){
+            ctx.globalAlpha = (1 - dist/140) * 0.18;
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+          }
+        }
+      }
 
-<script>
-function val(x){ return x==="" ? "" : Number(x)||0 }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    }
+    draw();
 
-function addRow(){
-  body.insertAdjacentHTML("beforeend",`
-  <tr>
-    <td><input></td>
-    <td><input type="number" oninput="calc(this)"></td>
-    <td><input type="number" oninput="calc(this)"></td>
-    <td><input type="number" oninput="calc(this)"></td>
-    <td class="ro totalDA"></td>
-    <td><input></td>
-    <td><input type="number"></td>
-    <td><input type="number" oninput="calc(this)"></td>
-    <td class="ro grand"></td>
-  </tr>`);
-}
-
-function calc(el){
-  const tr = el.closest("tr");
-  const cnt = val(tr.cells[1].firstChild.value);
-  const da  = val(tr.cells[2].firstChild.value);
-  const h   = val(tr.cells[3].firstChild.value);
-  const fare= val(tr.cells[7].firstChild.value);
-
-  const totalDA = (cnt && da) ? (cnt*da + h) : "";
-  const grand   = (totalDA!=="" && fare!=="") ? (totalDA+fare) : "";
-
-  tr.querySelector(".totalDA").textContent = totalDA;
-  tr.querySelector(".grand").textContent = grand;
-
-  totals();
-}
-
-function totals(){
-  let daCnt=0, da=0, fare=0, tot=0;
-  document.querySelectorAll("#body tr").forEach(tr=>{
-    daCnt += val(tr.cells[1].firstChild.value);
-    da += val(tr.querySelector(".totalDA").textContent);
-    fare += val(tr.cells[7].firstChild.value);
-    tot += val(tr.querySelector(".grand").textContent);
-  });
-  g_daCnt.textContent = daCnt||"";
-  g_da.textContent = da||"";
-  g_fare.textContent = fare||"";
-  g_total.textContent = tot||"";
-}
-
-function exportExcel(){
-  const wb = XLSX.utils.book_new();
-  const data=[["TA/DA Sheet"]];
-  document.querySelectorAll("tr").forEach(r=>{
-    data.push([...r.cells].map(c=>c.innerText||c.querySelector("input,select")?.value||""));
-  });
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),"TA_DA");
-  XLSX.writeFile(wb,"TA_DA.xlsx");
-}
-
-addRow();
-</script>
+    // ===== Micro-tilt on hover (no library) =====
+    document.querySelectorAll('.card').forEach(card=>{
+      let rect=null;
+      card.addEventListener('mousemove', (e)=>{
+        rect = rect || card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width/2;
+        const cy = rect.height/2;
+        const rx = ((y - cy)/cy) * -5; // rotateX
+        const ry = ((x - cx)/cx) * 6;  // rotateY
+        card.style.transform = `translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      });
+      card.addEventListener('mouseleave', ()=>{
+        rect=null;
+        card.style.transform = '';
+      });
+    });
+  </script>
 </body>
 </html>
