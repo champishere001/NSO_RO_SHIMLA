@@ -163,6 +163,53 @@
       letter-spacing:.5px;
     }
 
+    /* small “spark” line */
+    .spark{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
+      opacity:.55;
+      margin: 18px 0 0;
+    }
+
+    /* ===== NEW: Section headers (keeping same visualization) ===== */
+    .section{ margin-top: 18px; }
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      border:1px solid rgba(34,48,74,.9);
+      background: rgba(2,6,23,.45);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.30);
+    }
+    .section-title .left{
+      display:flex;align-items:center;gap:10px;
+      font-weight:900;letter-spacing:.3px;
+      color:#eaf6ff;
+    }
+    .section-title .left span{
+      width:34px;height:34px;border-radius:12px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+    }
+    .section-title .right{
+      font-size:12px;
+      font-weight:800;
+      color: rgba(148,163,184,.85);
+      white-space:nowrap;
+    }
+    .section-divider{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.45), transparent);
+      opacity:.7;
+      margin: 14px 0 18px;
+    }
+
+    /* ===== grid ===== */
     .grid{
       display:grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -172,6 +219,7 @@
     @media (max-width: 980px){
       .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .clock{ display:none; }
+      .section-title .right{ display:none; }
     }
     @media (max-width: 640px){
       .grid{ grid-template-columns: 1fr; }
@@ -190,6 +238,7 @@
       overflow:hidden;
       transform-style:preserve-3d;
       cursor: pointer;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
     }
 
     /* glow frame */
@@ -253,6 +302,8 @@
     .ico.ufs{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.26); }
     .ico.asuse{ background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.26); }
     .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
+    .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
+    .ico.sum{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.22); }
 
     .card h3{
       margin:0;
@@ -297,6 +348,7 @@
       text-decoration:none;
       user-select:none;
       transform: translateZ(25px);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
     }
     .btn:hover{ transform: translateZ(25px) translateY(-2px); }
 
@@ -314,6 +366,7 @@
     .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
     .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
     .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
+    .btn.pink{ background: var(--pink); color:#2b0011; box-shadow: 0 18px 35px rgba(251,113,133,.15); }
 
     /* footer */
     .foot{
@@ -327,14 +380,6 @@
       flex-wrap:wrap;
     }
     .foot b{ color:#dbeafe; }
-
-    /* small “spark” line */
-    .spark{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
-      opacity:.55;
-      margin: 18px 0 0;
-    }
 
     /* Left Rail (global) */
     .left-rail{
@@ -356,6 +401,7 @@
       padding:8px 6px;
       border-radius:12px;
       line-height:1.2;
+      transition: .2s ease;
     }
     .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
     .left-rail a.hub{ color:var(--accent); }
@@ -367,8 +413,7 @@
     @media (max-width: 640px){
       .wrap{ margin-left:72px; }
     }
-
-</style>
+  </style>
 </head>
 
 <body>
@@ -410,57 +455,113 @@
       </div>
     </div>
 
-    <div class="grid">
-      <!-- PLFS -->
-      <div class="card" onclick="go('plfs.html')" role="button" aria-label="Open PLFS">
-        <div class="card-head">
-          <div class="ico plfs">📊</div>
-          <h3>PLFS</h3>
+    <!-- =========================
+         SECTION 1: SCHEMES
+    ========================== -->
+    <div class="section">
+      <div class="section-title">
+        <div class="left">
+          <span>📊</span>
+          <div>Schemes</div>
         </div>
-        <p>Command dashboard for sample tracking, visits, and field monitoring.</p>
-        <div class="btnrow">
-          <a class="btn" href="plfs.html">🚀 Open PLFS</a>
-          <a class="btn secondary" href="plfs.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+        <div class="right">PLFS • UFS • ASUSE</div>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="grid">
+        <!-- PLFS -->
+        <div class="card" onclick="go('plfs.html')" role="button" aria-label="Open PLFS">
+          <div class="card-head">
+            <div class="ico plfs">📊</div>
+            <h3>PLFS</h3>
+          </div>
+          <p>Command dashboard for sample tracking, visits, and field monitoring.</p>
+          <div class="btnrow">
+            <a class="btn" href="plfs.html" onclick="event.stopPropagation()">🚀 Open PLFS</a>
+            <a class="btn secondary" href="plfs.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+          </div>
+        </div>
+
+        <!-- UFS -->
+        <div class="card" onclick="go('ufs_weekly.html')" role="button" aria-label="Open UFS">
+          <div class="card-head">
+            <div class="ico ufs">🗓️</div>
+            <h3>UFS</h3>
+          </div>
+          <p>Open weekly and monthly progress tools in one place.</p>
+          <div class="btnrow">
+            <a class="btn green" href="ufs_weekly.html" onclick="event.stopPropagation()">📅 Weekly</a>
+            <a class="btn green" href="ufs_monthly.html" onclick="event.stopPropagation()">🗓️ Monthly</a>
+            <a class="btn secondary" href="ufs_weekly.html#reports" onclick="event.stopPropagation()">📈 Reports</a>
+          </div>
+        </div>
+
+        <!-- ASUSE -->
+        <div class="card" onclick="go('asuse.html')" role="button" aria-label="Open ASUSE">
+          <div class="card-head">
+            <div class="ico asuse">🧾</div>
+            <h3>ASUSE</h3>
+          </div>
+          <p>ASUSE operations: roster, monitoring, and quick analytics access.</p>
+          <div class="btnrow">
+            <a class="btn violet" href="asuse.html" onclick="event.stopPropagation()">✨ Open ASUSE</a>
+            <a class="btn secondary" href="asuse.html#settings" onclick="event.stopPropagation()">⚙️ Settings</a>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- UFS (Weekly + Monthly inside same card) -->
-      <div class="card" onclick="go('ufs_weekly.html')" role="button" aria-label="Open UFS">
-        <div class="card-head">
-          <div class="ico ufs">🗓️</div>
-          <h3>UFS</h3>
+    <!-- =========================
+         SECTION 2: TA/DA + BILL DOCUMENTS
+    ========================== -->
+    <div class="section">
+      <div class="section-title">
+        <div class="left">
+          <span>🧾</span>
+          <div>TA/DA Bills & Documents</div>
         </div>
-        <p>Open weekly and monthly progress tools in one place.</p>
-        <div class="btnrow">
-          <a class="btn green" href="ufs_weekly.html" onclick="event.stopPropagation()">📅 Weekly</a>
-          <a class="btn green" href="ufs_monthly.html" onclick="event.stopPropagation()">🗓️ Monthly</a>
-          <a class="btn secondary" href="ufs_weekly.html#reports" onclick="event.stopPropagation()">📈 Reports</a>
-        </div>
+        <div class="right">Sheet • Upload • Summary</div>
       </div>
+      <div class="section-divider"></div>
 
-      <!-- ASUSE -->
-      <div class="card" onclick="go('asuse.html')" role="button" aria-label="Open ASUSE">
-        <div class="card-head">
-          <div class="ico asuse">🧾</div>
-          <h3>ASUSE</h3>
+      <div class="grid">
+        <!-- TA/DA -->
+        <div class="card" onclick="go('ta_da.html')" role="button" aria-label="Open TA/DA">
+          <div class="card-head">
+            <div class="ico tada">🧮</div>
+            <h3>TA / DA Sheet</h3>
+          </div>
+          <p>Designation-wise TA/DA calculation with PDF & Excel export (one-page A4 landscape).</p>
+          <div class="btnrow">
+            <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
+            <a class="btn secondary" href="ta_da.html#pdf" onclick="event.stopPropagation()">⬇️ PDF Export</a>
+          </div>
         </div>
-        <p>ASUSE operations: roster, monitoring, and quick analytics access.</p>
-        <div class="btnrow">
-          <a class="btn violet" href="asuse.html">✨ Open ASUSE</a>
-          <a class="btn secondary" href="asuse.html#settings" onclick="event.stopPropagation()">⚙️ Settings</a>
-        </div>
-      </div>
 
-      <!-- TA/DA -->
-      <div class="card" onclick="go('ta_da.html')" role="button" aria-label="Open TA/DA">
-        <div class="card-head">
-          <div class="ico tada">🧮</div>
-          <h3>TA / DA</h3>
+        <!-- Documents -->
+        <div class="card" onclick="go('tada_documents.html')" role="button" aria-label="Open TA/DA Documents">
+          <div class="card-head">
+            <div class="ico docs">📁</div>
+            <h3>Bill Documents</h3>
+          </div>
+          <p>Upload / view TA bills, hotel bills, tickets, scanned PDFs, and supporting files.</p>
+          <div class="btnrow">
+            <a class="btn pink" href="tada_documents.html" onclick="event.stopPropagation()">📂 Open Docs</a>
+            <a class="btn secondary" href="tada_documents.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
+          </div>
         </div>
-        <p>Excel-like TA/DA calculation sheet with designation-wise rates and auto totals.</p>
-        <div class="btnrow">
-          <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
-          <a class="btn secondary" href="ta_da.html#print" onclick="event.stopPropagation()">🖨️ Print</a>
+
+        <!-- Summary -->
+        <div class="card" onclick="go('tada_summary.html')" role="button" aria-label="Open Claim Summary">
+          <div class="card-head">
+            <div class="ico sum">📌</div>
+            <h3>Claim Summary</h3>
+          </div>
+          <p>Designation-wise totals + monthly summary to verify claims quickly.</p>
+          <div class="btnrow">
+            <a class="btn" href="tada_summary.html" onclick="event.stopPropagation()">📊 View Summary</a>
+            <a class="btn secondary" href="tada_summary.html#month" onclick="event.stopPropagation()">🗓️ Month</a>
+          </div>
         </div>
       </div>
     </div>
