@@ -88,11 +88,40 @@
       opacity:.75;
     }
 
+    /* ===== Left Rail (global) ===== */
+    .left-rail{
+      position:fixed; inset:0 auto 0 0;
+      width:72px;
+      background:#0f172a;
+      border-right:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center;
+      padding-top:14px; gap:18px;
+      z-index:9999;
+    }
+    .left-rail a{
+      width:56px;
+      text-align:center;
+      font-size:11px;
+      font-weight:900;
+      text-decoration:none;
+      color:#fff;
+      padding:8px 6px;
+      border-radius:12px;
+      line-height:1.2;
+      transition:.2s ease;
+    }
+    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
+    .left-rail a.hub{ color:var(--accent); }
+    .left-rail a.weekly{ color:var(--green); }
+    .left-rail a.monthly{ color:var(--green); }
+    .left-rail a.tada{ color:var(--amber); }
+
     /* ===== layout ===== */
     .wrap{
       max-width:1240px;
       margin:0 auto;
       padding:56px 18px 90px;
+      margin-left:72px;
     }
 
     .top{
@@ -100,7 +129,7 @@
       align-items:flex-start;
       justify-content:space-between;
       gap:18px;
-      margin-bottom: 26px;
+      margin-bottom: 16px;
     }
     .brand{
       display:flex;
@@ -124,7 +153,7 @@
       font-weight:600;
       font-size:14px;
       line-height:1.5;
-      max-width: 720px;
+      max-width: 760px;
     }
 
     .badge-row{
@@ -163,7 +192,6 @@
       letter-spacing:.5px;
     }
 
-    /* small “spark” line */
     .spark{
       height:1px;
       background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
@@ -171,8 +199,8 @@
       margin: 18px 0 0;
     }
 
-    /* ===== NEW: Section headers (keeping same visualization) ===== */
-    .section{ margin-top: 18px; }
+    /* ===== Section headers (premium, keeps visualization) ===== */
+    .section{ margin-top: 22px; }
     .section-title{
       display:flex;
       align-items:center;
@@ -240,8 +268,6 @@
       cursor: pointer;
       transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
     }
-
-    /* glow frame */
     .card::before{
       content:"";
       position:absolute;
@@ -252,8 +278,6 @@
       opacity:.9;
       pointer-events:none;
     }
-
-    /* shine sweep */
     .card::after{
       content:"";
       position:absolute;
@@ -272,7 +296,6 @@
       0%{ transform: translateX(0) rotate(18deg); }
       100%{ transform: translateX(380%) rotate(18deg); }
     }
-
     .card:hover{
       border-color: rgba(56,189,248,.55);
       box-shadow: var(--shadow);
@@ -303,7 +326,7 @@
     .ico.asuse{ background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.26); }
     .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
     .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
-    .ico.sum{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.22); }
+    .ico.arc{ background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.26); }
 
     .card h3{
       margin:0;
@@ -366,9 +389,7 @@
     .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
     .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
     .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
-    .btn.pink{ background: var(--pink); color:#2b0011; box-shadow: 0 18px 35px rgba(251,113,133,.15); }
 
-    /* footer */
     .foot{
       margin-top: 26px;
       color: rgba(148,163,184,.75);
@@ -380,39 +401,6 @@
       flex-wrap:wrap;
     }
     .foot b{ color:#dbeafe; }
-
-    /* Left Rail (global) */
-    .left-rail{
-      position:fixed; inset:0 auto 0 0;
-      width:72px;
-      background:#0f172a;
-      border-right:1px solid var(--border);
-      display:flex; flex-direction:column; align-items:center;
-      padding-top:14px; gap:18px;
-      z-index:9999;
-    }
-    .left-rail a{
-      width:56px;
-      text-align:center;
-      font-size:11px;
-      font-weight:900;
-      text-decoration:none;
-      color:#fff;
-      padding:8px 6px;
-      border-radius:12px;
-      line-height:1.2;
-      transition: .2s ease;
-    }
-    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
-    .left-rail a.hub{ color:var(--accent); }
-    .left-rail a.weekly{ color:var(--green); }
-    .left-rail a.monthly{ color:var(--green); }
-    .left-rail a.tada{ color:var(--amber); }
-
-    .wrap{ margin-left:72px; }
-    @media (max-width: 640px){
-      .wrap{ margin-left:72px; }
-    }
   </style>
 </head>
 
@@ -455,15 +443,10 @@
       </div>
     </div>
 
-    <!-- =========================
-         SECTION 1: SCHEMES
-    ========================== -->
+    <!-- ========================= SECTION 1: SCHEMES ========================= -->
     <div class="section">
       <div class="section-title">
-        <div class="left">
-          <span>📊</span>
-          <div>Schemes</div>
-        </div>
+        <div class="left"><span>📊</span><div>Schemes</div></div>
         <div class="right">PLFS • UFS • ASUSE</div>
       </div>
       <div class="section-divider"></div>
@@ -511,16 +494,11 @@
       </div>
     </div>
 
-    <!-- =========================
-         SECTION 2: TA/DA + BILL DOCUMENTS
-    ========================== -->
+    <!-- ========================= SECTION 2: TA/DA & DOCS ========================= -->
     <div class="section">
       <div class="section-title">
-        <div class="left">
-          <span>🧾</span>
-          <div>TA/DA Bills & Documents</div>
-        </div>
-        <div class="right">Sheet • Upload • Summary</div>
+        <div class="left"><span>🧾</span><div>TA/DA Bills & Documents</div></div>
+        <div class="right">Sheet • Bills • Archive</div>
       </div>
       <div class="section-divider"></div>
 
@@ -529,38 +507,37 @@
         <div class="card" onclick="go('ta_da.html')" role="button" aria-label="Open TA/DA">
           <div class="card-head">
             <div class="ico tada">🧮</div>
-            <h3>TA / DA Sheet</h3>
+            <h3>TA / DA Calculation</h3>
           </div>
-          <p>Designation-wise TA/DA calculation with PDF & Excel export (one-page A4 landscape).</p>
+          <p>Designation-wise TA/DA with PDF & Excel export.</p>
           <div class="btnrow">
             <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
             <a class="btn secondary" href="ta_da.html#pdf" onclick="event.stopPropagation()">⬇️ PDF Export</a>
           </div>
         </div>
 
-        <!-- Documents -->
-        <div class="card" onclick="go('tada_documents.html')" role="button" aria-label="Open TA/DA Documents">
+        <!-- Bills -->
+        <div class="card" onclick="go('ta_da_bills.html')" role="button" aria-label="Open Bills">
           <div class="card-head">
-            <div class="ico docs">📁</div>
-            <h3>Bill Documents</h3>
+            <div class="ico docs">📄</div>
+            <h3>TA / DA Bills</h3>
           </div>
-          <p>Upload / view TA bills, hotel bills, tickets, scanned PDFs, and supporting files.</p>
+          <p>Edit, attach, and verify TA/DA bill documents.</p>
           <div class="btnrow">
-            <a class="btn pink" href="tada_documents.html" onclick="event.stopPropagation()">📂 Open Docs</a>
-            <a class="btn secondary" href="tada_documents.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
+            <a class="btn amber" href="ta_da_bills.html" onclick="event.stopPropagation()">📄 Open Bills</a>
+            <a class="btn secondary" href="ta_da_bills.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
           </div>
         </div>
 
-        <!-- Summary -->
-        <div class="card" onclick="go('tada_summary.html')" role="button" aria-label="Open Claim Summary">
+        <!-- Archive -->
+        <div class="card" onclick="go('ta_da_archive.html')" role="button" aria-label="Open Archive">
           <div class="card-head">
-            <div class="ico sum">📌</div>
-            <h3>Claim Summary</h3>
+            <div class="ico arc">🗂️</div>
+            <h3>Bill Archive</h3>
           </div>
-          <p>Designation-wise totals + monthly summary to verify claims quickly.</p>
+          <p>Past TA/DA claims and PDF records.</p>
           <div class="btnrow">
-            <a class="btn" href="tada_summary.html" onclick="event.stopPropagation()">📊 View Summary</a>
-            <a class="btn secondary" href="tada_summary.html#month" onclick="event.stopPropagation()">🗓️ Month</a>
+            <a class="btn secondary" href="ta_da_archive.html" onclick="event.stopPropagation()">🗂️ View Archive</a>
           </div>
         </div>
       </div>
@@ -648,7 +625,7 @@
     }
     draw();
 
-    // ===== Micro-tilt on hover (no library) =====
+    // ===== Micro-tilt on hover =====
     document.querySelectorAll('.card').forEach(card=>{
       let rect=null;
       card.addEventListener('mousemove', (e)=>{
@@ -657,8 +634,8 @@
         const y = e.clientY - rect.top;
         const cx = rect.width/2;
         const cy = rect.height/2;
-        const rx = ((y - cy)/cy) * -5; // rotateX
-        const ry = ((x - cx)/cx) * 6;  // rotateY
+        const rx = ((y - cy)/cy) * -5;
+        const ry = ((x - cx)/cx) * 6;
         card.style.transform = `translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
       });
       card.addEventListener('mouseleave', ()=>{
