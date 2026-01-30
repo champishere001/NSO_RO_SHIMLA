@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TA/DA Calculation Sheet (Multi Tour Range + Single-Page PDF)</title>
+<title>TA/DA Calculation Sheet (Multi Tour + 1 Page PDF + Excel)</title>
 
-<!-- PDF + Excel libs (NO PRINT) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- Excel -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<!-- ✅ PDF deps (reliable) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
   :root{
@@ -24,6 +27,9 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);font-family:Arial,system-ui;padding:10px}
   .wrap{max-width:1500px;margin:auto}
+
+  /* Anything with .no-export will not be included in PDF */
+  .pdf-export .no-export{display:none !important}
 
   /* ===== Toolbar ===== */
   .toolbar{
@@ -60,7 +66,7 @@
   .btn.gray{background:var(--btn3)}
   .btn.danger{background:var(--danger)}
   .btn:active{transform:translateY(1px)}
-  .hint{font-size:12px;color:#333;margin-left:auto;max-width:720px}
+  .hint{font-size:12px;color:#333;margin-left:auto;max-width:760px}
 
   .rateBadge{
     height:34px;display:flex;align-items:center;gap:8px;
@@ -83,18 +89,10 @@
   .rangesHead{
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   }
-  .rangesHead .title{
-    font-weight:900;font-size:13px;
-  }
+  .rangesHead .title{font-weight:900;font-size:13px}
 
-  /* ✅ IMPORTANT: ranges shown NEXT TO previous (horizontal) */
-  #rangesContainer{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:flex-end;
-  }
-
+  /* side-by-side */
+  #rangesContainer{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
   .rangeRow{
     display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;
     padding:8px;border:1px solid #e3e7ee;border-radius:8px;background:#fafbfc;
@@ -105,7 +103,7 @@
     padding:6px 10px;border-radius:999px;height:34px;display:flex;align-items:center;
   }
 
-  /* ===== Sheet ===== */
+  /* ===== Sheet (export area) ===== */
   #taDaSheet{
     background:var(--card);border:1px solid var(--border);
     padding:10px;border-radius:8px;
@@ -155,7 +153,7 @@
     border-bottom:1px solid #000;display:inline-block;min-width:180px;height:12px;vertical-align:bottom;
   }
 
-  /* ===== Single-page PDF compact mode ===== */
+  /* Compact while capturing PDF */
   .pdf-compact .header-grid td{padding:4px;font-size:10px}
   .pdf-compact .header-title{font-size:12px}
   .pdf-compact .main th,.pdf-compact .main td{font-size:9px;padding:2px 3px}
@@ -163,17 +161,14 @@
   .pdf-compact .main input,.pdf-compact .main select{height:14px;font-size:9px}
   .pdf-compact .footer{font-size:9px;margin-top:6px}
   .pdf-compact .line{min-width:150px}
-
-  /* (optional) if user uses browser print later */
-  @page { size: A4 landscape; margin: 5mm; }
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-  <!-- ===== TOOLBAR ===== -->
-  <div class="toolbar">
+  <!-- ✅ toolbar is NOT exported -->
+  <div class="toolbar no-export">
     <div class="field">
       <label>नाम / Name</label>
       <input id="name" placeholder="Name" />
@@ -195,12 +190,12 @@
       <input id="place" placeholder="Place" />
     </div>
 
-    <div class="toggle" title="Designation select karte hi DA/Hotel rates auto set honge">
+    <div class="toggle">
       <input id="autoRates" type="checkbox" checked />
       <span><b>Auto rates</b> by designation</span>
     </div>
 
-    <div class="toggle" title="ON = Hotel auto fill (each range last day blank). Manual entry allowed.">
+    <div class="toggle">
       <input id="autoHotel" type="checkbox" checked />
       <span><b>Auto Hotel</b> claim</span>
     </div>
@@ -219,14 +214,11 @@
       <b id="appliedRateText">DA 500 | Hotel 750</b>
     </div>
 
-    <!-- MULTI RANGE PANEL -->
     <div class="ranges">
       <div class="rangesHead">
         <div class="title">Multi Tour Ranges</div>
         <button class="btn gray" type="button" onclick="addRangeUI()">+ Add Range</button>
-        <div style="font-size:12px;color:#333">
-          Ranges will add <b>next to previous</b> (not replace).
-        </div>
+        <div style="font-size:12px;color:#333">Ranges will add next to previous (not replace).</div>
       </div>
       <div id="rangesContainer"></div>
     </div>
@@ -235,15 +227,14 @@
     <button class="btn gray" onclick="addRow()">+ Add Row</button>
     <button class="btn gray" onclick="clearAll()">Clear</button>
 
+    <!-- ✅ PDF button fixed -->
     <button class="btn primary" onclick="exportPDFSinglePage()">⬇️ PDF (1 Page)</button>
     <button class="btn primary" onclick="exportExcel()">⬇️ Excel</button>
 
-    <div class="hint">
-      ✅ Multi ranges shown side-by-side • ✅ PDF forced to 1 page landscape (auto-fit) • ✅ Blank stays blank
-    </div>
+    <div class="hint">✅ PDF = only sheet (no toolbar) • ✅ Always landscape, 1 page • ✅ Blank stays blank</div>
   </div>
 
-  <!-- ===== SHEET ===== -->
+  <!-- ===== EXPORT AREA ===== -->
   <div id="taDaSheet">
     <table class="header-grid">
       <tr>
@@ -296,7 +287,7 @@
       </tfoot>
     </table>
 
-    <div class="footer" id="footerLine">
+    <div class="footer">
       <div>दिनांक: <span class="line"></span></div>
       <div>सम्बन्धित क्षेत्र कर्मचारी के हस्ताक्षर: <span class="line"></span></div>
     </div>
@@ -304,18 +295,9 @@
 </div>
 
 <script>
-/* =========================
-   MULTI TOUR RANGE + 1 PAGE PDF
-   - Multiple ranges add next to previous (horizontal)
-   - Generate rows for each range (duplicates allowed)
-   - Hotel auto per range: last day blank
-   - Blank stays blank if no entry
-   - PDF export: ALWAYS 1 page landscape (auto fit)
-   ========================= */
+const LS_KEY = "tada_sheet_multi_ranges_pdf_fixed_v1";
 
-const LS_KEY = "tada_sheet_multi_ranges_v2_onepage";
-
-/* Designation-wise rates (as provided) */
+/* Designation-wise rates */
 const DESIGNATION_RATES = {
   "Senior Statistical Officer": { da: 1000, hotel: 960 },
   "Survey Supervisor":         { da: 500,  hotel: 750 },
@@ -323,7 +305,6 @@ const DESIGNATION_RATES = {
   "Other":                     { da: 500,  hotel: 750 }
 };
 
-/* ===== helpers ===== */
 function parseNum(v){
   const s = String(v ?? "").trim();
   if(s === "") return 0;
@@ -334,17 +315,14 @@ function fmtINR(n){ return Math.round(Number(n||0)).toString(); }
 function isBlank(v){ return String(v ?? "").trim() === ""; }
 function setValIfDifferent(el, v){ if(el.value !== v) el.value = v; }
 
-/* timezone-safe local ISO */
 function toLocalISO(d){
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,"0");
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
-
 function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
 
-/* ===== header ===== */
 function setHeaderFromInputs(){
   const name = document.getElementById("name").value.trim() || "-";
   const desig = document.getElementById("designation").value || "-";
@@ -399,7 +377,7 @@ function addRangeUI(prefill={from:"",to:""}){
       <label>To</label>
       <input type="date" class="rg_to" value="${prefill.to||""}">
     </div>
-    <button class="btn danger" type="button" title="Remove range">Remove</button>
+    <button class="btn danger" type="button">Remove</button>
   `;
 
   row.querySelector(".btn.danger").addEventListener("click", ()=>{
@@ -426,7 +404,6 @@ function getRanges(){
   }));
 }
 
-/* timezone-safe date range */
 function dateRange(from, to){
   const out=[];
   if(!from || !to) return out;
@@ -445,7 +422,7 @@ function dateRange(from, to){
   return out;
 }
 
-/* ===== table rows ===== */
+/* ===== table ===== */
 function renderModeOptions(selected){
   const modes = ["", "Bus", "Taxi", "Train", "Own Vehicle", "Other"];
   return modes.map(m=>{
@@ -464,7 +441,7 @@ function makeRow(data={}){
     <td><input type="date" class="r_date" value="${data.date||""}"></td>
     <td><input type="number" min="0" step="1" class="r_noDA" value="${data.noDA ?? ""}"></td>
     <td><input type="number" min="0" step="1" class="r_DA" value="${data.DA ?? ""}"></td>
-    <td><input type="number" min="0" step="1" class="r_hotel" value="${data.hotel ?? ""}" title="Type = manual override"></td>
+    <td><input type="number" min="0" step="1" class="r_hotel" value="${data.hotel ?? ""}" title="manual"></td>
     <td><input type="number" min="0" step="1" class="r_totalDA" value="${data.totalDA ?? ""}" readonly></td>
     <td><select class="r_mode">${renderModeOptions(data.mode)}</select></td>
     <td><input type="number" min="0" step="1" class="r_km" value="${data.km ?? ""}"></td>
@@ -492,11 +469,9 @@ function isRowLastDay(tr, dateISO){
   const end = tr.dataset.rangeEnd || "";
   return !!(end && dateISO && end === dateISO);
 }
-
 function shouldAutoHotel(tr){
   return document.getElementById("autoHotel").checked && tr.dataset.hotelManual !== "1";
 }
-
 function applyAutoHotelIfNeeded(tr){
   if(!shouldAutoHotel(tr)) return;
 
@@ -577,7 +552,6 @@ function addRow(prefill={}){
   saveAll();
 }
 
-/* ===== Generate rows for ALL ranges (do not replace, append) ===== */
 function generateRows(){
   const ranges = getRanges().filter(r=>r.from && r.to);
   if(!ranges.length){
@@ -594,13 +568,7 @@ function generateRows(){
 
     list.forEach(d=>{
       const iso = toLocalISO(d);
-      addRow({
-        date: iso,
-        noDA: 1,
-        rangeId: rg.id,
-        rangeEnd: endISO,
-        hotelManual: 0
-      });
+      addRow({ date: iso, noDA: 1, rangeId: rg.id, rangeEnd: endISO, hotelManual: 0 });
     });
   });
 
@@ -663,7 +631,6 @@ function loadAll(){
     document.getElementById("rateDA").value = m.rateDA || "500";
     document.getElementById("rateHotel").value = m.rateHotel || "750";
 
-    // ranges
     const rc = document.getElementById("rangesContainer");
     rc.innerHTML = "";
     const ranges = data.ranges || [];
@@ -673,7 +640,6 @@ function loadAll(){
       addRangeUI();
     }
 
-    // rows
     const tbody = document.getElementById("rows");
     tbody.innerHTML = "";
     (data.rows || []).forEach(r=>{
@@ -739,20 +705,20 @@ function bindMeta(){
   });
 }
 
-/* ===== Export helpers ===== */
+/* ===== Export ===== */
 function makeFileName(prefix, ext){
   const nm = (document.getElementById("name").value || "User").trim().replace(/\s+/g,"_");
   const des = (document.getElementById("designation").value || "").trim().replace(/\s+/g,"_");
   return `${prefix}_${nm}${des?("_"+des):""}.${ext}`;
 }
 
-/* ✅ SINGLE PAGE PDF (landscape) - always 1 page, auto-fit */
+/* ✅ PDF: always landscape, always 1 page, only sheet exported */
 async function exportPDFSinglePage(){
   const sheet = document.getElementById("taDaSheet");
-  sheet.classList.add("pdf-compact");
+  document.body.classList.add("pdf-export");      // hides toolbar
+  sheet.classList.add("pdf-compact");             // tight layout
 
   try{
-    // use html2canvas from html2pdf bundle
     const canvas = await html2canvas(sheet, {
       scale: 2,
       useCORS: true,
@@ -761,7 +727,6 @@ async function exportPDFSinglePage(){
       scrollY: 0
     });
 
-    // jsPDF from html2pdf bundle
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
@@ -770,21 +735,23 @@ async function exportPDFSinglePage(){
 
     const imgData = canvas.toDataURL("image/jpeg", 0.98);
 
-    // fit image into ONE page
     const imgW = canvas.width;
     const imgH = canvas.height;
-
     const ratio = Math.min(pageW / imgW, pageH / imgH);
+
     const w = imgW * ratio;
     const h = imgH * ratio;
-
     const x = (pageW - w) / 2;
     const y = (pageH - h) / 2;
 
     pdf.addImage(imgData, "JPEG", x, y, w, h, undefined, "FAST");
     pdf.save(makeFileName("TA_DA_Sheet_OnePage", "pdf"));
+  } catch (e) {
+    alert("PDF export failed. Please check internet / reload page once.");
+    console.error(e);
   } finally {
     sheet.classList.remove("pdf-compact");
+    document.body.classList.remove("pdf-export");
   }
 }
 
@@ -845,7 +812,6 @@ function exportExcel(){
   ws["!cols"] = [
     {wch:12},{wch:10},{wch:10},{wch:12},{wch:12},{wch:12},{wch:8},{wch:12},{wch:12}
   ];
-
   XLSX.utils.book_append_sheet(wb, ws, "TA_DA");
   XLSX.writeFile(wb, makeFileName("TA_DA_Sheet","xlsx"));
 }
@@ -855,8 +821,8 @@ function exportExcel(){
   bindMeta();
   const ok = loadAll();
   if(!ok){
-    addRangeUI();   // first range
-    addRow({});     // one empty row
+    addRangeUI();
+    addRow({});
   }
   setHeaderFromInputs();
   applyDesignationRates();
