@@ -184,62 +184,59 @@
     font-weight:900;
   }
 
-  /* ================= PRINT FIXES (ADDED) ================= */
-  @media print {
+  /* ====== ONE-PAGE LANDSCAPE PRINT LOCK ====== */
+@page{
+  size: A4 landscape;
+  margin: 6mm;              /* keep small; increase only if needed */
+}
 
-  /* 1️⃣ Force A4 Landscape ALWAYS */
-  @page {
-    size: A4 landscape;
-    margin: 5mm;
+html, body{
+  height: auto !important;
+}
+
+@media print{
+  /* remove any extra page area */
+  body{
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
   }
 
-  /* 2️⃣ Kill browser margins & backgrounds */
-  html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  /* 3️⃣ Fit EVERYTHING into ONE page */
-  body {
-    transform: scale(0.82);          /* 🔑 key for single page */
-    transform-origin: top left;
-    width: 120%;
-  }
-
-  .sheet {
-    max-width: none !important;
+  /* put EVERYTHING inside this wrapper (see below) */
+  .print-one-page{
     width: 100% !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
+    max-width: 100% !important;
 
-  /* 4️⃣ Hide non-print sections */
-  .actionsbar,
-  .ranges,
-  tr.print-hide {
-    display: none !important;
-  }
-
-  /* 5️⃣ Tighten table for print */
-  table {
-    width: 100% !important;
-    table-layout: fixed !important;
-    font-size: 10px !important;
-  }
-
-  th, td {
-    padding: 3px 3px !important;
-  }
-
-  /* 6️⃣ HARD STOP on page breaks */
-  table, tr, td, th {
-    page-break-inside: avoid !important;
+    /* prevents page-2 */
+    break-after: avoid !important;
+    page-break-after: avoid !important;
     break-inside: avoid !important;
+    page-break-inside: avoid !important;
+
+    /* scale down to fit one page */
+    transform: scale(0.92);          /* adjust 0.88–0.98 if needed */
+    transform-origin: top left;
+
+    /* important: avoid overflow that triggers 2nd page */
+    overflow: hidden !important;
+  }
+
+  /* keep table from splitting */
+  table, thead, tbody, tfoot, tr, td, th{
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* reduce spacing (huge effect on extra blank page) */
+  th, td{
+    padding: 3px 4px !important;
+    line-height: 1.1 !important;
+    font-size: 11px !important;
+  }
+
+  /* kill any bottom gaps */
+  .no-print, button, .controls{
+    display:none !important;
   }
 }
 </style>
