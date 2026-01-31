@@ -699,24 +699,28 @@ async function syncToCloud(){
 }
 
 async function autoFetch(){
-  toggleLoader(true, "FETCHING...");
+  toggleLoader(true, "FETCHING HP...");
   try{
-    const snap = await db.ref('plfs_roster').once('value');
+    const STATE = "HIMACHAL PRADESH";
+
+    const snap = await db.ref(`plfs_roster/${STATE}`).once('value');
+
     master = [];
     if(snap.exists()){
-      snap.forEach(s=>{
-        const obj = s.val() || {};
-        Object.values(obj).forEach(r => master.push(r));
-      });
+      const obj = snap.val() || {};
+      Object.values(obj).forEach(r => master.push(r));
     }
-    if(!selSt) selSt = 'HIMACHAL PRADESH';
+
+    // Lock state to HP
+    selSt = STATE;
+    selSro = "ALL SROs";
+
     renderNav();
     refresh();
   } finally {
     toggleLoader(false);
   }
 }
-
 /* ===================== NO PASSWORD FOR SRO VIEW ===================== */
 function selectSroWithAuth(sroName){
   // No password / no restriction
@@ -743,9 +747,7 @@ function renderNav(){
       if(selSt === st){
         const sros = [...new Set(master.filter(x => x.state === st).map(x => x.sro))].sort();
 
-        html += `
-          <div class="sub-menu-container">
-            <div class="pill-grid">
+        html +=">
               <div class="pill all-btn ${selSro==='ALL SROs'?'active':''}" onclick="event.stopPropagation(); selectSroWithAuth('ALL SROs');">🌍 ALL SRO's</div>
               ${sros.map(s => `<div class="pill ${selSro===s?'active':''}" onclick="event.stopPropagation(); selectSroWithAuth('${s}');">${s}</div>`).join('')}
             </div>
