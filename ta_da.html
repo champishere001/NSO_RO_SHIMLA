@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>TA-DA Calculation Sheet</title>
+<title>TA/DA Calculation Sheet</title>
 
 <style>
   body{
@@ -179,6 +179,10 @@
     background:#eef6ff;
   }
 
+  /* Compact headers (optional but helps fit) */
+  .colhead th{ padding-top:2px; padding-bottom:2px; }
+  .grouphead{ padding:2px !important; }
+
   /* ===== PRINT: A4 LANDSCAPE + ONE PAGE FIT ===== */
   @page{
     size: A4 landscape;
@@ -200,28 +204,22 @@
       max-width:none !important;
     }
 
-    /* Hide controls + ranges + rates + blank spacer rows */
+    /* Hide controls + ranges + rates + spacer rows */
     .actionsbar{ display:none !important; }
     .no-print{ display:none !important; }
 
     /* tighter to fit one page */
-    table{
-      font-size:10.2px !important;
-    }
+    table{ font-size:9.5px !important; }
     td, th{
-      padding:2.2px 2.2px !important;   /* REDUCE CELL HEIGHT */
-      line-height:1.05 !important;      /* REDUCE LINE HEIGHT */
+      padding:1.8px 2px !important;
+      line-height:1.02 !important;
     }
     input, select{
-      font-size:10.2px !important;
+      font-size:9.5px !important;
       padding:0 !important;
-      line-height:1.05 !important;
-    }
-    input[type="date"]{
-      min-height:unset !important;
+      line-height:1.02 !important;
     }
 
-    /* keep table on one page */
     table, tr, td, th{
       page-break-inside: avoid !important;
       break-inside: avoid !important;
@@ -234,19 +232,20 @@
 <div class="sheet">
 
   <table id="tada">
+    <!-- ✅ Reduced column widths (compact) -->
     <colgroup>
-      <col style="width:12.5%">
-      <col style="width:10.5%">
-      <col style="width:10.5%">
-      <col style="width:10.5%">
+      <col style="width:8%">
+      <col style="width:6%">
+      <col style="width:8%">
+      <col style="width:8%">
+      <col style="width:9%">
+      <col style="width:7%">
+      <col style="width:6%">
+      <col style="width:7%">
       <col style="width:11%">
-      <col style="width:10%">
-      <col style="width:10%">
-      <col style="width:10.5%">
-      <col style="width:14.5%">
     </colgroup>
 
-    <!-- spacers (hide in print) -->
+    <!-- spacer (hidden in print) -->
     <tr class="no-print"><td colspan="9" style="border:none; padding:4px;"></td></tr>
 
     <tr>
@@ -360,14 +359,12 @@
     </tr>
   </table>
 
-  <!-- Buttons (HIDE IN PRINT automatically because actionsbar hidden in print) -->
+  <!-- Buttons -->
   <div class="actionsbar">
     <button class="btn secondary" onclick="addRow()">+ Add Row</button>
     <button class="btn secondary" onclick="duplicateSelected()">➕ Add Journey Day (Duplicate Selected)</button>
     <button class="btn danger" onclick="deleteSelected()">🗑 Delete Selected</button>
     <button class="btn danger" onclick="clearRows()">Clear Rows</button>
-
-    <!-- PDF BUTTON (opens browser Save as PDF dialog) -->
     <button class="btn" onclick="generatePDF()">Generate PDF</button>
   </div>
 
@@ -495,7 +492,6 @@
   }
 
   // Generate rows for a specific range
-  // append=true -> add to existing; append=false -> replace table rows with this range only
   function generateRange(id, append){
     const r = ranges.find(x => x.id === id);
     if(!r) return;
@@ -527,7 +523,7 @@
   function generateAllRanges(){
     if(!ranges.length) return;
     rowsEl.innerHTML = "";
-    ranges.forEach(r => generateRange(r.id, true)); // append
+    ranges.forEach(r => generateRange(r.id, true));
     sortRowsByDate();
     recalc();
   }
@@ -535,7 +531,6 @@
   // ===== Rows / selection / journey day =====
   function addRow(prefill = {}){
     const tr = document.createElement("tr");
-
     tr.dataset.nohotel = prefill.noHotel ? "1" : "0";
     tr.dataset.rangeid = prefill.rangeId || "";
 
@@ -640,11 +635,7 @@
       tr.querySelector(".tda").textContent = money(tda);
       tr.querySelector(".total").textContent = money(total);
 
-      gDA += da;
-      gHotel += hotel;
-      gTDA += tda;
-      gFare += fare;
-      gAll += total;
+      gDA += da; gHotel += hotel; gTDA += tda; gFare += fare; gAll += total;
     });
 
     document.getElementById("gDA").textContent = money(gDA);
@@ -656,7 +647,7 @@
 
   // Auto-fill year from month if empty
   document.getElementById("month").addEventListener("input", (e) => {
-    const val = e.target.value; // yyyy-mm
+    const val = e.target.value;
     if(val && !document.getElementById("year").value){
       document.getElementById("year").value = val.split("-")[0];
     }
@@ -664,7 +655,6 @@
 
   // ===== PDF button =====
   function generatePDF(){
-    // Browser print dialog -> "Save as PDF"
     const oldTitle = document.title;
     const nm = (document.getElementById("name").value || "TA-DA").trim().replace(/\s+/g,"_");
     const mm = (document.getElementById("month").value || "").replace("-","_");
@@ -673,7 +663,7 @@
     setTimeout(()=>{ document.title = oldTitle; }, 300);
   }
 
-  // Start: 3 empty rows + range list init
+  // Start
   addRow(); addRow(); addRow();
   updateRates();
   renderRanges();
