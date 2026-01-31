@@ -183,48 +183,14 @@
   .colhead th{ padding-top:2px; padding-bottom:2px; }
   .grouphead{ padding:2px !important; }
 
-  /* ===== PRINT: A4 LANDSCAPE + ONE PAGE FIT ===== */
+    /* ===== PRINT: A4 LANDSCAPE + ONE PAGE FIT ===== */
   @page{
     size: A4 landscape;
     margin: 6mm;
   }
 
   @media print{
-    html, body{
-      background:#fff !important;
-      padding:0 !important;
-      margin:0 !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .sheet{
-      box-shadow:none !important;
-      border:none !important;
-      padding:0 !important;
-      max-width:none !important;
-    }
-
-    /* Hide controls + ranges + rates + spacer rows */
-    .actionsbar{ display:none !important; }
-    .no-print{ display:none !important; }
-
-    /* tighter to fit one page */
-    table{ font-size:9.5px !important; }
-    td, th{
-      padding:1.8px 2px !important;
-      line-height:1.02 !important;
-    }
-    input, select{
-      font-size:9.5px !important;
-      padding:0 !important;
-      line-height:1.02 !important;
-    }
-
-    table, tr, td, th{
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-  }
+    html, body
 </style>
 </head>
 
