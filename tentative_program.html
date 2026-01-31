@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Daily Diary / Tentative Program – A4 Landscape</title>
+<title>Exact PDF Printable Layout (A4 Landscape)</title>
+
+<!-- PDF.js (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <style>
   :root{
@@ -14,8 +17,8 @@
     --muted:#94a3b8;
     --accent:#38bdf8;
   }
-  *{box-sizing:border-box}
 
+  *{ box-sizing:border-box; }
   body{
     margin:0;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -25,7 +28,6 @@
     color:var(--text);
   }
 
-  /* Topbar */
   .topbar{
     position: sticky;
     top:0;
@@ -34,6 +36,7 @@
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255,255,255,.08);
   }
+
   .topbar-inner{
     max-width: 1200px;
     margin: 0 auto;
@@ -43,6 +46,7 @@
     align-items:center;
     flex-wrap:wrap;
   }
+
   .title{
     font-weight: 800;
     letter-spacing:.2px;
@@ -59,7 +63,8 @@
     border-radius:999px;
     background: rgba(56,189,248,.08);
   }
-  .btn{
+
+  .btn, .file{
     border:1px solid rgba(255,255,255,.12);
     background: rgba(255,255,255,.06);
     color: var(--text);
@@ -78,6 +83,16 @@
     border-color: rgba(56,189,248,.35);
     color: #dff6ff;
   }
+
+  input[type="file"]{
+    display:none;
+  }
+  label.file{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+  }
+
   .hint{
     max-width:1200px;
     margin: 14px auto 0;
@@ -93,260 +108,231 @@
     padding: 0 14px;
   }
 
-  /* “Paper” preview */
+  /* SCREEN PREVIEW "PAPER" */
   .paper{
-    width:100%;
+    width: 100%;
     display:flex;
     flex-direction:column;
-    gap:18px;
+    gap: 18px;
   }
+
   .page{
     background:#fff;
     border-radius: 14px;
     overflow:hidden;
     border:1px solid rgba(255,255,255,.10);
     box-shadow: 0 18px 70px rgba(0,0,0,.45);
-    position:relative;
-    aspect-ratio: 297 / 210; /* A4 landscape preview ratio */
-    padding: 10mm; /* inside margin */
+    position: relative;
+
+    /* keep correct paper ratio for A4 landscape preview */
+    aspect-ratio: 297 / 210;
   }
 
-  /* Diary table look (Excel style) */
-  table{
-    width:100%;
-    border-collapse:collapse;
-    table-layout:fixed;
-    font-family: Calibri, Arial, sans-serif;
-    font-size:11px;
-    color:#000;
+  .page .label{
+    position:absolute;
+    top:10px; left:10px;
+    z-index:2;
+    font-size:12px;
+    color:#0b1220;
+    background: rgba(255,255,255,.85);
+    border:1px solid rgba(0,0,0,.12);
+    padding:4px 10px;
+    border-radius: 999px;
+    font-weight: 800;
   }
-  th, td{
-    border:1px solid #000;
-    padding:3px;
-    text-align:center;
-    vertical-align:middle;
-    word-break:break-word;
+
+  canvas{
+    width: 100%;
+    height: 100%;
+    display:block;
+    background:#fff;
   }
-  .header{font-weight:700}
-  .left{text-align:left}
 
-  input{
-    width:100%;
-    border:none;
-    background:transparent;
-    font-size:11px;
-    font-family: Calibri, Arial, sans-serif;
-    text-align:center;
-    padding:2px 2px;
+  .status{
+    margin-left:auto;
+    font-size:12px;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    gap:8px;
   }
-  input:focus{outline:none;background:#fff8dc}
-  .desc input{ text-align:left; }
+  .dot{
+    width:9px;height:9px;border-radius:50%;
+    background: rgba(148,163,184,.6);
+  }
+  .dot.ok{ background: rgba(16,185,129,.9); }
+  .dot.warn{ background: rgba(245,158,11,.95); }
 
-  /* Fixed column widths (Excel matched) */
-  col.c1{width:85px}
-  col.c2{width:70px}
-  col.c3{width:85px}
-  col.c4{width:70px}
-  col.c5{width:95px}
-  col.c6{width:65px}
-  col.c7{width:45px}
-  col.c8{width:45px}
-  col.c9{width:70px}
-  col.c10{width:120px}
-  col.c11{width:380px}
-  col.c12{width:75px}
-  col.c13{width:80px}
-  col.c14{width:45px}
-  col.c15{width:45px}
-  col.c16{width:110px}
-
-  /* PRINT exact A4 landscape, no UI */
+  /* PRINT: exact A4 landscape, no margins, one page per sheet */
   @media print{
-    body{background:#fff}
-    .topbar,.hint{display:none !important}
-    .wrap{max-width:none;margin:0;padding:0}
-    .paper{gap:0}
+    body{ background:#fff; }
+    .topbar, .hint{ display:none !important; }
+    .wrap{ max-width:none; margin:0; padding:0; }
+
+    .paper{ gap:0; }
+
     .page{
-      width:297mm !important;
-      height:210mm !important;
+      width: 297mm !important;
+      height: 210mm !important;
       border-radius:0 !important;
       border:none !important;
       box-shadow:none !important;
-      padding:10mm !important;
-      page-break-after:always;
-      break-after:page;
+      page-break-after: always;
+      break-after: page;
     }
-    @page{ size:A4 landscape; margin:0; }
+    .page:last-child{ page-break-after: auto; }
+    .page .label{ display:none; }
+
+    canvas{
+      width: 297mm !important;
+      height: 210mm !important;
+    }
+
+    @page{
+      size: A4 landscape;
+      margin: 0;
+    }
   }
 </style>
 </head>
-
 <body>
 
 <div class="topbar">
   <div class="topbar-inner">
     <div class="title">
-      Daily Diary / Tentative Program
+      Exact PDF Printable Layout
       <span class="badge">A4 Landscape</span>
     </div>
 
-    <button class="btn" id="btnAdd">➕ Add Row</button>
-    <button class="btn" id="btnRemove">➖ Remove Last</button>
-    <button class="btn primary" id="btnPrint">🖨️ Print (A4 Landscape)</button>
+    <input id="pdfFile" type="file" accept="application/pdf" />
+    <label class="file" for="pdfFile">📄 Choose PDF</label>
+
+    <button class="btn primary" id="btnPrint" disabled>🖨️ Print (A4 Landscape)</button>
+
+    <div class="status" id="status">
+      <span class="dot warn" id="dot"></span>
+      <span id="statusText">Load a PDF to preview</span>
+    </div>
   </div>
 </div>
 
 <div class="hint">
-  यह page सीधे **Daily Diary (Bilingual + Full Header)** दिखाता है। Date fields में **calendar** खुलेगा। Print पर exact A4 landscape output मिलेगा।
+  Tip: This prints the PDF as an <b>image-perfect</b> render (same scan look). If your PDF looks rotated, this code auto-renders it in <b>landscape</b> while keeping the exact content.
 </div>
 
 <div class="wrap">
-  <div class="paper">
-    <div class="page">
-
-      <table id="diaryTable">
-        <!-- Header section (full bilingual) -->
-        <tr class="header">
-          <td colspan="2"><input placeholder="Month / माह"></td>
-          <td><input placeholder="Year / वर्ष"></td>
-          <td colspan="8">की दैनिकी / DAILY DIARY FOR THE MONTH OF</td>
-          <td colspan="5"><input placeholder="माह-वर्ष / Month-Year"></td>
-        </tr>
-
-        <tr>
-          <td colspan="3" class="left">क्षेत्र कर्मचारी/अधिकारी का नाम :
-            <input style="width:60%;text-align:left">
-          </td>
-          <td colspan="3" class="left">पदनाम :
-            <input style="width:60%;text-align:left">
-          </td>
-          <td colspan="5" class="left">उ.क्षे./न.क्षे.का. :
-            <input style="width:40%;text-align:left">
-          </td>
-          <td colspan="5" class="left">क्षेत्रीय कार्यालय :
-            <input style="width:40%;text-align:left">
-          </td>
-        </tr>
-
-        <tr>
-          <td colspan="3" class="left">Name of the Field Official :
-            <input style="width:60%;text-align:left">
-          </td>
-          <td colspan="3" class="left">Designation :
-            <input style="width:60%;text-align:left">
-          </td>
-          <td colspan="5" class="left">S.R.O./N.S.R.O :
-            <input style="width:40%;text-align:left">
-          </td>
-          <td colspan="5" class="left">R.O :
-            <input style="width:40%;text-align:left">
-          </td>
-        </tr>
-
-        <tr class="header">
-          <td colspan="16" class="left">किस स्कीम के अन्तर्गत कार्यरत / Scheme in which working (SE / AS / ASI / UFS)</td>
-        </tr>
-
-        <!-- Column group headers -->
-        <tr class="header">
-          <td colspan="8">यात्रा / JOURNEY</td>
-          <td colspan="4">किया गया कार्य / WORK DONE</td>
-          <td colspan="4">विराम अवधि / DURATION OF HALT</td>
-        </tr>
-
-        <tr class="header">
-          <td colspan="2">प्रस्थान / Departure</td>
-          <td colspan="2">आगमन / Arrival</td>
-          <td rowspan="2">यात्रा का साधन<br>Mode of travel</td>
-          <td rowspan="2">सड़क द्वारा तय दूरी (कि.मी.)<br>Distance in km</td>
-          <td colspan="2">अदा किया गया किराया<br>Fare Paid</td>
-          <td rowspan="2">स्कीम<br>Scheme</td>
-          <td rowspan="2">प्रतिदर्श इकाई का नाम<br>Name of sample unit</td>
-          <td rowspan="2">किये गये कार्य का विवरण<br>Description of work done</td>
-          <td rowspan="2">कार्य की परिमात्रा<br>Volume of work</td>
-          <td rowspan="2">व्यतीत समय<br>Time spent</td>
-          <td rowspan="2">दिन<br>Days</td>
-          <td rowspan="2">घण्टे<br>Hours</td>
-          <td rowspan="2">अभियुक्तियाँ<br>Remarks</td>
-        </tr>
-
-        <tr class="header">
-          <td>दिनांक<br>Date</td>
-          <td>से<br>From</td>
-          <td>दिनांक<br>Date</td>
-          <td>तक<br>To</td>
-          <td>Rs.</td>
-          <td>P.</td>
-        </tr>
-
-        <tr class="header">
-          <td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td>
-          <td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td><td></td>
-        </tr>
-
-        <!-- col widths for the data grid -->
-        <colgroup>
-          <col class="c1"><col class="c2"><col class="c3"><col class="c4">
-          <col class="c5"><col class="c6"><col class="c7"><col class="c8">
-          <col class="c9"><col class="c10"><col class="c11"><col class="c12">
-          <col class="c13"><col class="c14"><col class="c15"><col class="c16">
-        </colgroup>
-
-        <tbody id="rows"></tbody>
-      </table>
-
-    </div>
-  </div>
+  <div class="paper" id="paper"></div>
 </div>
 
 <script>
-  const rowsBody = document.getElementById("rows");
-  const btnAdd = document.getElementById("btnAdd");
-  const btnRemove = document.getElementById("btnRemove");
+  // PDF.js setup
+  const pdfjsLib = window["pdfjs-dist/build/pdf"];
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  const fileInput = document.getElementById("pdfFile");
+  const paper = document.getElementById("paper");
   const btnPrint = document.getElementById("btnPrint");
+  const statusText = document.getElementById("statusText");
+  const dot = document.getElementById("dot");
 
-  function makeCell(html){
-    const td = document.createElement("td");
-    td.innerHTML = html;
-    return td;
+  let loaded = false;
+
+  function setStatus(text, type){
+    statusText.textContent = text;
+    dot.classList.remove("ok","warn");
+    dot.classList.add(type);
   }
 
-  function addRow(){
-    const tr = document.createElement("tr");
-
-    tr.appendChild(makeCell('<input type="date">'));        // 1
-    tr.appendChild(makeCell('<input placeholder="">'));      // 2
-    tr.appendChild(makeCell('<input type="date">'));         // 3
-    tr.appendChild(makeCell('<input placeholder="">'));      // 4
-    tr.appendChild(makeCell('<input placeholder="">'));      // 5
-    tr.appendChild(makeCell('<input placeholder="">'));      // 6
-    tr.appendChild(makeCell('<input inputmode="numeric" placeholder="">')); // 7
-    tr.appendChild(makeCell('<input inputmode="numeric" placeholder="">')); // 8
-    tr.appendChild(makeCell('<input placeholder="">'));      // 9 scheme
-    tr.appendChild(makeCell('<input placeholder="">'));      // 10 sample
-    tr.appendChild(makeCell('<div class="desc"><input placeholder="" style="text-align:left"></div>')); // 11 desc
-    tr.appendChild(makeCell('<input placeholder="">'));      // 12 volume
-    tr.appendChild(makeCell('<input type="time">'));         // 13 time spent
-    tr.appendChild(makeCell('<input inputmode="numeric" placeholder="">')); // 14 days
-    tr.appendChild(makeCell('<input inputmode="numeric" placeholder="">')); // 15 hours
-    tr.appendChild(makeCell('<input placeholder="">'));      // remarks
-
-    rowsBody.appendChild(tr);
+  function clearPages(){
+    paper.innerHTML = "";
+    loaded = false;
+    btnPrint.disabled = true;
   }
 
-  btnAdd.addEventListener("click", addRow);
+  async function renderPdf(arrayBuffer){
+    clearPages();
+    setStatus("Loading PDF…", "warn");
 
-  btnRemove.addEventListener("click", ()=>{
-    const last = rowsBody.lastElementChild;
-    if(last) last.remove();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const numPages = pdf.numPages;
+
+    // Create page containers first (stable layout)
+    for(let p=1; p<=numPages; p++){
+      const pageDiv = document.createElement("div");
+      pageDiv.className = "page";
+
+      const tag = document.createElement("div");
+      tag.className = "label";
+      tag.textContent = "Page " + p;
+
+      const canvas = document.createElement("canvas");
+      canvas.id = "cv_" + p;
+
+      pageDiv.appendChild(tag);
+      pageDiv.appendChild(canvas);
+      paper.appendChild(pageDiv);
+    }
+
+    // Render each page to exactly fit A4 landscape
+    // We render with rotation=90 so portrait-scanned-rotated pages become landscape in output.
+    for(let p=1; p<=numPages; p++){
+      const page = await pdf.getPage(p);
+
+      // Start with a viewport (rotation 90) and choose a scale that gives good print clarity.
+      // We'll render high-res and then CSS will size it to mm for printing.
+      const rotation = 90;
+
+      // base viewport at scale 1
+      const base = page.getViewport({ scale: 1, rotation });
+
+      // We want a high-res canvas. Target about ~2200px width for A4 landscape for crisp print.
+      const targetWidthPx = 2200; 
+      const scale = targetWidthPx / base.width;
+
+      const viewport = page.getViewport({ scale, rotation });
+
+      const canvas = document.getElementById("cv_" + p);
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+
+      // White background to avoid transparency issues in print
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    }
+
+    loaded = true;
+    btnPrint.disabled = false;
+    setStatus(`Ready: ${numPages} page(s) rendered`, "ok");
+  }
+
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+
+    if(file.type !== "application/pdf"){
+      setStatus("Please select a PDF file.", "warn");
+      return;
+    }
+
+    try{
+      const buf = await file.arrayBuffer();
+      await renderPdf(buf);
+    }catch(err){
+      console.error(err);
+      setStatus("Failed to load PDF. Try another file.", "warn");
+    }
   });
 
-  btnPrint.addEventListener("click", ()=> window.print());
-
-  // Start with zero rows (NO dummy). Add when needed.
-  // If you want 1 blank row by default, uncomment:
-  // addRow();
+  btnPrint.addEventListener("click", () => {
+    if(!loaded) return;
+    // Open print dialog
+    window.print();
+  });
 </script>
-
 </body>
 </html>
