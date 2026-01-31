@@ -299,6 +299,7 @@
     .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
     .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
     .ico.arc{ background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.26); }
+    .ico.tp{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.26); }
 
     .card h3{ margin:0; font-size:18px; font-weight:900; letter-spacing:.2px; }
     .card p{
@@ -447,6 +448,7 @@
       </div>
       <div class="section-divider"></div>
 
+      <!-- ✅ UPDATED: Added Tentative Program card -->
       <div class="grid">
         <div class="card" onclick="go('ta_da.html')" role="button">
           <div class="card-head"><div class="ico tada">🧮</div><h3>TA / DA Calculation</h3></div>
@@ -463,6 +465,16 @@
           <div class="btnrow">
             <a class="btn amber" href="tada_documents.html" onclick="event.stopPropagation()">📄 Open Bills</a>
             <a class="btn secondary" href="tada_documents.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
+          </div>
+        </div>
+
+        <!-- ✅ NEW: Tentative Program -->
+        <div class="card" onclick="go('tentative_program.html')" role="button">
+          <div class="card-head"><div class="ico tp">🗓️</div><h3>Tentative Program</h3></div>
+          <p>Create / edit tentative program and print clean A4 format.</p>
+          <div class="btnrow">
+            <a class="btn" href="tentative_program.html" onclick="event.stopPropagation()">🗓️ Open Program</a>
+            <a class="btn secondary" href="tentative_program.html#print" onclick="event.stopPropagation()">🖨️ Print</a>
           </div>
         </div>
 
