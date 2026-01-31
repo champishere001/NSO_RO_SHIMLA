@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover" />
+  <title>PLFS Gateway | Action Plan + Inspection Notes</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --card:#0f172a;
+      --card2:#111c33;
+      --border:#22304a;
+      --accent:#38bdf8;
+      --green:#10b981;
+      --danger:#ef4444;
+      --amber:#f59e0b;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --radius:22px;
+      --shadow: 0 24px 90px rgba(0,0,0,.62);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Plus Jakarta Sans",system-ui,Arial;
+      background: radial-gradient(1000px 540px at 15% 10%, rgba(56,189,248,.13), transparent 60%),
+                  radial-gradient(900px 520px at 90% 20%, rgba(16,185,129,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      overflow-x:hidden;
+      padding-left:72px; /* left rail */
+    }
+
+    /* Left Rail */
+    .left-rail{
+      position:fixed;
+      inset:0 auto 0 0;
+      width:72px;
+      background:#0f172a;
+      border-right:1px solid #22304a;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding-top:14px;
+      gap:18px;
+      z-index:30000;
+    }
+    .left-rail a{
+      width:56px;
+      text-align:center;
+      font-size:11px;
+      font-weight:900;
+      text-decoration:none;
+      color:#fff;
+      padding:8px 6px;
+      border-radius:12px;
+      line-height:1.2;
+    }
+    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
+    .left-rail a.hub{ color:var(--accent); }
+    .left-rail a.plfs{ color:var(--green); }
+
+    /* Top bar */
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:2000;
+      background:rgba(15,23,42,.82);
+      backdrop-filter: blur(14px);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .topbar .row{
+      max-width:1200px;
+      margin:0 auto;
+      padding:14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+      letter-spacing:.6px;
+    }
+    .brand .dot{
+      width:10px;height:10px;border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 16px rgba(56,189,248,.55);
+    }
+    .brand span{
+      color:var(--accent);
+      font-size:13px;
+      text-transform:uppercase;
+    }
+    .right-links{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .linkbtn{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:800;
+      font-size:12px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+    }
+    .linkbtn:hover{ border-color:rgba(56,189,248,.45); transform:translateY(-1px); }
+
+    /* Layout */
+    .wrap{
+      max-width:1200px;
+      margin:18px auto 60px;
+      padding:0 18px;
+    }
+    .hero{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .hero{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(17,28,51,.9), rgba(15,23,42,.92));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:18px 18px 14px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-size:16px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+    .badge{
+      font-size:10px;
+      font-weight:900;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--muted);
+      background:rgba(0,0,0,.28);
+    }
+
+    .card .bd{ padding:18px; }
+
+    /* Big buttons */
+    .biggrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 680px){
+      .biggrid{ grid-template-columns: 1fr; }
+    }
+    .bigbtn{
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg, rgba(56,189,248,.10), rgba(0,0,0,.22));
+      border-radius:18px;
+      padding:18px;
+      cursor:pointer;
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      text-decoration:none;
+      color:var(--text);
+      position:relative;
+      overflow:hidden;
+      min-height:110px;
+    }
+    .bigbtn:hover{ border-color:rgba(56,189,248,.5); transform:translateY(-2px); }
+    .bigbtn .ic{
+      width:44px;height:44px;border-radius:14px;
+      display:grid;place-items:center;
+      font-size:20px;
+      font-weight:900;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      flex:0 0 auto;
+    }
+    .bigbtn.action .ic{ color:#000; background:rgba(56,189,248,.95); border-color:rgba(56,189,248,.95); }
+    .bigbtn.notes .ic{ color:#000; background:rgba(16,185,129,.95); border-color:rgba(16,185,129,.95); }
+    .bigbtn .tx .h{
+      font-weight:900;
+      font-size:14px;
+    }
+    .bigbtn .tx .p{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      line-height:1.4;
+    }
+
+    /* Form */
+    .form{
+      display:grid;
+      gap:10px;
+    }
+    .row2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 680px){
+      .row2{ grid-template-columns: 1fr; }
+    }
+    label{
+      font-size:11px;
+      font-weight:900;
+      color:var(--muted);
+      letter-spacing:.2px;
+      text-transform:uppercase;
+    }
+    .field{
+      margin-top:6px;
+      width:100%;
+      background:rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--text);
+      padding:12px 12px;
+      border-radius:14px;
+      outline:none;
+      font-weight:800;
+      font-size:13px;
+    }
+    .field:focus{
+      border-color:rgba(56,189,248,.55);
+      box-shadow:0 0 0 3px rgba(56,189,248,.14);
+    }
+    .btnrow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:12px 14px;
+      font-weight:900;
+      cursor:pointer;
+      font-size:12px;
+      letter-spacing:.2px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn.primary{ background:var(--green); color:#00140d; }
+    .btn.secondary{ background:rgba(56,189,248,.92); color:#000; }
+    .btn.ghost{
+      background:transparent;
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none !important;
+    }
+
+    /* Upload status */
+    .status{
+      margin-top:10px;
+      border:1px dashed rgba(255,255,255,.16);
+      border-radius:18px;
+      padding:12px;
+      color:var(--muted);
+      font-weight:800;
+      font-size:12px;
+      background:rgba(0,0,0,.18);
+    }
+    .progress{
+      margin-top:10px;
+      height:10px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(16,185,129,.95), rgba(56,189,248,.92));
+      transition:width .2s ease;
+    }
+
+    /* List */
+    .list{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+      max-height: 360px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .item{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      padding:12px;
+      background:rgba(0,0,0,.18);
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .meta .a{
+      font-weight:900;
+      font-size:12px;
+      color:#fff;
+      margin-bottom:6px;
+    }
+    .meta .b{
+      color:var(--muted);
+      font-weight:800;
+      font-size:11px;
+      line-height:1.4;
+    }
+    .item a{
+      color:var(--accent);
+      font-weight:900;
+      text-decoration:none;
+      font-size:12px;
+    }
+    .item a:hover{ text-decoration:underline; }
+
+    /* Modal */
+    .modalMask{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.74);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50000;
+      padding:18px;
+      backdrop-filter: blur(8px);
+    }
+    .modal{
+      width:min(980px, 100%);
+      max-height: 90vh;
+      overflow:auto;
+      background:linear-gradient(180deg, rgba(17,28,51,.96), rgba(15,23,42,.98));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:24px;
+      box-shadow: var(--shadow);
+    }
+    .modal .mh{
+      padding:16px 16px 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      gap:12px;
+    }
+    .modal .mh .t{
+      font-weight:900;
+      font-size:14px;
+    }
+    .xbtn{
+      background:transparent;
+      border:1px solid rgba(255,255,255,.14);
+      color:#fff;
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-weight:900;
+    }
+    .modal .mb{ padding:16px; }
+  </style>
+</head>
+
+<body>
+  <!-- Left Rail -->
+  <nav class="left-rail">
+    <a class="hub" href="index.html">🏠 HUB</a>
+    <a class="plfs" href="plfs_gateway.html">🧭 GATE</a>
+    <a href="plfs.html">📊 PLFS</a>
+  </nav>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="row">
+      <div class="brand">
+        <div class="dot"></div>
+        <span>PLFS Gateway</span>
+      </div>
+      <div class="right-links">
+        <a class="linkbtn" href="index.html">🏠 HUB</a>
+        <a class="linkbtn" href="plfs.html">📊 PLFS</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <!-- Left: 2 Buttons -->
+      <div class="card">
+        <div class="hd">
+          <div>
+            <div class="title">Choose Module</div>
+            <div class="sub">A page between HUB and PLFS: open Action Plan or Upload Inspection Notes (PDF) SRO-wise.</div>
+          </div>
+          <div class="badge">2 BUTTON GATE</div>
+        </div>
+        <div class="bd">
+          <div class="biggrid">
+            <!-- ACTION PLAN BUTTON -->
+            <!-- Change href below to your actual action plan page if different -->
+            <a class="bigbtn action" href="ufs_action.html">
+              <div class="ic">📈</div>
+              <div class="tx">
+                <div class="h">Show Action Plan</div>
+                <div class="p">Open Action Plan dashboard page. (You can change link to your exact action plan file.)</div>
+              </div>
+            </a>
+
+            <!-- NOTES BUTTON -->
+            <button class="bigbtn notes" onclick="openNotes()">
+              <div class="ic">📝</div>
+              <div class="tx">
+                <div class="h">Upload Inspection Notes</div>
+                <div class="p">Upload PDF notes SRO-wise with a Sample No. and auto-store in Firebase.</div>
+              </div>
+            </button>
+          </div>
+
+          <div class="status" style="margin-top:14px;">
+            ✅ Tip: Add this page link in HUB as: <b>plfs_gateway.html</b> and change PLFS link to route via this page.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Quick Stats / Recent -->
+      <div class="card">
+        <div class="hd">
+          <div>
+            <div class="title">Inspection Notes</div>
+            <div class="sub">Recent uploads (from Firebase) — filter by SRO inside the upload window.</div>
+          </div>
+          <div class="badge">LIVE</div>
+        </div>
+        <div class="bd">
+          <div class="row2">
+            <div>
+              <label>Total Notes</label>
+              <div class="field" style="display:flex;align-items:center;justify-content:space-between;">
+                <span id="totalNotes" style="font-weight:900;color:#fff;">0</span>
+                <span style="color:var(--muted);font-weight:900;font-size:11px;">ALL SRO</span>
+              </div>
+            </div>
+            <div>
+              <label>Last Upload</label>
+              <div class="field" style="display:flex;align-items:center;justify-content:space-between;">
+                <span id="lastUpload" style="font-weight:900;color:#fff;">—</span>
+                <span style="color:var(--muted);font-weight:900;font-size:11px;">TIME</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="list" id="recentList" style="margin-top:12px;">
+            <!-- recent items render here -->
+          </div>
+
+          <div class="status">
+            Storage: <b>Firebase Storage</b> (PDF file) + Database: <b>RTDB</b> (metadata)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes Upload Modal -->
+  <div class="modalMask" id="notesMask" onclick="closeNotes(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="mh">
+        <div class="t">📝 Upload Inspection Notes (PDF) — SRO wise + Sample No</div>
+        <button class="xbtn" onclick="closeNotes()">✕ Close</button>
+      </div>
+      <div class="mb">
+        <div class="card" style="box-shadow:none;border-radius:18px;">
+          <div class="bd">
+            <div class="form">
+              <div class="row2">
+                <div>
+                  <label>Select SRO</label>
+                  <select id="sroSel" class="field" onchange="loadSroNotes()">
+                    <option value="">— Select SRO —</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Sample No (apply to PDF)</label>
+                  <input id="sampleNo" class="field" placeholder="e.g. 12 / 007 / S-15" />
+                </div>
+              </div>
+
+              <div class="row2">
+                <div>
+                  <label>Inspection Date (optional)</label>
+                  <input id="insDate" type="date" class="field" />
+                </div>
+                <div>
+                  <label>Choose PDF File</label>
+                  <input id="pdfFile" type="file" class="field" accept="application/pdf" />
+                </div>
+              </div>
+
+              <div>
+                <label>Remarks (optional)</label>
+                <input id="remarks" class="field" placeholder="Short note / officer name / place etc." />
+              </div>
+
+              <div class="btnrow">
+                <button class="btn primary" id="uploadBtn" onclick="uploadPdf()">⬆️ Upload PDF</button>
+                <button class="btn ghost" onclick="resetForm()">🧹 Clear</button>
+                <button class="btn secondary" onclick="loadRecent()">🔄 Refresh Recent</button>
+              </div>
+
+              <div class="progress"><div class="bar" id="progBar"></div></div>
+              <div class="status" id="upStatus">Ready.</div>
+
+              <div style="margin-top:14px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <div style="font-weight:900;">SRO Notes List</div>
+                  <div style="color:var(--muted);font-weight:900;font-size:11px;">Click open to view/download</div>
+                </div>
+                <div class="list" id="sroList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="status" style="margin-top:14px;">
+          ✅ Saved Path: <b>Storage</b> → <code>inspection_notes/{SRO}/sample_{SAMPLE}/timestamp_filename.pdf</code><br/>
+          ✅ Metadata: <b>RTDB</b> → <code>inspection_notes_meta/{SRO}/{noteId}</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ===================== Firebase ===================== */
+const config = {
+  apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI",
+  authDomain: "action-plan-62fae.firebaseapp.com",
+  databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com",
+  projectId: "action-plan-62fae",
+  storageBucket: "action-plan-62fae.appspot.com"
+};
+firebase.initializeApp(config);
+const db = firebase.database();
+const storage = firebase.storage();
+
+/* ===================== SRO Source =====================
+   Best: auto read SRO list from PLFS roster in RTDB.
+   If not found, fallback to manual list (edit below).
+*/
+const FALLBACK_SROS = [
+  "RO SHIMLA",
+  "SRO SHIMLA",
+  "SRO MANDI",
+  "SRO KANGRA",
+  "SRO HAMIRPUR",
+  "SRO SOLAN"
+];
+
+/* ===================== Modal controls ===================== */
+function openNotes(){
+  document.getElementById("notesMask").style.display = "flex";
+  loadSroDropdown();
+  loadRecent();
+}
+function closeNotes(e){
+  if(e && e.target && e.target.id !== "notesMask") return;
+  document.getElementById("notesMask").style.display = "none";
+}
+function resetForm(){
+  document.getElementById("sampleNo").value = "";
+  document.getElementById("insDate").value = "";
+  document.getElementById("pdfFile").value = "";
+  document.getElementById("remarks").value = "";
+  setStatus("Ready.");
+  setProgress(0);
+}
+
+/* ===================== UI helpers ===================== */
+function setProgress(p){
+  document.getElementById("progBar").style.width = `${Math.max(0, Math.min(100, p))}%`;
+}
+function setStatus(msg, type="info"){
+  const el = document.getElementById("upStatus");
+  el.innerHTML = msg;
+  el.style.borderColor =
+    type==="ok" ? "rgba(16,185,129,.6)" :
+    type==="bad" ? "rgba(239,68,68,.6)" :
+    "rgba(255,255,255,.16)";
+}
+
+/* ===================== SRO dropdown ===================== */
+async function loadSroDropdown(){
+  const sel = document.getElementById("sroSel");
+  const prev = sel.value || "";
+  sel.innerHTML = `<option value="">— Select SRO —</option>`;
+
+  // Try getting SRO list from plfs_roster
+  try{
+    const snap = await db.ref("plfs_roster").once("value");
+    let sroSet = new Set();
+
+    if(snap.exists()){
+      snap.forEach(stateNode=>{
+        const rosterObj = stateNode.val() || {};
+        Object.values(rosterObj).forEach(row=>{
+          if(row && row.sro) sroSet.add(String(row.sro).trim());
+        });
+      });
+    }
+
+    const sros = [...sroSet].filter(Boolean).sort();
+    const finalList = sros.length ? sros : FALLBACK_SROS;
+
+    finalList.forEach(s=>{
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      sel.appendChild(opt);
+    });
+
+    if(prev && finalList.includes(prev)) sel.value = prev;
+  }catch(err){
+    // fallback
+    FALLBACK_SROS.forEach(s=>{
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  }
+
+  // auto load list if selected
+  if(sel.value) loadSroNotes();
+}
+
+/* ===================== Upload ===================== */
+async function uploadPdf(){
+  const sro = document.getElementById("sroSel").value.trim();
+  const sample = document.getElementById("sampleNo").value.trim();
+  const insDate = document.getElementById("insDate").value || "";
+  const remarks = document.getElementById("remarks").value.trim();
+  const fileEl = document.getElementById("pdfFile");
+  const file = fileEl.files[0];
+
+  if(!sro){
+    setStatus("❌ Please select SRO.", "bad");
+    return;
+  }
+  if(!sample){
+    setStatus("❌ Please enter Sample No (this will be applied to PDF record).", "bad");
+    return;
+  }
+  if(!file){
+    setStatus("❌ Please choose a PDF file.", "bad");
+    return;
+  }
+  if(file.type !== "application/pdf"){
+    setStatus("❌ Only PDF allowed.", "bad");
+    return;
+  }
+
+  // Disable button during upload
+  const btn = document.getElementById("uploadBtn");
+  btn.disabled = true;
+
+  setProgress(0);
+  setStatus("Uploading...");
+
+  try{
+    const safeSro = sro.replace(/[.#$[\]/]/g, "_");
+    const safeSample = sample.replace(/[^\w\-]/g, "_");
+    const ts = Date.now();
+    const safeName = (file.name || "notes.pdf").replace(/[^\w.\-]/g, "_");
+    const storagePath = `inspection_notes/${safeSro}/sample_${safeSample}/${ts}_${safeName}`;
+
+    const ref = storage.ref(storagePath);
+    const task = ref.put(file, { contentType: "application/pdf" });
+
+    task.on("state_changed", (snap)=>{
+      const p = (snap.bytesTransferred / snap.totalBytes) * 100;
+      setProgress(p);
+      setStatus(`Uploading... ${Math.round(p)}%`);
+    });
+
+    await task;
+    const url = await ref.getDownloadURL();
+
+    // Save metadata in RTDB
+    const noteId = `${ts}_${Math.random().toString(16).slice(2)}`;
+    const meta = {
+      sro,
+      sampleNo: sample,
+      inspectionDate: insDate,
+      remarks,
+      fileName: file.name,
+      storagePath,
+      url,
+      createdAt: ts
+    };
+
+    await db.ref(`inspection_notes_meta/${safeSro}/${noteId}`).set(meta);
+
+    setProgress(100);
+    setStatus(`✅ Uploaded successfully.<br/>SRO: <b>${sro}</b> | Sample No: <b>${sample}</b>`, "ok");
+
+    // refresh lists
+    await loadSroNotes();
+    await loadRecent();
+
+    // clear file input only
+    fileEl.value = "";
+  }catch(err){
+    console.error(err);
+    setStatus(`❌
