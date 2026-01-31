@@ -183,7 +183,7 @@
   .colhead th{ padding-top:2px; padding-bottom:2px; }
   .grouphead{ padding:2px !important; }
 
-  /* ===== PRINT: A4 LANDSCAPE + 80% SCALE ===== */
+  /* ===== PRINT: A4 LANDSCAPE + 90% SCALE + ONE PAGE ===== */
   @page{
     size: A4 landscape;
     margin: 6mm;
@@ -198,15 +198,15 @@
       print-color-adjust: exact;
     }
 
-    /* Hide non-print */
+    /* Hide in print: buttons + ranges row + rates row + spacers */
     .actionsbar,
     .no-print,
     .ranges,
-    .rate-badge{
+    .rate-badge,
+    .mini{
       display:none !important;
     }
 
-    /* Remove card look */
     .sheet{
       max-width:none !important;
       width:100% !important;
@@ -216,19 +216,19 @@
       margin:0 !important;
     }
 
-    /* ---- 80% SHRINK WRAPPER ---- */
+    /* 90% shrink to fit all rows on one page */
     .print-scale{
-      transform: scale(0.80);
+      transform: scale(0.90);
       transform-origin: top left;
-      width: 125%;
+      width: 111.111%;
     }
 
-    /* denser print */
-    table{ font-size: 10px !important; }
-    th, td{ padding: 2px 2px !important; line-height: 1.05 !important; }
-    input, select{ font-size:10px !important; padding:0 !important; line-height: 1.05 !important; }
+    /* Denser print so all rows fit */
+    table{ font-size: 10.4px !important; }
+    th, td{ padding: 1.9px 2px !important; line-height: 1.04 !important; }
+    input, select{ font-size:10.4px !important; padding:0 !important; line-height:1.04 !important; }
 
-    /* avoid page breaks */
+    /* Avoid page breaks inside table */
     table, tr, td, th{
       page-break-inside: avoid !important;
       break-inside: avoid !important;
@@ -240,7 +240,7 @@
 <body>
 <div class="sheet">
 
-  <!-- ✅ Print scale wrapper (80%) -->
+  <!-- ✅ Print scale wrapper (90% only in print) -->
   <div class="print-scale">
     <table id="tada">
       <colgroup>
@@ -501,7 +501,6 @@
     });
   }
 
-  // Generate rows for a specific range
   function generateRange(id, append){
     const r = ranges.find(x => x.id === id);
     if(!r) return;
@@ -538,7 +537,6 @@
     recalc();
   }
 
-  // ===== Rows / selection / journey day =====
   function addRow(prefill = {}){
     const tr = document.createElement("tr");
     tr.dataset.nohotel = prefill.noHotel ? "1" : "0";
@@ -623,7 +621,6 @@
     trs.forEach(tr => rowsEl.appendChild(tr));
   }
 
-  // ===== Calculation =====
   function recalc(){
     let gDA = 0, gHotel = 0, gTDA = 0, gFare = 0, gAll = 0;
 
@@ -655,7 +652,6 @@
     document.getElementById("gAll").textContent = money(gAll);
   }
 
-  // Auto-fill year from month if empty
   document.getElementById("month").addEventListener("input", (e) => {
     const val = e.target.value;
     if(val && !document.getElementById("year").value){
@@ -663,7 +659,6 @@
     }
   });
 
-  // ===== PDF button =====
   function generatePDF(){
     const oldTitle = document.title;
     const nm = (document.getElementById("name").value || "TA-DA").trim().replace(/\s+/g,"_");
@@ -673,7 +668,6 @@
     setTimeout(()=>{ document.title = oldTitle; }, 300);
   }
 
-  // Start
   addRow(); addRow(); addRow();
   updateRates();
   renderRanges();
