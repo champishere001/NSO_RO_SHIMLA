@@ -1,671 +1,639 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>NSO Scheme Hub 2026</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>TA/DA Calculation Sheet</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  body{
+    margin:0;
+    padding:18px;
+    background:#f3f5f7;
+    font-family: Arial, Helvetica, sans-serif;
+    color:#111;
+  }
+  .sheet{
+    max-width:1200px;
+    margin:auto;
+    background:#fff;
+    padding:14px;
+    border:1px solid #cfd6df;
+    box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  }
 
-  <style>
-    :root{
-      --bg:#020617;
-      --panel:#0b1222;
-      --card1:#0f172a;
-      --card2:#111c33;
-      --border:#22304a;
+  table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+    font-size:13px;
+  }
+  td, th{
+    border:1px solid #000;
+    padding:6px 6px;
+    text-align:center;
+    vertical-align:middle;
+    word-wrap:break-word;
+  }
 
-      --accent:#38bdf8;
-      --green:#10b981;
-      --amber:#f59e0b;
-      --pink:#fb7185;
-      --violet:#a78bfa;
+  .title{
+    font-weight:700;
+    font-size:16px;
+    padding:10px 6px;
+  }
+  .hdrline{
+    text-align:left;
+    font-weight:600;
+  }
 
-      --text:#e5e7eb;
-      --muted:#94a3b8;
+  input, select{
+    width:100%;
+    border:none;
+    outline:none;
+    background:transparent;
+    text-align:center;
+    font-size:13px;
+    padding:2px 0;
+    font-family: inherit;
+  }
+  .left input, .left select{ text-align:left; padding-left:2px; }
+  .left{ text-align:left; }
 
-      --shadow: 0 24px 90px rgba(0,0,0,.62);
-      --shadow2: 0 18px 60px rgba(0,0,0,.45);
-      --radius: 22px;
-    }
+  .grouphead{ font-weight:700; }
+  .colhead th{ font-weight:700; }
+  .totalrow td{ font-weight:700; }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      font-family:"Plus Jakarta Sans",system-ui,Segoe UI,Arial,sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x:hidden;
-    }
+  .rate-badge{
+    font-weight:700;
+    text-align:right;
+    font-size:12px;
+  }
+  .rate-badge span{
+    display:inline-block;
+    padding:2px 8px;
+    border:1px solid #000;
+    border-radius:999px;
+    margin-left:6px;
+  }
 
-    /* ===== animated background ===== */
-    .bg{
-      position:fixed;
-      inset:0;
-      z-index:-2;
-      background:
-        radial-gradient(1200px 520px at 18% 15%, rgba(56,189,248,.18), transparent 60%),
-        radial-gradient(1000px 560px at 82% 22%, rgba(16,185,129,.12), transparent 60%),
-        radial-gradient(900px 520px at 50% 85%, rgba(167,139,250,.10), transparent 65%),
-        linear-gradient(180deg, #000814, #020617);
-    }
-    .noise{
-      position:fixed;
-      inset:0;
-      z-index:-1;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
-      opacity:.16;
-      mix-blend-mode:overlay;
-      pointer-events:none;
-    }
+  .mini{
+    display:inline-flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .mini input[type="date"]{
+    width:160px;
+    border:1px solid #000;
+    padding:4px 6px;
+    border-radius:6px;
+    background:#fff;
+    text-align:left;
+  }
 
-    /* floating blobs */
-    .blob{
-      position:fixed;
-      width:420px;
-      height:420px;
-      border-radius:50%;
-      filter: blur(50px);
-      opacity:.22;
-      z-index:-1;
-      animation: float 9s ease-in-out infinite;
-    }
-    .b1{ left:-120px; top:80px; background: rgba(56,189,248,.8); }
-    .b2{ right:-160px; top:140px; background: rgba(16,185,129,.8); animation-duration: 11s; }
-    .b3{ left:38%; bottom:-220px; background: rgba(167,139,250,.8); animation-duration: 13s; }
-    @keyframes float{
-      0%,100%{ transform: translate(0,0) scale(1); }
-      50%{ transform: translate(24px,-18px) scale(1.06); }
-    }
+  .btn-mini{
+    border:none;
+    cursor:pointer;
+    font-weight:800;
+    padding:6px 10px;
+    border-radius:8px;
+    background:#1a4f8d;
+    color:#fff;
+  }
+  .btn-mini.gray{ background:#2f3b4a; }
+  .btn-mini.red{ background:#b42318; }
+  .btn-mini:active{ transform: scale(.99); }
 
-    /* particles canvas sits on top of bg */
-    #fx{
-      position:fixed;
-      inset:0;
-      z-index:-0;
-      pointer-events:none;
-      opacity:.75;
-    }
+  .ranges{
+    margin-top:8px;
+    border:1px solid #000;
+    border-radius:10px;
+    padding:10px;
+    background:#fff;
+  }
+  .ranges h4{
+    margin:0 0 8px;
+    font-size:12.5px;
+    font-weight:900;
+    letter-spacing:.2px;
+  }
+  .range-list{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:6px;
+  }
+  .range-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 10px;
+    border:1px solid #000;
+    border-radius:10px;
+    background:#f8fafc;
+    font-weight:800;
+    font-size:12px;
+  }
+  .range-item .meta{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .range-item code{
+    background:#fff;
+    border:1px solid #000;
+    padding:2px 6px;
+    border-radius:999px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight:900;
+  }
+  .range-item .actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
 
-    /* ===== layout ===== */
-    .wrap{
-      max-width:1240px;
-      margin:0 auto;
-      padding:56px 18px 90px;
-    }
+  .actionsbar{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+  .btn{
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    padding:10px 14px;
+    font-weight:900;
+    background:#1a4f8d;
+    color:#fff;
+  }
+  .btn.secondary{ background:#2f3b4a; }
+  .btn.danger{ background:#b42318; }
 
-    .top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:18px;
-      margin-bottom: 26px;
-    }
-    .brand{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
+  tr.sel{
+    outline: 3px solid #1a4f8d;
+    outline-offset:-3px;
+    background:#eef6ff;
+  }
 
-    .title{
-      margin:0;
-      font-size:38px;
-      font-weight:900;
-      letter-spacing:.8px;
-      line-height:1.05;
-    }
-    .title .a{ color: var(--accent); }
-    .title .b{ color: #cbeeff; }
+  .hotelMark{
+    font-size:11px;
+    font-weight:900;
+  }
 
-    .subtitle{
-      margin:0;
-      color: var(--muted);
-      font-weight:600;
-      font-size:14px;
-      line-height:1.5;
-      max-width: 720px;
-    }
-
-    .badge-row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top: 6px;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(34,48,74,.9);
-      background: rgba(2,6,23,.55);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      font-size:12px;
-      font-weight:800;
-      color: #dbeafe;
-    }
-    .pill i{ opacity:.9; font-style:normal; }
-
-    .clock{
-      text-align:right;
-      color: var(--muted);
-      font-weight:800;
-      font-size:12px;
-      padding-top: 6px;
-      white-space:nowrap;
-    }
-    .clock b{
-      color:#eaf6ff;
-      font-weight:900;
-      letter-spacing:.5px;
-    }
-
-    /* small “spark” line */
-    .spark{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
-      opacity:.55;
-      margin: 18px 0 0;
-    }
-
-    /* ===== NEW: Section headers (keeping same visualization) ===== */
-    .section{ margin-top: 18px; }
-    .section-title{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding: 12px 16px;
-      border-radius: 16px;
-      border:1px solid rgba(34,48,74,.9);
-      background: rgba(2,6,23,.45);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.30);
-    }
-    .section-title .left{
-      display:flex;align-items:center;gap:10px;
-      font-weight:900;letter-spacing:.3px;
-      color:#eaf6ff;
-    }
-    .section-title .left span{
-      width:34px;height:34px;border-radius:12px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.06);
-    }
-    .section-title .right{
-      font-size:12px;
-      font-weight:800;
-      color: rgba(148,163,184,.85);
-      white-space:nowrap;
-    }
-    .section-divider{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.45), transparent);
-      opacity:.7;
-      margin: 14px 0 18px;
-    }
-
-    /* ===== grid ===== */
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:22px;
-      margin-top:18px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .clock{ display:none; }
-      .section-title .right{ display:none; }
-    }
-    @media (max-width: 640px){
-      .grid{ grid-template-columns: 1fr; }
-      .title{ font-size:30px; }
-      .wrap{ padding-top: 38px; }
-    }
-
-    /* ===== premium cards ===== */
-    .card{
-      position:relative;
-      border-radius: var(--radius);
-      padding: 24px 24px 20px;
-      background: linear-gradient(180deg, rgba(17,28,51,.92), rgba(15,23,42,.92));
-      border: 1px solid rgba(34,48,74,.9);
-      box-shadow: var(--shadow2);
-      overflow:hidden;
-      transform-style:preserve-3d;
-      cursor: pointer;
-      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-    }
-
-    /* glow frame */
-    .card::before{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      background:
-        radial-gradient(650px 260px at 15% 15%, rgba(56,189,248,.18), transparent 55%),
-        radial-gradient(540px 240px at 88% 18%, rgba(16,185,129,.12), transparent 55%);
-      opacity:.9;
-      pointer-events:none;
-    }
-
-    /* shine sweep */
-    .card::after{
-      content:"";
-      position:absolute;
-      top:-40%;
-      left:-60%;
-      width:60%;
-      height:180%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
-      transform: rotate(18deg);
-      opacity:0;
-      transition: opacity .35s ease;
-      pointer-events:none;
-    }
-    .card:hover::after{ opacity:1; animation: sweep 1.2s ease; }
-    @keyframes sweep{
-      0%{ transform: translateX(0) rotate(18deg); }
-      100%{ transform: translateX(380%) rotate(18deg); }
-    }
-
-    .card:hover{
-      border-color: rgba(56,189,248,.55);
-      box-shadow: var(--shadow);
-      transform: translateY(-6px);
-    }
-
-    .card-head{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      position:relative;
-      z-index:1;
-      margin-bottom: 10px;
-    }
-
-    .ico{
-      width:42px;height:42px;
-      border-radius: 14px;
-      display:grid;
-      place-items:center;
-      font-size:20px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.35);
-      box-shadow: 0 12px 30px rgba(0,0,0,.25);
-    }
-    .ico.plfs{ background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.28); }
-    .ico.ufs{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.26); }
-    .ico.asuse{ background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.26); }
-    .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
-    .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
-    .ico.sum{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.22); }
-
-    .card h3{
-      margin:0;
-      font-size:18px;
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-    .card p{
-      margin:6px 0 16px;
-      color: var(--muted);
-      font-weight:600;
-      font-size:12.5px;
-      line-height:1.5;
-      position:relative;
-      z-index:1;
-    }
-
-    .btnrow{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      position:relative;
-      z-index:1;
-      margin-top: 10px;
-    }
-
-    .btn{
-      appearance:none;
-      border:none;
-      cursor:pointer;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-weight:900;
-      font-size:12px;
-      letter-spacing:.3px;
-      color:#001019;
-      background: var(--accent);
-      box-shadow: 0 18px 35px rgba(56,189,248,.18);
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      text-decoration:none;
-      user-select:none;
-      transform: translateZ(25px);
-      transition: transform .18s ease, background .18s ease, border-color .18s ease;
-    }
-    .btn:hover{ transform: translateZ(25px) translateY(-2px); }
-
-    .btn.secondary{
-      background: rgba(255,255,255,.06);
-      color:#e5e7eb;
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:none;
-    }
-    .btn.secondary:hover{
-      background: rgba(255,255,255,.10);
-      border-color: rgba(255,255,255,.18);
-    }
-
-    .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
-    .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
-    .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
-    .btn.pink{ background: var(--pink); color:#2b0011; box-shadow: 0 18px 35px rgba(251,113,133,.15); }
-
-    /* footer */
-    .foot{
-      margin-top: 26px;
-      color: rgba(148,163,184,.75);
-      font-weight:700;
-      font-size:11px;
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .foot b{ color:#dbeafe; }
-
-    /* Left Rail (global) */
-    .left-rail{
-      position:fixed; inset:0 auto 0 0;
-      width:72px;
-      background:#0f172a;
-      border-right:1px solid var(--border);
-      display:flex; flex-direction:column; align-items:center;
-      padding-top:14px; gap:18px;
-      z-index:9999;
-    }
-    .left-rail a{
-      width:56px;
-      text-align:center;
-      font-size:11px;
-      font-weight:900;
-      text-decoration:none;
-      color:#fff;
-      padding:8px 6px;
-      border-radius:12px;
-      line-height:1.2;
-      transition: .2s ease;
-    }
-    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
-    .left-rail a.hub{ color:var(--accent); }
-    .left-rail a.weekly{ color:var(--green); }
-    .left-rail a.monthly{ color:var(--green); }
-    .left-rail a.tada{ color:var(--amber); }
-
-    .wrap{ margin-left:72px; }
-    @media (max-width: 640px){
-      .wrap{ margin-left:72px; }
-    }
-  </style>
+  @media print{
+    body{ background:#fff; padding:0; }
+    .sheet{ box-shadow:none; border:none; padding:0; }
+    .actionsbar, .ranges{ display:none; }
+  }
+</style>
 </head>
 
 <body>
-  <nav class="left-rail">
-    <a href="index.html" class="hub">🏠 HUB</a>
-    <a href="plfs.html">📊 PLFS</a>
-    <a href="ufs_weekly.html" class="weekly">🗓️ Weekly</a>
-    <a href="ufs_monthly.html" class="monthly">📅 Monthly</a>
-    <a href="ta_da.html" class="tada">🧮 TA/DA</a>
-  </nav>
+<div class="sheet">
 
-  <div class="bg"></div>
-  <canvas id="fx"></canvas>
-  <div class="noise"></div>
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
+  <table id="tada">
+    <colgroup>
+      <col style="width:12.5%">
+      <col style="width:10.5%">
+      <col style="width:10.5%">
+      <col style="width:10.5%">
+      <col style="width:11%">
+      <col style="width:10%">
+      <col style="width:10%">
+      <col style="width:10.5%">
+      <col style="width:14.5%">
+    </colgroup>
 
-  <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <h1 class="title"><span class="a">NSO</span> <span class="b">SCHEME HUB 2026</span></h1>
-        <p class="subtitle">
-          One dashboard to open <b>PLFS</b>, <b>UFS</b> (Weekly + Monthly), and <b>ASUSE</b>.
-          Fast navigation, premium UI, and clean access for field operations.
-        </p>
-        <div class="badge-row">
-          <div class="pill"><i>⚡</i> Quick Launch</div>
-          <div class="pill"><i>🛰️</i> Live Tools</div>
-          <div class="pill"><i>🧠</i> Smart Workflow</div>
-          <div class="pill"><i>🔒</i> Secure Access</div>
-        </div>
-        <div class="spark"></div>
-      </div>
+    <tr><td colspan="9" style="border:none; padding:4px;"></td></tr>
 
-      <div class="clock" id="clockBox">
-        <div><b id="nowTime">--:--</b></div>
-        <div id="nowDate">--</div>
-      </div>
-    </div>
+    <tr>
+      <td colspan="9" class="title">
+        दोरा भत्ता / दैनिक भत्ता गणना पत्र &nbsp;|&nbsp; TA/DA CALCULATION SHEET
+      </td>
+    </tr>
 
-    <!-- =========================
-         SECTION 1: SCHEMES
-    ========================== -->
-    <div class="section">
-      <div class="section-title">
-        <div class="left">
-          <span>📊</span>
-          <div>Schemes</div>
-        </div>
-        <div class="right">PLFS • UFS • ASUSE</div>
-      </div>
-      <div class="section-divider"></div>
+    <tr><td colspan="9" style="border:none; padding:6px;"></td></tr>
 
-      <div class="grid">
-        <!-- PLFS -->
-        <div class="card" onclick="go('plfs.html')" role="button" aria-label="Open PLFS">
-          <div class="card-head">
-            <div class="ico plfs">📊</div>
-            <h3>PLFS</h3>
-          </div>
-          <p>Command dashboard for sample tracking, visits, and field monitoring.</p>
-          <div class="btnrow">
-            <a class="btn" href="plfs.html" onclick="event.stopPropagation()">🚀 Open PLFS</a>
-            <a class="btn secondary" href="plfs.html#help" onclick="event.stopPropagation()">📌 Guide</a>
-          </div>
-        </div>
+    <tr>
+      <td colspan="5" class="hdrline left">
+        नाम/Name :
+        <input id="name" class="left" placeholder="Enter Name" />
+      </td>
+      <td colspan="4" class="hdrline left">
+        पद-नाम/Designation :
+        <select id="desig" class="left" onchange="updateRates()">
+          <option value="">Select Designation</option>
+          <option value="ENUM">Enumerator</option>
+          <option value="SUP">Survey Supervisor</option>
+          <option value="SSO">Senior Statistical Officer</option>
+        </select>
+      </td>
+    </tr>
 
-        <!-- UFS -->
-        <div class="card" onclick="go('ufs_weekly.html')" role="button" aria-label="Open UFS">
-          <div class="card-head">
-            <div class="ico ufs">🗓️</div>
-            <h3>UFS</h3>
-          </div>
-          <p>Open weekly and monthly progress tools in one place.</p>
-          <div class="btnrow">
-            <a class="btn green" href="ufs_weekly.html" onclick="event.stopPropagation()">📅 Weekly</a>
-            <a class="btn green" href="ufs_monthly.html" onclick="event.stopPropagation()">🗓️ Monthly</a>
-            <a class="btn secondary" href="ufs_weekly.html#reports" onclick="event.stopPropagation()">📈 Reports</a>
-          </div>
+    <tr>
+      <td colspan="3" class="hdrline left">
+        स्थान /Place :
+        <input id="place" class="left" placeholder="Enter Place" />
+      </td>
+      <td colspan="3" class="hdrline left">
+        माह/Month :
+        <input id="month" class="left" type="month" />
+      </td>
+      <td colspan="3" class="hdrline left">
+        वर्ष /Year :
+        <input id="year" class="left" type="number" placeholder="2025" />
+      </td>
+    </tr>
+
+    <!-- Multi Range Controller (inside sheet, same feel) -->
+    <tr>
+      <td colspan="9" class="hdrline left">
+        <div class="mini">
+          <span><b>Tour Range:</b></span>
+          <span>From</span>
+          <input id="fromDate" type="date" />
+          <span>To</span>
+          <input id="toDate" type="date" />
+          <span>Total Days: <b id="tourDays">0</b></span>
+          <button type="button" class="btn-mini" onclick="addRange()">Add Range</button>
+          <button type="button" class="btn-mini gray" onclick="generateAllRanges()">Generate All Ranges</button>
         </div>
 
-        <!-- ASUSE -->
-        <div class="card" onclick="go('asuse.html')" role="button" aria-label="Open ASUSE">
-          <div class="card-head">
-            <div class="ico asuse">🧾</div>
-            <h3>ASUSE</h3>
-          </div>
-          <p>ASUSE operations: roster, monitoring, and quick analytics access.</p>
-          <div class="btnrow">
-            <a class="btn violet" href="asuse.html" onclick="event.stopPropagation()">✨ Open ASUSE</a>
-            <a class="btn secondary" href="asuse.html#settings" onclick="event.stopPropagation()">⚙️ Settings</a>
-          </div>
+        <div class="ranges" id="rangesBox">
+          <h4>Saved Ranges (multiple allowed in month)</h4>
+          <div class="range-list" id="rangeList"></div>
         </div>
-      </div>
-    </div>
+      </td>
+    </tr>
 
-    <!-- =========================
-         SECTION 2: TA/DA + BILL DOCUMENTS
-    ========================== -->
-    <div class="section">
-      <div class="section-title">
-        <div class="left">
-          <span>🧾</span>
-          <div>TA/DA Bills & Documents</div>
-        </div>
-        <div class="right">Sheet • Upload • Summary</div>
-      </div>
-      <div class="section-divider"></div>
+    <tr>
+      <td colspan="9" class="rate-badge">
+        Applied Rates:
+        <span id="rateText">DA ₹0 | Hotel ₹0</span>
+        <span style="margin-left:10px;">Tip:</span>
+        <span style="border-style:dashed;">Click row to select • “Add Journey Day” duplicates selected date • Double-tap Hotel cell toggles No-Hotel</span>
+      </td>
+    </tr>
 
-      <div class="grid">
-        <!-- TA/DA -->
-        <div class="card" onclick="go('ta_da.html')" role="button" aria-label="Open TA/DA">
-          <div class="card-head">
-            <div class="ico tada">🧮</div>
-            <h3>TA / DA Sheet</h3>
-          </div>
-          <p>Designation-wise TA/DA calculation with PDF & Excel export (one-page A4 landscape).</p>
-          <div class="btnrow">
-            <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
-            <a class="btn secondary" href="ta_da.html#pdf" onclick="event.stopPropagation()">⬇️ PDF Export</a>
-          </div>
-        </div>
+    <tr>
+      <td class="grouphead"></td>
+      <td colspan="4" class="grouphead">DA Details</td>
+      <td colspan="3" class="grouphead">Travelling Detail</td>
+      <td class="grouphead"></td>
+    </tr>
 
-        <!-- Documents -->
-        <div class="card" onclick="go('tada_documents.html')" role="button" aria-label="Open TA/DA Documents">
-          <div class="card-head">
-            <div class="ico docs">📁</div>
-            <h3>Bill Documents</h3>
-          </div>
-          <p>Upload / view TA bills, hotel bills, tickets, scanned PDFs, and supporting files.</p>
-          <div class="btnrow">
-            <a class="btn pink" href="tada_documents.html" onclick="event.stopPropagation()">📂 Open Docs</a>
-            <a class="btn secondary" href="tada_documents.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
-          </div>
-        </div>
+    <tr class="colhead">
+      <th>Date</th>
+      <th>No. of DA</th>
+      <th>DA Amount</th>
+      <th>Hotel Bill</th>
+      <th>Total DA (3+4)</th>
+      <th>Mode</th>
+      <th>K.M.</th>
+      <th>Total Fare</th>
+      <th>Total (5+8)</th>
+    </tr>
 
-        <!-- Summary -->
-        <div class="card" onclick="go('tada_summary.html')" role="button" aria-label="Open Claim Summary">
-          <div class="card-head">
-            <div class="ico sum">📌</div>
-            <h3>Claim Summary</h3>
-          </div>
-          <p>Designation-wise totals + monthly summary to verify claims quickly.</p>
-          <div class="btnrow">
-            <a class="btn" href="tada_summary.html" onclick="event.stopPropagation()">📊 View Summary</a>
-            <a class="btn secondary" href="tada_summary.html#month" onclick="event.stopPropagation()">🗓️ Month</a>
-          </div>
-        </div>
-      </div>
-    </div>
+    <tbody id="rows"></tbody>
 
-    <div class="foot">
-      <div>Made for <b>NSO Field Operations</b> • 2026</div>
-      <div>Tip: Hover cards for glow ✨</div>
-    </div>
+    <tr class="totalrow">
+      <td colspan="2" class="left">Grand Total</td>
+      <td id="gDA">0</td>
+      <td id="gHotel">0</td>
+      <td id="gTDA">0</td>
+      <td></td>
+      <td></td>
+      <td id="gFare">0</td>
+      <td id="gAll">0</td>
+    </tr>
+
+    <tr>
+      <td colspan="9" class="left" style="border-top:none; padding-top:16px;">
+        <span style="font-weight:700;">दिनांक:-</span>
+        <span style="display:inline-block; width:220px; border-bottom:1px solid #000; margin:0 14px 0 8px;"></span>
+        <span style="float:right; font-weight:700;">संबन्धित क्षेत्र कर्मचारी के हस्ताक्षर</span>
+      </td>
+    </tr>
+  </table>
+
+  <div class="actionsbar">
+    <button class="btn secondary" onclick="addRow()">+ Add Row</button>
+    <button class="btn secondary" onclick="duplicateSelected()">➕ Add Journey Day (Duplicate Selected)</button>
+    <button class="btn danger" onclick="deleteSelected()">🗑 Delete Selected</button>
+    <button class="btn danger" onclick="clearRows()">Clear Rows</button>
+    <button class="btn" onclick="window.print()">Print</button>
   </div>
 
-  <script>
-    // ===== Navigation helper (so card click works) =====
-    function go(url){ window.location.href = url; }
+</div>
 
-    // ===== Clock =====
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function tick(){
-      const d = new Date();
-      const h = pad(d.getHours()), m = pad(d.getMinutes());
-      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      document.getElementById('nowTime').textContent = `${h}:${m}`;
-      document.getElementById('nowDate').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+<script>
+  // ===== Rates =====
+  let DA_RATE = 0;
+  let HOTEL_RATE = 0;
+
+  const rowsEl = document.getElementById("rows");
+  const rateText = document.getElementById("rateText");
+  const rangeList = document.getElementById("rangeList");
+
+  // Ranges array: {id, fromISO, toISO, days}
+  let ranges = [];
+  let selectedRow = null;
+
+  function money(n){
+    n = Number(n || 0);
+    const rounded = Math.round(n * 100) / 100;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  }
+
+  function updateRates(){
+    const d = document.getElementById("desig").value;
+
+    if(d === "ENUM"){
+      DA_RATE = 400;
+      HOTEL_RATE = 750;
+    } else if(d === "SUP"){
+      DA_RATE = 500;
+      HOTEL_RATE = 750;
+    } else if(d === "SSO"){
+      DA_RATE = 1000;
+      HOTEL_RATE = 968;
+    } else {
+      DA_RATE = 0;
+      HOTEL_RATE = 0;
     }
-    tick(); setInterval(tick, 1000);
 
-    // ===== Particles (lightweight, no library) =====
-    const c = document.getElementById('fx');
-    const ctx = c.getContext('2d');
-    let W,H,particles=[];
-    function resize(){
-      W = c.width = window.innerWidth;
-      H = c.height = window.innerHeight;
-      particles = Array.from({length: 70}, () => ({
-        x: Math.random()*W,
-        y: Math.random()*H,
-        r: Math.random()*1.6 + 0.4,
-        vx: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
-        vy: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
-        a: Math.random()*0.35 + 0.15
-      }));
+    rateText.textContent = `DA ₹${money(DA_RATE)} | Hotel ₹${money(HOTEL_RATE)}`;
+    recalc();
+  }
+
+  // ===== Tour Range helpers =====
+  function parseDate(v){
+    if(!v) return null;
+    const d = new Date(v + "T00:00:00");
+    return isNaN(d) ? null : d;
+  }
+
+  function toISO(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+
+  function dayDiffInclusive(a, b){
+    const ms = 24*60*60*1000;
+    const diff = Math.round((b - a) / ms);
+    return diff >= 0 ? diff + 1 : 0;
+  }
+
+  function updateTourDaysUI(){
+    const from = parseDate(document.getElementById("fromDate").value);
+    const to   = parseDate(document.getElementById("toDate").value);
+    const days = (from && to) ? dayDiffInclusive(from, to) : 0;
+    document.getElementById("tourDays").textContent = days;
+    return { from, to, days };
+  }
+
+  document.addEventListener("input", (e)=>{
+    if(e.target && (e.target.id === "fromDate" || e.target.id === "toDate")){
+      updateTourDaysUI();
     }
-    window.addEventListener('resize', resize);
-    resize();
+  });
 
-    function draw(){
-      ctx.clearRect(0,0,W,H);
+  function addRange(){
+    const { from, to, days } = updateTourDaysUI();
+    if(!from || !to || !days) return;
 
-      // dots
-      for(const p of particles){
-        p.x += p.vx; p.y += p.vy;
-        if(p.x < -20) p.x = W+20;
-        if(p.x > W+20) p.x = -20;
-        if(p.y < -20) p.y = H+20;
-        if(p.y > H+20) p.y = -20;
+    const item = {
+      id: String(Date.now()) + "_" + Math.floor(Math.random()*9999),
+      fromISO: toISO(from),
+      toISO: toISO(to),
+      days
+    };
+    ranges.push(item);
+    renderRanges();
+  }
 
-        ctx.beginPath();
-        ctx.globalAlpha = p.a;
-        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fillStyle = "#cbeeff";
-        ctx.fill();
-      }
+  function removeRange(id){
+    ranges = ranges.filter(r => r.id !== id);
+    renderRanges();
+  }
 
-      // lines (nearby)
-      for(let i=0;i<particles.length;i++){
-        for(let j=i+1;j<particles.length;j++){
-          const a = particles[i], b = particles[j];
-          const dx = a.x-b.x, dy = a.y-b.y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if(dist < 140){
-            ctx.globalAlpha = (1 - dist/140) * 0.18;
-            ctx.strokeStyle = "#38bdf8";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(a.x,a.y);
-            ctx.lineTo(b.x,b.y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      ctx.globalAlpha = 1;
-      requestAnimationFrame(draw);
+  function renderRanges(){
+    rangeList.innerHTML = "";
+    if(!ranges.length){
+      rangeList.innerHTML = `<div style="font-weight:800; color:#333;">No ranges added yet.</div>`;
+      return;
     }
-    draw();
 
-    // ===== Micro-tilt on hover (no library) =====
-    document.querySelectorAll('.card').forEach(card=>{
-      let rect=null;
-      card.addEventListener('mousemove', (e)=>{
-        rect = rect || card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const cx = rect.width/2;
-        const cy = rect.height/2;
-        const rx = ((y - cy)/cy) * -5; // rotateX
-        const ry = ((x - cx)/cx) * 6;  // rotateY
-        card.style.transform = `translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-      });
-      card.addEventListener('mouseleave', ()=>{
-        rect=null;
-        card.style.transform = '';
-      });
+    ranges.forEach((r, idx)=>{
+      const div = document.createElement("div");
+      div.className = "range-item";
+      div.innerHTML = `
+        <div class="meta">
+          <span><b>Range ${idx+1}:</b></span>
+          <code>${r.fromISO}</code>
+          <span>to</span>
+          <code>${r.toISO}</code>
+          <span>(Days: <b>${r.days}</b>)</span>
+        </div>
+        <div class="actions">
+          <button class="btn-mini" type="button" onclick="generateRange('${r.id}', true)">Append Rows</button>
+          <button class="btn-mini gray" type="button" onclick="generateRange('${r.id}', false)">Replace Rows</button>
+          <button class="btn-mini red" type="button" onclick="removeRange('${r.id}')">Remove</button>
+        </div>
+      `;
+      rangeList.appendChild(div);
     });
-  </script>
+  }
+
+  // Generate rows for a specific range
+  // append=true -> add to existing; append=false -> replace table rows with this range only
+  function generateRange(id, append){
+    const r = ranges.find(x => x.id === id);
+    if(!r) return;
+
+    const from = parseDate(r.fromISO);
+    const to = parseDate(r.toISO);
+    const days = dayDiffInclusive(from, to);
+    if(!append) rowsEl.innerHTML = "";
+
+    const cur = new Date(from);
+    for(let i=0;i<days;i++){
+      const iso = toISO(cur);
+      const isLastDay = (i === days - 1);
+
+      addRow({
+        date: iso,
+        days: 1,
+        noHotel: isLastDay,
+        rangeId: r.id
+      });
+
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    sortRowsByDate();
+    recalc();
+  }
+
+  function generateAllRanges(){
+    if(!ranges.length) return;
+    rowsEl.innerHTML = "";
+    ranges.forEach(r => generateRange(r.id, true)); // append
+    sortRowsByDate();
+    recalc();
+  }
+
+  // ===== Rows / selection / journey day =====
+  function addRow(prefill = {}){
+    const tr = document.createElement("tr");
+
+    // no hotel flag & range id tracking
+    tr.dataset.nohotel = prefill.noHotel ? "1" : "0";
+    tr.dataset.rangeid = prefill.rangeId || "";
+
+    tr.innerHTML = `
+      <td><input type="date" value="${prefill.date || ""}" oninput="recalc()"></td>
+      <td><input type="number" min="0" step="1" value="${prefill.days ?? 1}" oninput="recalc()"></td>
+      <td class="da">0</td>
+      <td class="hotel">0</td>
+      <td class="tda">0</td>
+      <td><input value="${prefill.mode || ""}"></td>
+      <td><input type="number" min="0" step="0.1" value="${prefill.km || ""}" oninput="recalc()"></td>
+      <td><input type="number" min="0" step="0.01" value="${prefill.fare || ""}" oninput="recalc()"></td>
+      <td class="total">0</td>
+    `;
+
+    // click select row
+    tr.addEventListener("click", ()=>{
+      selectRow(tr);
+    });
+
+    // double-click hotel cell toggles no-hotel (useful after edits)
+    tr.querySelector(".hotel").addEventListener("dblclick", (e)=>{
+      e.stopPropagation();
+      tr.dataset.nohotel = (tr.dataset.nohotel === "1") ? "0" : "1";
+      recalc();
+    });
+
+    rowsEl.appendChild(tr);
+    recalc();
+  }
+
+  function selectRow(tr){
+    if(selectedRow) selectedRow.classList.remove("sel");
+    selectedRow = tr;
+    selectedRow.classList.add("sel");
+  }
+
+  function duplicateSelected(){
+    if(!selectedRow) return;
+
+    const date = selectedRow.children[0].querySelector("input").value;
+    const days = selectedRow.children[1].querySelector("input").value;
+    const mode = selectedRow.children[5].querySelector("input").value;
+    const km   = selectedRow.children[6].querySelector("input").value;
+    const fare = selectedRow.children[7].querySelector("input").value;
+
+    // Journey day row: same date, default hotel same as original (but you can toggle)
+    addRow({
+      date,
+      days: Number(days || 1),
+      mode,
+      km,
+      fare,
+      noHotel: false,
+      rangeId: selectedRow.dataset.rangeid || ""
+    });
+
+    sortRowsByDate();
+    recalc();
+  }
+
+  function deleteSelected(){
+    if(!selectedRow) return;
+    selectedRow.remove();
+    selectedRow = null;
+    recalc();
+  }
+
+  function clearRows(){
+    rowsEl.innerHTML = "";
+    selectedRow = null;
+    // keep 3 blank rows like sheet feel
+    addRow(); addRow(); addRow();
+  }
+
+  function sortRowsByDate(){
+    const trs = Array.from(rowsEl.querySelectorAll("tr"));
+    trs.sort((a,b)=>{
+      const da = a.children[0].querySelector("input").value || "9999-12-31";
+      const db = b.children[0].querySelector("input").value || "9999-12-31";
+      if(da < db) return -1;
+      if(da > db) return 1;
+      return 0; // same date -> keep insertion order (journey days remain grouped)
+    });
+    rowsEl.innerHTML = "";
+    trs.forEach(tr => rowsEl.appendChild(tr));
+  }
+
+  // ===== Calculation =====
+  function recalc(){
+    let gDA = 0, gHotel = 0, gTDA = 0, gFare = 0, gAll = 0;
+
+    [...rowsEl.querySelectorAll("tr")].forEach(tr => {
+      const days = Number(tr.children[1].querySelector("input").value || 0);
+      const fare = Number(tr.children[7].querySelector("input").value || 0);
+
+      const da = days * DA_RATE;
+
+      const noHotel = tr.dataset.nohotel === "1";
+      const hotel = noHotel ? 0 : (days * HOTEL_RATE);
+
+      const tda = da + hotel;
+      const total = tda + fare;
+
+      tr.querySelector(".da").textContent = money(da);
+
+      // hotel mark
+      tr.querySelector(".hotel").textContent = money(hotel);
+      tr.querySelector(".hotel").title = noHotel ? "No Hotel (toggled / last day)" : "Double-tap to toggle No-Hotel";
+
+      tr.querySelector(".tda").textContent = money(tda);
+      tr.querySelector(".total").textContent = money(total);
+
+      gDA += da;
+      gHotel += hotel;
+      gTDA += tda;
+      gFare += fare;
+      gAll += total;
+    });
+
+    document.getElementById("gDA").textContent = money(gDA);
+    document.getElementById("gHotel").textContent = money(gHotel);
+    document.getElementById("gTDA").textContent = money(gTDA);
+    document.getElementById("gFare").textContent = money(gFare);
+    document.getElementById("gAll").textContent = money(gAll);
+  }
+
+  // Auto-fill year from month if empty
+  document.getElementById("month").addEventListener("input", (e) => {
+    const val = e.target.value; // yyyy-mm
+    if(val && !document.getElementById("year").value){
+      document.getElementById("year").value = val.split("-")[0];
+    }
+  });
+
+  // Start: 3 empty rows + range list init
+  addRow(); addRow(); addRow();
+  updateRates();
+  renderRanges();
+</script>
+
 </body>
 </html>
