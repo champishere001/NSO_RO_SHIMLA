@@ -505,6 +505,8 @@ let systemDateString = "2026-01-18";
 let globalAdmin = false;
 
 const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+/* ✅ NAV ONLY HIMACHAL */
 const nsoZones = { "NORTH": ["HIMACHAL PRADESH"] };
 
 /* ===================== UI helpers ===================== */
@@ -684,34 +686,38 @@ function upd(id, f, v){
   refresh();
 }
 
-/* ===================== Cloud Sync ===================== */
+/* ===================== Cloud Sync (HP only safety) ===================== */
 async function syncToCloud(){
-  if(!selSt) return;
-  toggleLoader(true, "SYNCING...");
+  const STATE = "HIMACHAL PRADESH";
+  if(selSt !== STATE){
+    alert("Only HIMACHAL PRADESH is allowed on this page.");
+    return;
+  }
+  toggleLoader(true, "SYNCING HP...");
   try{
     const data = {};
     master.filter(m => m.state === selSt).forEach(m => data[m.uid] = m);
     await db.ref(`plfs_roster/${selSt}`).set(data);
-    alert("Cloud Updated.");
+    alert("Cloud Updated (HP).");
   } finally {
     toggleLoader(false);
   }
 }
 
+/* ✅ Fetch ONLY HIMACHAL PRADESH from DB */
 async function autoFetch(){
+  const STATE = "HIMACHAL PRADESH";
   toggleLoader(true, "FETCHING HP...");
   try{
-    const STATE = "HIMACHAL PRADESH";
-
     const snap = await db.ref(`plfs_roster/${STATE}`).once('value');
-
     master = [];
+
     if(snap.exists()){
       const obj = snap.val() || {};
       Object.values(obj).forEach(r => master.push(r));
     }
 
-    // Lock state to HP
+    // lock selection to HP
     selSt = STATE;
     selSro = "ALL SROs";
 
@@ -721,9 +727,9 @@ async function autoFetch(){
     toggleLoader(false);
   }
 }
+
 /* ===================== NO PASSWORD FOR SRO VIEW ===================== */
 function selectSroWithAuth(sroName){
-  // No password / no restriction
   selSro = sroName;
   renderNav();
   refresh();
@@ -747,7 +753,9 @@ function renderNav(){
       if(selSt === st){
         const sros = [...new Set(master.filter(x => x.state === st).map(x => x.sro))].sort();
 
-        html +=">
+        html += `
+          <div class="sub-menu-container">
+            <div class="pill-grid">
               <div class="pill all-btn ${selSro==='ALL SROs'?'active':''}" onclick="event.stopPropagation(); selectSroWithAuth('ALL SROs');">🌍 ALL SRO's</div>
               ${sros.map(s => `<div class="pill ${selSro===s?'active':''}" onclick="event.stopPropagation(); selectSroWithAuth('${s}');">${s}</div>`).join('')}
             </div>
@@ -815,7 +823,7 @@ function exportCSV(){
 /* ===================== Boot ===================== */
 window.onload = () => {
   document.getElementById('sysCalendar').value = systemDateString;
-  autoFetch();
+  autoFetch(); // ✅ only HP fetch
 };
 </script>
 </body>
