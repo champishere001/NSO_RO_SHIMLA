@@ -7,26 +7,24 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Firebase (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
-
-  <!-- OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
   <style>
     :root{
-      --bg:#020617; --panel:#0b1222; --card1:#0f172a; --card2:#111c33; --border:#22304a;
-      --accent:#38bdf8; --green:#10b981; --amber:#f59e0b; --pink:#fb7185; --violet:#a78bfa;
-      --text:#e5e7eb; --muted:#94a3b8;
-      --shadow: 0 24px 90px rgba(0,0,0,.62);
-      --shadow2: 0 18px 60px rgba(0,0,0,.45);
-      --radius: 22px;
+      --bg:#020617;
+      --panel:#0b1222;
+      --card:#0f172a;
+      --card2:#111c33;
+      --border:#22304a;
+
+      --accent:#38bdf8;
+      --green:#10b981;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+
+      --shadow: 0 26px 110px rgba(0,0,0,.70);
+      --shadow2: 0 18px 60px rgba(0,0,0,.48);
+      --radius: 24px;
     }
+
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
@@ -37,1089 +35,335 @@
       overflow-x:hidden;
     }
 
+    /* background */
     .bg{
-      position:fixed; inset:0; z-index:-2;
+      position:fixed; inset:0; z-index:-3;
       background:
-        radial-gradient(1200px 520px at 18% 15%, rgba(56,189,248,.18), transparent 60%),
-        radial-gradient(1000px 560px at 82% 22%, rgba(16,185,129,.12), transparent 60%),
-        radial-gradient(900px 520px at 50% 85%, rgba(167,139,250,.10), transparent 65%),
+        radial-gradient(1000px 520px at 16% 18%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(900px 520px at 84% 22%, rgba(16,185,129,.13), transparent 62%),
+        radial-gradient(900px 520px at 50% 88%, rgba(56,189,248,.10), transparent 65%),
         linear-gradient(180deg, #000814, #020617);
     }
     .noise{
-      position:fixed; inset:0; z-index:-1;
+      position:fixed; inset:0; z-index:-2;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
-      opacity:.16; mix-blend-mode:overlay; pointer-events:none;
+      opacity:.14; mix-blend-mode:overlay; pointer-events:none;
     }
     .blob{
-      position:fixed; width:420px; height:420px; border-radius:50%;
-      filter: blur(50px); opacity:.22; z-index:-1;
-      animation: float 9s ease-in-out infinite;
+      position:fixed; width:520px; height:520px; border-radius:50%;
+      filter: blur(60px); opacity:.22; z-index:-1;
+      animation: float 10s ease-in-out infinite;
     }
-    .b1{ left:-120px; top:80px; background: rgba(56,189,248,.8); }
-    .b2{ right:-160px; top:140px; background: rgba(16,185,129,.8); animation-duration: 11s; }
-    .b3{ left:38%; bottom:-220px; background: rgba(167,139,250,.8); animation-duration: 13s; }
+    .b1{ left:-180px; top:120px; background: rgba(56,189,248,.85); }
+    .b2{ right:-220px; top:140px; background: rgba(16,185,129,.85); animation-duration: 12s; }
+    .b3{ left:35%; bottom:-280px; background: rgba(56,189,248,.55); animation-duration: 14s; }
     @keyframes float{
       0%,100%{ transform: translate(0,0) scale(1); }
-      50%{ transform: translate(24px,-18px) scale(1.06); }
+      50%{ transform: translate(28px,-18px) scale(1.06); }
     }
-    #fx{ position:fixed; inset:0; z-index:-0; pointer-events:none; opacity:.75; }
 
-    .left-rail{
-      position:fixed; inset:0 auto 0 0; width:72px;
-      background:#0f172a; border-right:1px solid var(--border);
-      display:flex; flex-direction:column; align-items:center;
-      padding-top:14px; gap:18px; z-index:9999;
+    /* layout */
+    .wrap{
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 64px 18px 80px;
+      display:grid;
+      gap: 18px;
     }
-    .left-rail a{
-      width:56px; text-align:center; font-size:11px; font-weight:900;
-      text-decoration:none; color:#fff; padding:8px 6px; border-radius:12px;
-      line-height:1.2; transition:.2s ease;
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
     }
-    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
-    .left-rail a.hub{ color:var(--accent); }
-    .left-rail a.plfs{ color:var(--accent); }
-    .left-rail a.action{ color:var(--green); }
 
-    .wrap{ max-width:1240px; margin:0 auto; padding:56px 18px 90px; margin-left:72px; }
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
 
-    .title{ margin:0; font-size:34px; font-weight:900; letter-spacing:.8px; line-height:1.05; }
-    .title .a{ color: var(--accent); } .title .b{ color:#cbeeff; }
-    .subtitle{ margin:10px 0 0; color:var(--muted); font-weight:600; font-size:14px; line-height:1.5; max-width:760px; }
+    .title{
+      margin:0;
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: .8px;
+      line-height: 1.02;
+    }
+    .title .a{ color: var(--accent); }
+    .title .b{ color:#cbeeff; }
 
-    .badge-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 12px; border-radius:999px;
-      border:1px solid rgba(34,48,74,.9);
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 760px;
+    }
+
+    .chips{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 4px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,48,74,.9);
       background: rgba(2,6,23,.55);
       backdrop-filter: blur(10px);
       box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      font-size:12px; font-weight:800; color:#dbeafe;
+      font-size: 12px;
+      font-weight: 900;
+      color:#dbeafe;
     }
 
     .spark{
       height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
-      opacity:.55;
-      margin: 18px 0 0;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.62), transparent);
+      opacity:.6;
+      margin: 10px 0 0;
     }
 
-    .section{ margin-top:22px; }
-    .section-title{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:12px 16px; border-radius:16px;
-      border:1px solid rgba(34,48,74,.9);
-      background: rgba(2,6,23,.45);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.30);
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 8px;
     }
-    .section-title .left{ display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.3px; color:#eaf6ff; }
-    .section-title .left span{
-      width:34px; height:34px; border-radius:12px; display:grid; place-items:center;
-      border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.06);
-    }
-    .section-title .right{ font-size:12px; font-weight:800; color: rgba(148,163,184,.85); white-space:nowrap; }
-    .section-divider{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.45), transparent);
-      opacity:.7; margin: 14px 0 18px;
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      .title{ font-size: 34px; }
     }
 
-    .grid{ display:grid; grid-template-columns:1.2fr .8fr; gap:22px; margin-top:18px; }
-    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } .section-title .right{ display:none; } }
-
+    /* cards */
     .card{
       position:relative;
       border-radius: var(--radius);
-      padding: 24px 24px 20px;
+      padding: 22px 22px 18px;
       background: linear-gradient(180deg, rgba(17,28,51,.92), rgba(15,23,42,.92));
-      border: 1px solid rgba(34,48,74,.9);
+      border: 1px solid rgba(34,48,74,.92);
       box-shadow: var(--shadow2);
       overflow:hidden;
-      transform-style:preserve-3d;
-      cursor: pointer;
-      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      transform-style: preserve-3d;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
     }
+
     .card::before{
-      content:""; position:absolute; inset:-2px;
+      content:"";
+      position:absolute; inset:-2px;
       background:
-        radial-gradient(650px 260px at 15% 15%, rgba(56,189,248,.18), transparent 55%),
-        radial-gradient(540px 240px at 88% 18%, rgba(16,185,129,.12), transparent 55%);
-      opacity:.9; pointer-events:none;
+        radial-gradient(680px 260px at 15% 15%, rgba(56,189,248,.18), transparent 55%),
+        radial-gradient(560px 240px at 88% 18%, rgba(16,185,129,.12), transparent 55%);
+      opacity:.9;
+      pointer-events:none;
     }
     .card::after{
-      content:""; position:absolute; top:-40%; left:-60%;
+      content:"";
+      position:absolute; top:-40%; left:-60%;
       width:60%; height:180%;
       background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
       transform: rotate(18deg);
-      opacity:0; transition: opacity .35s ease;
+      opacity:0;
+      transition: opacity .35s ease;
       pointer-events:none;
     }
-    .card:hover::after{ opacity:1; animation:sweep 1.2s ease; }
-    @keyframes sweep{ 0%{ transform: translateX(0) rotate(18deg); } 100%{ transform: translateX(380%) rotate(18deg); } }
-    .card:hover{ border-color: rgba(56,189,248,.55); box-shadow: var(--shadow); transform: translateY(-6px); }
+    .card:hover::after{ opacity:1; animation:sweep 1.1s ease; }
+    @keyframes sweep{
+      0%{ transform: translateX(0) rotate(18deg); }
+      100%{ transform: translateX(380%) rotate(18deg); }
+    }
 
-    .card-head{ display:flex; align-items:center; gap:12px; position:relative; z-index:1; margin-bottom:10px; }
-    .ico{
-      width:42px; height:42px; border-radius:14px; display:grid; place-items:center; font-size:20px;
-      border:1px solid rgba(255,255,255,.10);
+    .card:hover{
+      transform: translateY(-6px);
+      box-shadow: var(--shadow);
+      border-color: rgba(56,189,248,.55);
+    }
+
+    .head{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 10px;
+    }
+
+    .icon{
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      display:grid;
+      place-items:center;
+      font-size: 22px;
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.35);
-      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      box-shadow: 0 14px 34px rgba(0,0,0,.25);
     }
-    .ico.action{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.26); }
-    .ico.notes{ background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.28); }
+    .icon.green{ background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.28); }
+    .icon.blue{ background: rgba(56,189,248,.14); border-color: rgba(56,189,248,.30); }
 
-    .card h3{ margin:0; font-size:18px; font-weight:900; letter-spacing:.2px; }
+    .card h3{
+      margin:0;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
     .card p{
-      margin:6px 0 16px;
+      position:relative;
+      z-index:1;
+      margin: 6px 0 16px;
       color: var(--muted);
-      font-weight:600;
-      font-size:12.5px;
-      line-height:1.5;
-      position:relative; z-index:1;
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.55;
     }
 
-    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:1; margin-top: 10px; }
+    .actions{
+      position:relative;
+      z-index:1;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 8px;
+    }
+
     .btn{
-      appearance:none; border:none; cursor:pointer;
-      padding: 10px 14px; border-radius: 12px;
-      font-weight:900; font-size:12px; letter-spacing:.3px;
-      color:#001019; background: var(--accent);
-      box-shadow: 0 18px 35px rgba(56,189,248,.18);
-      display:inline-flex; align-items:center; gap:8px;
-      text-decoration:none; user-select:none;
-      transform: translateZ(25px);
-      transition: transform .18s ease, background .18s ease, border-color .18s ease;
-    }
-    .btn:hover{ transform: translateZ(25px) translateY(-2px); }
-    .btn.secondary{
-      background: rgba(255,255,255,.06);
-      color:#e5e7eb; border:1px solid rgba(255,255,255,.10);
-      box-shadow:none;
-    }
-    .btn.secondary:hover{ background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.18); }
-    .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
-    .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
-
-    .modalMask{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.78);
-      display:none;
+      display:inline-flex;
       align-items:center;
       justify-content:center;
-      z-index:40000;
-      padding:18px;
-      backdrop-filter: blur(10px);
-    }
-    .modal{
-      width:min(980px, 100%);
-      max-height: 90vh;
-      overflow:auto;
-      background: linear-gradient(180deg, rgba(17,28,51,.96), rgba(15,23,42,.98));
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:24px;
-      box-shadow: var(--shadow);
-    }
-    .mh{
-      padding:16px 16px 12px;
-      display:flex; justify-content:space-between; align-items:center;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      gap:12px;
-    }
-    .mh .t{ font-weight:900; font-size:14px; }
-    .xbtn{
-      background:transparent;
-      border:1px solid rgba(255,255,255,.14);
-      color:#fff;
-      border-radius:12px;
-      padding:8px 10px;
+      gap:10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: .3px;
+      text-decoration:none;
+      user-select:none;
       cursor:pointer;
-      font-weight:900;
-    }
-    .mb{ padding:16px; }
 
-    .form{ display:grid; gap:10px; position:relative; z-index:1; }
-    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    @media (max-width: 680px){ .row2{ grid-template-columns:1fr; } }
-
-    label{
-      font-size:11px; font-weight:900; color:var(--muted);
-      letter-spacing:.2px; text-transform:uppercase;
-    }
-    .field{
-      margin-top:6px; width:100%;
-      background:rgba(0,0,0,.25);
       border:1px solid rgba(255,255,255,.10);
-      color:var(--text);
-      padding:12px 12px;
-      border-radius:14px;
-      outline:none;
-      font-weight:800;
-      font-size:13px;
-    }
-    .field:focus{
-      border-color:rgba(56,189,248,.55);
-      box-shadow:0 0 0 3px rgba(56,189,248,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+      min-width: 220px;
     }
 
-    .status{
-      margin-top:10px;
-      border:1px dashed rgba(255,255,255,.16);
-      border-radius:18px;
-      padding:12px;
-      color:var(--muted);
-      font-weight:800;
-      font-size:12px;
-      background:rgba(0,0,0,.18);
-    }
-    .progress{
-      margin-top:10px;
-      height:10px;
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:999px;
-      overflow:hidden;
-    }
-    .bar{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg, rgba(16,185,129,.95), rgba(56,189,248,.92));
-      transition:width .2s ease;
+    .btn:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.10);
     }
 
-    .list{ margin-top:14px; display:grid; gap:10px; max-height: 360px; overflow:auto; padding-right:4px; }
-    .item{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      padding:12px;
-      background:rgba(0,0,0,.18);
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
+    .btn.primary{
+      background: var(--accent);
+      color:#001019;
+      border:none;
+      box-shadow: 0 18px 35px rgba(56,189,248,.18);
     }
-    .meta .a{ font-weight:900; font-size:12px; color:#fff; margin-bottom:6px; }
-    .meta .b{ color:var(--muted); font-weight:800; font-size:11px; line-height:1.4; }
-    .item a{ color:var(--accent); font-weight:900; text-decoration:none; font-size:12px; }
-    .item a:hover{ text-decoration:underline; }
+    .btn.primary:hover{ background:#4cc8ff; }
 
-    .previewWrap{
-      margin-top:12px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      background:rgba(0,0,0,.14);
-      overflow:hidden;
+    .btn.green{
+      background: var(--green);
+      color:#00110a;
+      border:none;
+      box-shadow: 0 18px 35px rgba(16,185,129,.16);
     }
-    .previewHead{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      font-weight:900;
-      font-size:12px;
-      color:#eaf6ff;
+    .btn.green:hover{ background:#18c58a; }
+
+    .hint{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      color: rgba(148,163,184,.95);
+      font-weight: 800;
+      font-size: 12px;
+      line-height: 1.5;
     }
-    .previewBody{
-      max-height:180px;
-      overflow:auto;
-      padding:6px 8px 10px;
-      display:grid;
-      gap:8px;
+
+    /* footer */
+    .foot{
+      margin-top: 8px;
+      color: rgba(148,163,184,.85);
+      font-weight: 800;
+      font-size: 12px;
     }
-    .prow{
-      display:grid;
-      grid-template-columns: 1.25fr .55fr .55fr;
-      gap:10px;
-      align-items:center;
-      padding:8px 10px;
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:14px;
-      background:rgba(255,255,255,.04);
-    }
-    .prow .fn{
-      font-weight:900;
-      font-size:11.5px;
-      color:#fff;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-    .prow .sm{
-      font-weight:900;
-      font-size:11.5px;
-      color:#dbeafe;
-      text-align:center;
-    }
-    .prow .st{
-      font-weight:900;
-      font-size:11px;
-      color:var(--muted);
-      text-align:right;
-      white-space:nowrap;
-    }
-    .tagOk{ color: rgba(16,185,129,.95); }
-    .tagBad{ color: rgba(239,68,68,.95); }
   </style>
 </head>
 
 <body>
-  <nav class="left-rail">
-    <a href="index.html" class="hub">🏠 HUB</a>
-    <a href="plfs_gateway.html" class="plfs">🧭 GATE</a>
-    <a href="plfs.html" class="plfs">📊 PLFS</a>
-    <a href="ufs_action.html" class="action">📈 Action</a>
-  </nav>
-
   <div class="bg"></div>
-  <canvas id="fx"></canvas>
   <div class="noise"></div>
   <div class="blob b1"></div>
   <div class="blob b2"></div>
   <div class="blob b3"></div>
 
   <div class="wrap">
-    <h1 class="title"><span class="a">PLFS</span> <span class="b">GATEWAY</span></h1>
-    <p class="subtitle">
-      Between HUB and PLFS: open <b>Action Plan</b> or upload <b>Inspection Notes (PDF)</b> SRO-wise with Sample No.
-    </p>
-    <div class="badge-row">
-      <div class="pill">⚡ Quick Access</div>
-      <div class="pill">📄 PDF Notes</div>
-      <div class="pill">☁️ Drive Drop Box</div>
-      <div class="pill">🧠 SRO-wise Tracking</div>
+    <div class="top">
+      <div class="brand">
+        <h1 class="title"><span class="a">PLFS</span> <span class="b">GATEWAY</span></h1>
+        <p class="subtitle">
+          Clean landing page with only two actions. Use the buttons below to open the PLFS dashboard
+          or your Inspection Notes Drive Drop Box link.
+        </p>
+        <div class="chips">
+          <div class="chip">⚡ Quick Access</div>
+          <div class="chip">📄 Inspection Notes</div>
+          <div class="chip">☁️ Drive Drop Box</div>
+          <div class="chip">✅ Minimal</div>
+        </div>
+      </div>
     </div>
+
     <div class="spark"></div>
 
-    <div class="section">
-      <div class="section-title">
-        <div class="left"><span>🧭</span><div>PLFS Gateway</div></div>
-        <div class="right">Action Plan • Inspection Notes</div>
-      </div>
-      <div class="section-divider"></div>
-
-      <div class="grid">
-        <div class="card" role="button" onclick="go('plfs.html')">
-          <div class="card-head">
-            <div class="ico action">📈</div>
+    <div class="grid">
+      <div class="card">
+        <div class="head">
+          <div class="icon green">📊</div>
+          <div>
             <h3>Action Plan</h3>
           </div>
-          <p>Open PLFS command dashboard.</p>
-          <div class="btnrow">
-            <a class="btn secondary" href="plfs.html" onclick="event.stopPropagation()">📊 Go PLFS</a>
+        </div>
+        <p>Open PLFS command dashboard page.</p>
+        <div class="actions">
+          <a class="btn green" href="plfs.html">Open Action Plan</a>
+        </div>
+        <div class="hint">Tip: Keep this file as <b>plfs_gateway.html</b> and link from HUB.</div>
+      </div>
+
+      <div class="card">
+        <div class="head">
+          <div class="icon blue">📝</div>
+          <div>
+            <h3>Inspection Notes</h3>
           </div>
         </div>
-
-        <div class="card" role="button" onclick="openNotes()">
-          <div class="card-head">
-            <div class="ico notes">📝</div>
-            <h3>Inspection Notes (PDF)</h3>
-          </div>
-          <p>Upload PDF SRO-wise + Sample No (Auto detect from cover). PDFs go to <b>Google Drive</b>, metadata to Notes RTDB.</p>
-          <div class="btnrow">
-            <button class="btn" type="button" onclick="event.stopPropagation(); openNotes()">⬆️ Upload Notes</button>
-            <button class="btn secondary" type="button" onclick="event.stopPropagation(); loadRecent()">🔄 Refresh</button>
-          </div>
-
-          <div class="status" style="margin-top:14px;">
-            <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-              <div><b>Total Notes:</b> <span id="totalNotes">0</span></div>
-              <div><b>Last Upload:</b> <span id="lastUpload">—</span></div>
-            </div>
-          </div>
-
-          <div class="list" id="recentList"></div>
+        <p>Opens your existing Google Apps Script Drop Box upload page.</p>
+        <div class="actions">
+          <a class="btn primary"
+             href="https://script.google.com/macros/s/AKfycbwG0VEtS1ILS4EKUpmQfSiZlBRnaLtlEpSuBSShDmLQW7o78iMZufECN9JCQT6SWRwG/exec"
+             target="_blank" rel="noopener">
+            Open Inspection Notes Upload
+          </a>
         </div>
+        <div class="hint">This button is only a link — no Firebase, no upload logic inside this page.</div>
       </div>
     </div>
-  </div>
 
-  <!-- NOTES MODAL -->
-  <div class="modalMask" id="notesMask" onclick="closeNotes(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="mh">
-        <div class="t">📝 Upload Inspection Notes (PDF) — SRO wise + Sample No (Auto Detect)</div>
-        <button class="xbtn" onclick="closeNotes()">✕ Close</button>
-      </div>
-      <div class="mb">
-        <div class="card" style="box-shadow:none; border-radius:18px; cursor:default;">
-          <div class="card-head">
-            <div class="ico notes">📄</div>
-            <h3>Upload Panel</h3>
-          </div>
-          <p>Select SRO, choose <b>one or multiple PDFs</b>. Sample No will be auto-detected from first page (manual allowed only for single PDF).</p>
-
-          <div class="form">
-            <div class="row2">
-              <div>
-                <label>Select SRO (Only 4)</label>
-                <select id="sroSel" class="field" onchange="loadSroNotes()">
-                  <option value="">— Select SRO —</option>
-                </select>
-              </div>
-              <div>
-                <label>Sample No (manual only for single PDF)</label>
-                <input id="sampleNo" class="field" placeholder="Auto-detected… (single file: you may type)" />
-              </div>
-            </div>
-
-            <div class="row2">
-              <div>
-                <label>Inspection Date (optional)</label>
-                <input id="insDate" type="date" class="field" />
-              </div>
-              <div>
-                <label>Choose PDF File(s) (auto detect)</label>
-                <input id="pdfFile" type="file" class="field" accept="application/pdf" multiple />
-              </div>
-            </div>
-
-            <div>
-              <label>Remarks (optional)</label>
-              <input id="remarks" class="field" placeholder="Officer name / place etc." />
-            </div>
-
-            <div class="previewWrap">
-              <div class="previewHead">
-                <div>Selected Files Preview</div>
-                <div style="color:var(--muted);font-size:11px;">Sample detect results</div>
-              </div>
-              <div class="previewBody" id="previewBody">
-                <div class="status" style="margin:8px;">No file selected.</div>
-              </div>
-            </div>
-
-            <div class="btnrow">
-              <button class="btn green" id="uploadBtn" onclick="uploadPdf()">⬆️ Upload PDF(s)</button>
-              <button class="btn secondary" onclick="resetForm()">🧹 Clear</button>
-              <button class="btn violet" onclick="loadRecent()">🔄 Refresh Recent</button>
-            </div>
-
-            <div class="progress"><div class="bar" id="progBar"></div></div>
-            <div class="status" id="upStatus">Ready.</div>
-
-            <div style="margin-top:14px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                <div style="font-weight:900;">SRO Notes List</div>
-                <div style="color:var(--muted);font-weight:900;font-size:11px;">Click open to view/download</div>
-              </div>
-              <div class="list" id="sroList"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="status" style="margin-top:14px;">
-          ✅ Upload Target: <b>Google Drive (Apps Script Drop Box)</b><br/>
-          ✅ Notes RTDB Meta: <b>inspection_notes_meta/{SRO}/{noteId}</b> (stored in inspection-notes-default-rtdb)
-        </div>
-      </div>
+    <div class="foot">
+      NSO Scheme Hub 2026 • PLFS Gateway
     </div>
   </div>
-
-<script>
-/* ===================== PDF.js worker ===================== */
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-/* ===================== NAV ===================== */
-function go(url){ window.location.href = url; }
-
-/* ===================== Google Drive Upload (Apps Script) ===================== */
-const DRIVE_UPLOAD_ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbwG0VEtS1ILS4EKUpmQfSiZlBRnaLtlEpSuBSShDmLQW7o78iMZufECN9JCQT6SWRwG/exec";
-
-/*
-Expected Apps Script response (recommended):
-{
-  ok: true,
-  fileId: "...",
-  name: "....pdf",
-  url: "https://drive.google.com/file/d/FILEID/view?usp=sharing",
-  folderId: "...",
-  folderUrl: "https://drive.google.com/drive/folders/FOLDERID"
-}
-*/
-
-/* ===================== Firebase ===================== */
-/* ✅ PRIMARY (Action plan) — USING YOUR DATABASE URL */
-const config = {
-  apiKey: "AIzaSyB6fQ8n4qyG-TfVdAqWtDped17bMYTZSgI",
-  authDomain: "action-plan-62fae.firebaseapp.com",
-  databaseURL: "https://action-plan-62fae-default-rtdb.firebaseio.com/",
-  projectId: "action-plan-62fae"
-};
-firebase.initializeApp(config);
-const db = firebase.database();
-
-/* ✅ SECOND (Inspection Notes) — ONLY RTDB (NO STORAGE NOW) */
-const notesConfig = {
-  apiKey: "AIzaSyCsx7ZnXOGj9Q04LgV-SvP-8SOZUxuWdIA",
-  authDomain: "inspection-notes.firebaseapp.com",
-  databaseURL: "https://inspection-notes-default-rtdb.firebaseio.com/",
-  projectId: "inspection-notes",
-  messagingSenderId: "633078446998",
-  appId: "1:633078446998:web:e612c945065754bf653bb7"
-};
-const notesApp = firebase.initializeApp(notesConfig, "notesApp");
-const notesDb  = firebase.database(notesApp);
-
-/* ===================== SRO list (ONLY 4) ===================== */
-const ALLOWED_SROS = ["SRO SHIMLA","SRO HAMIRPUR","SRO DHARAMSHALA","SRO MANDI"];
-
-/* ===================== Modal ===================== */
-function openNotes(){
-  document.getElementById("notesMask").style.display="flex";
-  loadSroDropdownOnly4();
-  loadRecent();
-}
-function closeNotes(e){
-  if(e && e.target && e.target.id !== "notesMask") return;
-  document.getElementById("notesMask").style.display="none";
-}
-function resetForm(){
-  document.getElementById("sampleNo").value="";
-  document.getElementById("insDate").value="";
-  document.getElementById("pdfFile").value="";
-  document.getElementById("remarks").value="";
-  __lastDetectedSample = "";
-  __lastDetectSource = "";
-  __lastDetectSnippet = "";
-  __multiDetected = [];
-  renderPreview([]);
-  setStatus("Ready.");
-  setProgress(0);
-
-  const up = document.getElementById("uploadBtn");
-  if(up) up.disabled = true;
-}
-
-/* ===================== helpers ===================== */
-function setProgress(p){
-  document.getElementById("progBar").style.width = `${Math.max(0, Math.min(100, p))}%`;
-}
-function setStatus(msg, type="info"){
-  const el = document.getElementById("upStatus");
-  el.innerHTML = msg;
-  el.style.borderColor =
-    type==="ok" ? "rgba(16,185,129,.6)" :
-    type==="bad" ? "rgba(239,68,68,.6)" :
-    "rgba(255,255,255,.16)";
-}
-function safeKey(s){ return String(s||"").replace(/[.#$[\]/]/g,"_"); }
-function safeSample(s){ return String(s||"").replace(/[^\w\-]/g,"_"); }
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-/* ===================== Preview ===================== */
-function renderPreview(files){
-  const box = document.getElementById("previewBody");
-  if(!files || !files.length){
-    box.innerHTML = `<div class="status" style="margin:8px;">No file selected.</div>`;
-    return;
-  }
-  box.innerHTML = files.map(f=>{
-    const has = !!(f.sample && String(f.sample).trim());
-    const st = has ? `<span class="tagOk">OK</span>` : `<span class="tagBad">NOT FOUND</span>`;
-    const sm = has ? escapeHtml(f.sample) : "—";
-    return `
-      <div class="prow">
-        <div class="fn" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
-        <div class="sm">${sm}</div>
-        <div class="st">${st}${f.source ? ` • ${escapeHtml(f.source)}` : ""}</div>
-      </div>
-    `;
-  }).join("");
-}
-
-/* ===================== Sample detection ===================== */
-let __lastDetectedSample = "";
-let __lastDetectSource = "";
-let __lastDetectSnippet = "";
-let __multiDetected = [];
-
-function extractSampleFromText(txt){
-  const t = String(txt || "");
-  const cleaned = t.replace(/\s+/g," ").trim();
-
-  const p1 = /S\.?\s*No\.?\s*of\s*(the\s*)?sample\s*FSU\s*[:\-]?\s*([0-9]{4,10})/i;
-  let m = cleaned.match(p1);
-  if(m) return { sample: m[2], snippet: m[0] };
-
-  const p2 = /(sample\s*(serial|s\.?no|no\.?|number|id)|serial\s*no\.?|s\.?\s*no\.?)\s*[:\-]?\s*([A-Z0-9\-\/]{2,30})/i;
-  m = cleaned.match(p2);
-  if(m) return { sample: m[3], snippet: m[0] };
-
-  const p3 = /FSU[^0-9]{0,24}([0-9]{4,10})/i;
-  m = cleaned.match(p3);
-  if(m) return { sample: m[1], snippet: m[0] };
-
-  return null;
-}
-
-async function detectSampleFromPdf_RETURN(file){
-  try{
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    const page = await pdf.getPage(1);
-
-    let text = "";
-    try{
-      const tc = await page.getTextContent();
-      text = (tc.items || []).map(x => x.str || "").join(" ").trim();
-    }catch(e){}
-
-    const found1 = extractSampleFromText(text);
-    if(found1 && found1.sample){
-      return { sample: String(found1.sample), source: "pdf-text", snippet: found1.snippet || "" };
-    }
-
-    const viewport = page.getViewport({ scale: 2.0 });
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently:true });
-    canvas.width = Math.floor(viewport.width);
-    canvas.height = Math.floor(viewport.height);
-
-    await page.render({ canvasContext: ctx, viewport }).promise;
-
-    const dataUrl = canvas.toDataURL("image/png");
-    const ocr = await Tesseract.recognize(dataUrl, "eng");
-    const ocrText = (ocr && ocr.data && ocr.data.text) ? ocr.data.text : "";
-
-    const found2 = extractSampleFromText(ocrText);
-    if(found2 && found2.sample){
-      return { sample: String(found2.sample), source: "ocr", snippet: found2.snippet || "" };
-    }
-
-    return { sample: "", source: "", snippet: "" };
-  }catch(err){
-    console.error("detectSampleFromPdf_RETURN error:", err);
-    return { sample: "", source: "error", snippet: String(err.message || err) };
-  }
-}
-
-/* ===================== Load SRO dropdown ===================== */
-function loadSroDropdownOnly4(){
-  const sel = document.getElementById("sroSel");
-  const prev = sel.value || "";
-  sel.innerHTML = `<option value="">— Select SRO —</option>`;
-  ALLOWED_SROS.forEach(s=>{
-    const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    sel.appendChild(opt);
-  });
-  if(prev && ALLOWED_SROS.includes(prev)) sel.value = prev;
-  if(sel.value) loadSroNotes();
-}
-
-/* ===================== Upload to Apps Script (with progress) ===================== */
-function uploadToDriveViaAppsScript({ file, sro, sampleNo, insDate, remarks, detectSource, detectSnippet, sampleAuto }, onProgress){
-  return new Promise((resolve, reject)=>{
-    const fd = new FormData();
-    fd.append("file", file, file.name);
-
-    // fields
-    fd.append("sro", sro);
-    fd.append("sampleNo", sampleNo);
-    fd.append("inspectionDate", insDate || "");
-    fd.append("remarks", remarks || "");
-
-    // optional extra info
-    fd.append("sampleAutoDetected", sampleAuto ? "true" : "false");
-    fd.append("sampleDetectSource", detectSource || "");
-    fd.append("sampleDetectSnippet", detectSnippet || "");
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", DRIVE_UPLOAD_ENDPOINT, true);
-
-    xhr.upload.onprogress = (evt)=>{
-      if(evt.lengthComputable && typeof onProgress === "function"){
-        const pct = (evt.loaded / evt.total) * 100;
-        onProgress(pct);
-      }
-    };
-
-    xhr.onreadystatechange = ()=>{
-      if(xhr.readyState !== 4) return;
-      if(xhr.status >= 200 && xhr.status < 300){
-        let data = null;
-        try{ data = JSON.parse(xhr.responseText); }catch(e){}
-        if(data && (data.ok === true || data.success === true || data.fileId || data.url)){
-          resolve(data);
-        }else{
-          // if script returns plain text / url
-          resolve({ ok:true, raw: xhr.responseText });
-        }
-      }else{
-        reject(new Error(`Apps Script upload failed (${xhr.status}): ${xhr.responseText || "No response"}`));
-      }
-    };
-
-    xhr.onerror = ()=> reject(new Error("Network error while uploading to Apps Script."));
-    xhr.send(fd);
-  });
-}
-
-/* ===================== Upload PDF(s) ===================== */
-async function uploadPdf(){
-  const sro = document.getElementById("sroSel").value.trim();
-  const insDate = document.getElementById("insDate").value || "";
-  const remarks = document.getElementById("remarks").value.trim();
-  const fileEl = document.getElementById("pdfFile");
-  const files = Array.from(fileEl.files || []);
-
-  if(!sro) { setStatus("❌ Please select SRO.", "bad"); return; }
-  if(!files.length){ setStatus("❌ Please choose PDF file(s).", "bad"); return; }
-  for(const f of files){
-    if(f.type !== "application/pdf"){
-      setStatus(`❌ Only PDF allowed. Invalid: ${escapeHtml(f.name)}`, "bad");
-      return;
-    }
-  }
-
-  const btn = document.getElementById("uploadBtn");
-  btn.disabled = true;
-  setProgress(0);
-
-  try{
-    const sroKey = safeKey(sro);
-    const tsBase = Date.now();
-    const manualSample = document.getElementById("sampleNo").value.trim();
-
-    if(files.length > 1 && (!__multiDetected || __multiDetected.length !== files.length)){
-      setStatus("⚠️ Please wait for detection to finish (or reselect files).", "bad");
-      btn.disabled = false;
-      return;
-    }
-
-    let okCount = 0, failCount = 0;
-
-    for(let i=0;i<files.length;i++){
-      const file = files[i];
-      const ts = tsBase + i;
-
-      let sample = "", detectSource = "", detectSnippet = "", sampleAuto = false;
-
-      if(files.length === 1){
-        if(manualSample){
-          sample = manualSample; sampleAuto = false;
-        }else{
-          const det = await detectSampleFromPdf_RETURN(file);
-          sample = det.sample || "";
-          detectSource = det.source || "";
-          detectSnippet = det.snippet || "";
-          sampleAuto = !!sample;
-        }
-      }else{
-        const det = __multiDetected[i] || {};
-        sample = (det.sample || "").trim();
-        detectSource = det.source || "";
-        detectSnippet = det.snippet || "";
-        sampleAuto = !!sample;
-      }
-
-      if(!sample){
-        failCount++;
-        setStatus(`❌ Sample No not found for: <b>${escapeHtml(file.name)}</b> (skip)`, "bad");
-        continue;
-      }
-
-      setStatus(`⬆️ Uploading to Drive (${i+1}/${files.length}): <b>${escapeHtml(file.name)}</b> | Sample: <b>${escapeHtml(sample)}</b>`, "info");
-
-      // progress mapping: each file gets a slice of the bar
-      const base = (i / files.length) * 100;
-      const slice = (100 / files.length);
-
-      const uploadResp = await uploadToDriveViaAppsScript(
-        {
-          file,
-          sro,
-          sampleNo: sample,
-          insDate,
-          remarks,
-          detectSource,
-          detectSnippet,
-          sampleAuto
-        },
-        (pct)=>{
-          const mapped = base + (pct/100)*slice;
-          setProgress(Math.min(99, mapped));
-        }
-      );
-
-      // derive final URL
-      const url =
-        (uploadResp && uploadResp.url) ? uploadResp.url :
-        (uploadResp && uploadResp.fileId) ? `https://drive.google.com/file/d/${uploadResp.fileId}/view?usp=sharing` :
-        (uploadResp && typeof uploadResp.raw === "string" && uploadResp.raw.includes("http")) ? uploadResp.raw.trim() :
-        "";
-
-      const fileId = (uploadResp && uploadResp.fileId) ? uploadResp.fileId : "";
-      const folderId = (uploadResp && uploadResp.folderId) ? uploadResp.folderId : "";
-      const folderUrl = (uploadResp && uploadResp.folderUrl) ? uploadResp.folderUrl : "";
-
-      const noteId = `${ts}_${Math.random().toString(16).slice(2)}`;
-      const meta = {
-        sro,
-        sampleNo: sample,
-        sampleAutoDetected: sampleAuto,
-        sampleDetectSource: detectSource,
-        sampleDetectSnippet: detectSnippet,
-        inspectionDate: insDate,
-        remarks,
-        fileName: file.name,
-
-        // Drive info
-        driveFileId: fileId,
-        driveFolderId: folderId,
-        driveFolderUrl: folderUrl,
-        url: url, // open link
-        createdAt: ts
-      };
-
-      await notesDb.ref(`inspection_notes_meta/${sroKey}/${noteId}`).set(meta);
-      okCount++;
-    }
-
-    setProgress(100);
-    setStatus(`✅ Upload completed. Success: <b>${okCount}</b> | Failed/Skipped: <b>${failCount}</b>`, okCount ? "ok" : "bad");
-
-    await loadSroNotes();
-    await loadRecent();
-
-    fileEl.value = "";
-    document.getElementById("sampleNo").value = "";
-    __multiDetected = [];
-    renderPreview([]);
-
-  }catch(err){
-    console.error(err);
-    setStatus(`❌ Upload failed: ${escapeHtml(err.message || err)}`, "bad");
-    setProgress(0);
-  }finally{
-    btn.disabled = false;
-  }
-}
-
-/* ===================== Lists ===================== */
-async function loadSroNotes(){
-  const sro = document.getElementById("sroSel").value.trim();
-  const box = document.getElementById("sroList");
-  box.innerHTML = "";
-
-  if(!sro){
-    box.innerHTML = `<div class="status">Select SRO to view uploads.</div>`;
-    return;
-  }
-
-  const sroKey = safeKey(sro);
-
-  try{
-    const snap = await notesDb.ref(`inspection_notes_meta/${sroKey}`)
-      .orderByChild("createdAt").limitToLast(60).once("value");
-
-    if(!snap.exists()){
-      box.innerHTML = `<div class="status">No notes uploaded for this SRO yet.</div>`;
-      return;
-    }
-
-    const arr = [];
-    snap.forEach(ch => arr.push({ id: ch.key, ...ch.val() }));
-    arr.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-
-    box.innerHTML = arr.map(n=>{
-      const dt = n.createdAt ? new Date(n.createdAt).toLocaleString() : "—";
-      const idate = n.inspectionDate ? n.inspectionDate : "—";
-      const sample = n.sampleNo || "—";
-      const rmk = n.remarks ? n.remarks : "—";
-      const badge = n.sampleAutoDetected ? "🧠 Auto" : "✍️ Manual";
-      const openUrl = n.url ? n.url : (n.driveFileId ? `https://drive.google.com/file/d/${n.driveFileId}/view?usp=sharing` : "");
-
-      return `
-        <div class="item">
-          <div class="meta">
-            <div class="a">Sample No: ${escapeHtml(sample)} • ${escapeHtml(n.fileName || "PDF")}
-              <span style="color:var(--muted);font-weight:900;">(${badge})</span>
-            </div>
-            <div class="b">Inspection Date: <b style="color:#fff">${escapeHtml(idate)}</b><br/>
-              Uploaded: ${escapeHtml(dt)}<br/>Remarks: ${escapeHtml(rmk)}
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-            ${openUrl ? `<a href="${openUrl}" target="_blank" rel="noopener">Open PDF ↗</a>` : `<span style="color:var(--muted);font-weight:900;font-size:12px;">No link</span>`}
-            ${n.driveFolderUrl ? `<a href="${n.driveFolderUrl}" target="_blank" rel="noopener">Folder ↗</a>` : ``}
-          </div>
-        </div>
-      `;
-    }).join("");
-  }catch(err){
-    console.error(err);
-    box.innerHTML = `<div class="status" style="border-color:rgba(239,68,68,.6)">❌ Failed: ${escapeHtml(err.message || err)}</div>`;
-  }
-}
-
-async function loadRecent(){
-  const recentBox = document.getElementById("recentList");
-  recentBox.innerHTML = `<div class="status">Loading…</div>`;
-
-  try{
-    const root = await notesDb.ref("inspection_notes_meta").once("value");
-    let all = [];
-
-    if(root.exists()){
-      root.forEach(sroNode=>{
-        const obj = sroNode.val() || {};
-        Object.values(obj).forEach(n=>{
-          if(n && n.createdAt) all.push(n);
-        });
-      });
-    }
-
-    all.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-    const top = all.slice(0, 8);
-
-    document.getElementById("totalNotes").textContent = all.length ? String(all.length) : "0";
-    document.getElementById("lastUpload").textContent = top.length ? new Date(top[0].createdAt).toLocaleString() : "—";
-
-    if(!top.length){
-      recentBox.innerHTML = `<div class="status">No uploads yet.</div>`;
-      return;
-    }
-
-    recentBox.innerHTML = top.map(n=>{
-      const dt = new Date(n.createdAt).toLocaleString();
-      const openUrl = n.url ? n.url : (n.driveFileId ? `https://drive.google.com/file/d/${n.driveFileId}/view?usp=sharing` : "");
-      return `
-        <div class="item">
-          <div class="meta">
-            <div class="a">${escapeHtml(n.sro || "SRO")} • Sample: ${escapeHtml(n.sampleNo || "—")}</div>
-            <div class="b">${escapeHtml(n.fileName || "PDF")}<br/>${escapeHtml(dt)}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-            ${openUrl ? `<a href="${openUrl}" target="_blank" rel="noopener">Open ↗</a>` : `<span style="color:var(--muted);font-weight:900;font-size:12px;">No link</span>`}
-          </div>
-        </div>
-      `;
-    }).join("");
-
-  }catch(err){
-    console.error(err);
-    recentBox.innerHTML = `<div class="status" style="border-color:rgba(239,68,68,.6)">❌ Failed: ${escapeHtml(err.message || err)}</div>`;
-  }
-}
-
-/* ===================== FX: particles ===================== */
-const c = document.getElementById('fx');
-const ctx = c.getContext('2d');
-let W,H,particles=[];
-
-function resize(){
-  W = c.width = window.innerWidth;
-  H = c.height = window.innerHeight;
-  particles = Array.from({length: 70}, () => ({
-    x: Math.random()*W, y: Math.random()*H,
-    r: Math.random()*1.6 + 0.4,
-    vx: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
-    vy: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
-    a: Math.random()*0.35 + 0.15
-  }));
-}
-window.addEventListener('resize', resize);
-resize();
-
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  for(const p of particles){
-    p.x += p.vx; p.y += p.vy;
-    if(p.x < -20) p.x = W+20;
-    if(p.x > W+20) p.x = -20;
-    if(p.y < -20) p.y = H+20;
-    if(p.y > H+20) p.y = -20;
-
-    ctx.beginPath();
-    ctx.globalAlpha = p.a;
-    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle = "#cbeeff";
-    ctx.fill();
-  }
-
-  for(let i=0;i<particles.length;i++){
-    for(let j=i+1;j<particles.length;j++){
-      const a = particles[i], b = particles[j];
-      const dx = a.x-b.x, dy = a.y-b.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if(dist < 140){
-        ctx.globalAlpha = (1 - dist/140) * 0.18;
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(a.x,a.y);
-        ctx.lineTo(b.x,b.y);
-        ctx.stroke();
-      }
-    }
-  }
-  ctx.globalAlpha = 1;
-  requestAnimationFrame(draw);
-}
-draw();
-
-/* ===================== Boot ===================== */
-window.onload = () => {
-  loadRecent();
-  renderPreview([]);
-  loadSroDropdownOnly4();
-
-  const up = document.getElementById("uploadBtn");
-  if(up) up.disabled = true;
-
-  const f = document.getElementById("pdfFile");
-  if(f){
-    f.addEventListener("change", async ()=>{
-      const files = Array.from(f.files || []);
-      __multiDetected = [];
-
-      if(up) up.disabled = true;
-
-      if(!files.length){
-        renderPreview([]);
-        setStatus("Ready.");
-        setProgress(0);
-        return;
-      }
-
-      renderPreview(files.map(x=>({name:x.name, sample:"", source:""})));
-      setStatus(`🔎 Detecting Sample No for ${files.length} PDF(s)…`, "info");
-      setProgress(2);
-
-      for(let i=0;i<files.length;i++){
-        const file = files[i];
-        setStatus(`🔎 Detecting (${i+1}/${files.length}) : <b>${escapeHtml(file.name)}</b>`, "info");
-
-        const det = await detectSampleFromPdf_RETURN(file);
-
-        __multiDetected.push({
-          name: file.name,
-          size: file.size,
-          sample: det.sample || "",
-          source: det.source || "",
-          snippet: det.snippet || ""
-        });
-
-        renderPreview(__multiDetected.map(x=>({name:x.name, sample:x.sample, source:x.source})));
-        const pct = Math.round(((i+1)/files.length)*60);
-        setProgress(Math.min(60, pct));
-      }
-
-      const found = __multiDetected.filter(x=>x.sample).length;
-      setStatus(`✅ Detection done. Found Sample No in <b>${found}/${files.length}</b> file(s). Now click Upload.`, found? "ok" : "bad");
-      setProgress(65);
-
-      if(up) up.disabled = false;
-    });
-  }
-};
-</script>
 </body>
 </html>
