@@ -23,6 +23,9 @@
       /* ✅ NEW: ASI color */
       --cyan:#22d3ee;
 
+      /* ✅ NEW: Daily Diary color */
+      --indigo:#60a5fa;
+
       --text:#e5e7eb;
       --muted:#94a3b8;
 
@@ -106,8 +109,11 @@
     .left-rail a.monthly{ color:var(--green); }
     .left-rail a.tada{ color:var(--amber); }
 
-    /* ✅ NEW: ASI rail color */
+    /* ASI rail color */
     .left-rail a.asi{ color: var(--cyan); }
+
+    /* ✅ Daily Diary rail color */
+    .left-rail a.diary{ color: var(--indigo); }
 
     .wrap{
       max-width:1240px;
@@ -307,8 +313,10 @@
     .ico.arc{ background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.26); }
     .ico.tp{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.26); }
 
-    /* ✅ NEW: ASI icon style */
     .ico.asi{ background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.26); }
+
+    /* ✅ Daily Diary icon style */
+    .ico.diary{ background: rgba(96,165,250,.10); border-color: rgba(96,165,250,.26); }
 
     .card h3{ margin:0; font-size:18px; font-weight:900; letter-spacing:.2px; }
     .card p{
@@ -357,9 +365,10 @@
     .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
     .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
     .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
-
-    /* ✅ NEW: ASI button */
     .btn.cyan{ background: var(--cyan); color:#001014; box-shadow: 0 18px 35px rgba(34,211,238,.15); }
+
+    /* ✅ Daily Diary button */
+    .btn.indigo{ background: var(--indigo); color:#061125; box-shadow: 0 18px 35px rgba(96,165,250,.15); }
 
     .foot{
       margin-top: 26px;
@@ -383,8 +392,10 @@
     <a href="ufs_monthly.html" class="monthly">📅 Monthly</a>
     <a href="ufs_action.html" class="weekly">📈 Action</a>
 
-    <!-- ✅ NEW: ASI link -->
     <a href="asi.html" class="asi">🧭 ASI</a>
+
+    <!-- ✅ NEW: Daily Diary link -->
+    <a href="daily_diary.html" class="diary">📘 Diary</a>
 
     <a href="ta_da.html" class="tada">🧮 TA/DA</a>
   </nav>
@@ -401,7 +412,7 @@
       <div class="brand">
         <h1 class="title"><span class="a">NSO</span> <span class="b">SCHEME HUB 2026</span></h1>
         <p class="subtitle">
-          One dashboard to open <b>PLFS</b>, <b>UFS</b> (Weekly + Monthly), and <b>ASUSE</b>.
+          One dashboard to open <b>PLFS</b>, <b>UFS</b> (Weekly + Monthly), <b>ASUSE</b>, and <b>ASI</b>.
           Fast navigation, premium UI, and clean access for field operations.
         </p>
         <div class="badge-row">
@@ -422,7 +433,7 @@
     <div class="section">
       <div class="section-title">
         <div class="left"><span>📊</span><div>Schemes</div></div>
-        <div class="right">PLFS • UFS • ASUSE • ASI</div>
+        <div class="right">PLFS • UFS • ASUSE • ASI • Daily Diary</div>
       </div>
       <div class="section-divider"></div>
 
@@ -455,13 +466,22 @@
           </div>
         </div>
 
-        <!-- ✅ NEW: ASI SCHEME CARD -->
         <div class="card" onclick="go('asi.html')" role="button">
           <div class="card-head"><div class="ico asi">🧭</div><h3>ASI</h3></div>
           <p>ASI operations: quick access, monitoring, and field tools.</p>
           <div class="btnrow">
             <a class="btn cyan" href="asi.html" onclick="event.stopPropagation()">🚀 Open ASI</a>
             <a class="btn secondary" href="asi.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+          </div>
+        </div>
+
+        <!-- ✅ NEW: DAILY DIARY TOOL CARD -->
+        <div class="card" onclick="go('daily_diary.html')" role="button">
+          <div class="card-head"><div class="ico diary">📘</div><h3>Daily Diary</h3></div>
+          <p>Calendar-based daily diary with tours, office/holiday quick clicks, and print-ready output.</p>
+          <div class="btnrow">
+            <a class="btn indigo" href="daily_diary.html" onclick="event.stopPropagation()">📘 Open Diary</a>
+            <a class="btn secondary" href="daily_diary.html#help" onclick="event.stopPropagation()">📌 Guide</a>
           </div>
         </div>
       </div>
