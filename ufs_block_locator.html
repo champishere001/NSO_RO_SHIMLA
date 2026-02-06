@@ -300,9 +300,19 @@
 
         <div class="cardBody">
           <div class="row">
-            <input class="inp" id="kmlUrl" value="https://drive.google.com/file/d/1UbOW9y3qBh991qZk9bIBWGyRH8aEZF5d/view?usp=drivesdk" />
+
+            <!-- ✅ NEW: Proxy URL (Apps Script Web App) -->
+            <input class="inp" id="proxyUrl" placeholder="Paste Apps Script Proxy URL here (required for Drive fetch)" />
+
+            <!-- ✅ Your Drive link here -->
+            <input class="inp" id="kmlUrl" value="https://drive.google.com/file/d/1I7SfE0fOOV-er-06U-q8dICbjmFMLZeK/view?usp=drivesdk" />
+
             <div class="controls">
               <button class="btn primary" id="loadKmlUrlBtn">Load KML URL</button>
+
+              <!-- ✅ NEW: One-click button -->
+              <button class="btn ok" id="fetchDriveBtn">Fetch KML files (Drive)</button>
+
               <button class="btn" id="restoreSavedBtn">Restore Saved KML</button>
               <button class="btn warn" id="clearSavedBtn">Clear Saved KML</button>
               <label class="chk"><input type="checkbox" id="saveOfflineChk" checked>Save Offline</label>
@@ -322,7 +332,8 @@
             <div class="hint">
               ✅ Sheet must be: Share → General access → <b>Anyone with the link</b> → Viewer. <br/>
               KML filename example: <b>b14w6iv1.kml</b> (Block=14, Ward=6) <br/>
-              ZIP must contain .kml files. (folders inside ZIP OK)
+              ZIP must contain .kml files. (folders inside ZIP OK) <br/>
+              ✅ Drive fetch works only via Proxy URL (Apps Script Web App).
             </div>
           </div>
         </div>
@@ -799,6 +810,42 @@ function stopGPS(){
 }
 
 /* =========================
+   Drive Proxy fetch (NEW)
+========================= */
+function extractDriveFileId(url){
+  const u = String(url||"");
+  let m = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  m = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  return null;
+}
+function base64ToU8(b64){
+  const bin = atob(b64);
+  const u8 = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+async function fetchFromDriveViaProxy(fileId){
+  const proxy = document.getElementById("proxyUrl").value.trim();
+  if(!proxy){
+    logAct("❌ Proxy URL missing. Paste Apps Script Web App URL in Proxy field.", "bad");
+    return null;
+  }
+  const url = `${proxy}?id=${encodeURIComponent(fileId)}`;
+  logAct("🔌 Proxy fetch: " + url, "info");
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if(!data.ok){
+    logAct("❌ Proxy error: " + (data.error || "unknown"), "bad");
+    return null;
+  }
+  return data;
+}
+
+/* =========================
    Load KML from text
 ========================= */
 async function addKmlFromText(name, text, saveOffline=true){
@@ -841,43 +888,30 @@ async function handleKmlOrZipFiles(files){
     const fname = (file.name || "").toLowerCase();
 
     if(fname.endsWith(".kml")){
-      try{
-        const text = await file.text();
-        await addKmlFromText(file.name, text, saveOffline);
-      }catch(e){
-        logAct(`❌ Failed to read ${file.name}: ${e.message}`, "bad");
-      }
+      const text = await file.text();
+      await addKmlFromText(file.name, text, saveOffline);
       continue;
     }
 
     if(fname.endsWith(".zip")){
-      try{
-        logAct(`🗜️ Unzipping: ${file.name}`, "info");
+      logAct(`🗜️ Unzipping: ${file.name}`, "info");
+      const zipData = await file.arrayBuffer();
+      const zip = await JSZip.loadAsync(zipData);
 
-        const zipData = await file.arrayBuffer();
-        const zip = await JSZip.loadAsync(zipData);
+      const entries = Object.keys(zip.files);
+      const kmlEntryNames = entries.filter(n => n.toLowerCase().endsWith(".kml") && !zip.files[n].dir);
 
-        const entries = Object.keys(zip.files);
-        const kmlEntryNames = entries.filter(n => n.toLowerCase().endsWith(".kml") && !zip.files[n].dir);
+      if(!kmlEntryNames.length){
+        logAct(`⚠️ No .kml found inside ZIP: ${file.name}`, "warn");
+        continue;
+      }
 
-        if(!kmlEntryNames.length){
-          logAct(`⚠️ No .kml found inside ZIP: ${file.name}`, "warn");
-          continue;
-        }
+      logAct(`📂 Found ${kmlEntryNames.length} KML in ZIP`, "ok");
 
-        logAct(`📂 Found ${kmlEntryNames.length} KML in ZIP`, "ok");
-
-        for(const entryName of kmlEntryNames){
-          try{
-            const kmlText = await zip.files[entryName].async("text");
-            const virtualName = `${file.name}::${entryName}`;
-            await addKmlFromText(virtualName, kmlText, saveOffline);
-          }catch(e){
-            logAct(`❌ ZIP entry failed ${entryName}: ${e.message}`, "bad");
-          }
-        }
-      }catch(e){
-        logAct(`❌ ZIP unzip failed (${file.name}): ${e.message}`, "bad");
+      for(const entryName of kmlEntryNames){
+        const kmlText = await zip.files[entryName].async("text");
+        const virtualName = `${file.name}::${entryName}`;
+        await addKmlFromText(virtualName, kmlText, saveOffline);
       }
       continue;
     }
@@ -889,44 +923,66 @@ async function handleKmlOrZipFiles(files){
 }
 
 /* =========================
-   Load KML from URL/Drive link
+   Load KML/ZIP from URL (Drive-safe)
 ========================= */
-function extractDriveFileId(url){
-  const u = String(url||"");
-  let m = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if(m) return m[1];
-  m = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if(m) return m[1];
-  return null;
-}
-
 async function loadKmlFromUrl(){
   const input = document.getElementById("kmlUrl").value.trim();
   if(!input){
-    logAct("❌ KML URL is empty", "bad");
+    logAct("❌ KML/ZIP URL is empty", "bad");
     return;
   }
 
   const saveOffline = document.getElementById("saveOfflineChk").checked;
-  let url = input;
+
+  // Drive link -> proxy
   const fid = extractDriveFileId(input);
   if(fid){
-    url = `https://drive.google.com/uc?export=download&id=${fid}`;
-    logAct("🔁 Drive link detected. Using download URL: " + url, "info");
-  }
+    logAct("📌 Drive link detected. Using proxy.", "info");
+    const data = await fetchFromDriveViaProxy(fid);
+    if(!data) return;
 
-  try{
-    const res = await fetch(url, { method:"GET" });
-    const text = await res.text();
+    const name = data.name || `drive_${fid}`;
+    const u8 = base64ToU8(data.base64 || "");
 
-    if(text.trim().startsWith("<!DOCTYPE html") || text.includes("ServiceLogin")){
-      logAct("❌ Got HTML instead of KML (Drive permission/CORS). Need Apps Script proxy for Drive files.", "bad");
-      logAct("Tip: Upload KML/ZIP manually OR use a CORS-enabled URL OR ask me for Apps Script proxy.", "warn");
-      return;
+    const lower = name.toLowerCase();
+    if(lower.endsWith(".zip") || (data.mimeType||"").includes("zip")){
+      try{
+        logAct(`🗜️ ZIP received: ${name}`, "ok");
+        const zip = await JSZip.loadAsync(u8);
+        const entries = Object.keys(zip.files);
+        const kmlEntryNames = entries.filter(n => n.toLowerCase().endsWith(".kml") && !zip.files[n].dir);
+
+        if(!kmlEntryNames.length){
+          logAct("⚠️ No .kml found inside ZIP", "warn");
+          return;
+        }
+
+        logAct(`📂 Found ${kmlEntryNames.length} KML in ZIP`, "ok");
+        for(const entryName of kmlEntryNames){
+          const kmlText = await zip.files[entryName].async("text");
+          const virtualName = `${name}::${entryName}`;
+          await addKmlFromText(virtualName, kmlText, saveOffline);
+        }
+        fitAll();
+        return;
+      }catch(e){
+        logAct("❌ ZIP parse failed: " + e.message, "bad");
+        return;
+      }
     }
 
-    const name = fid ? `drive_${fid}.kml` : (new URL(url)).pathname.split("/").pop() || "remote.kml";
+    // KML
+    const text = new TextDecoder("utf-8").decode(u8);
     await addKmlFromText(name, text, saveOffline);
+    fitAll();
+    return;
+  }
+
+  // Normal URL
+  try{
+    const res = await fetch(input);
+    const text = await res.text();
+    await addKmlFromText("remote.kml", text, saveOffline);
     fitAll();
   }catch(e){
     logAct("❌ URL load failed: " + e.message, "bad");
@@ -999,6 +1055,13 @@ document.getElementById("kmlInput").addEventListener("change", async (e) => {
 });
 
 document.getElementById("loadKmlUrlBtn").addEventListener("click", loadKmlFromUrl);
+
+/* ✅ NEW BUTTON */
+document.getElementById("fetchDriveBtn").addEventListener("click", async () => {
+  logAct("🚀 Fetch KML files (Drive) clicked", "info");
+  await loadKmlFromUrl();
+});
+
 document.getElementById("restoreSavedBtn").addEventListener("click", restoreSaved);
 document.getElementById("clearSavedBtn").addEventListener("click", clearSaved);
 
@@ -1028,8 +1091,6 @@ document.getElementById("clearLogBtn").addEventListener("click", clearActivity);
 setGpsStatus(false);
 setSheetStatus(false, "Sheet: NOT LOADED");
 logAct("Ready. 1) Upload KML/ZIP  2) Load Sheet  3) Start GPS", "info");
-
-// Auto-restore saved KML on page open
 restoreSaved();
 </script>
 </body>
