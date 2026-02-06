@@ -1,681 +1,634 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>NSO Scheme Hub 2026</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>NSO Scheme Hub 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#020617;
+      --panel:#0b1222;
+      --card1:#0f172a;
+      --card2:#111c33;
+      --border:#22304a;
 
-<style>
-  :root{
-    --bg0:#040913;
-    --bg1:#060a18;
+      --accent:#38bdf8;
+      --green:#10b981;
+      --amber:#f59e0b;
+      --pink:#fb7185;
+      --violet:#a78bfa;
 
-    --panelA: rgba(13, 24, 44, .72);
-    --panelB: rgba(10, 18, 35, .58);
-    --border: rgba(255,255,255,.10);
+      /* ✅ NEW: ASI color */
+      --cyan:#22d3ee;
 
-    --text:#eaf2ff;
-    --muted:#9fb3c8;
+      /* ✅ NEW: Daily Diary color */
+      --indigo:#60a5fa;
 
-    --blue:#38bdf8;
-    --green:#22c55e;
-    --violet:#a78bfa;
-    --amber:#f59e0b;
-    --pink:#fb7185;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
 
-    --shadow: 0 30px 95px rgba(0,0,0,.62);
-    --shadow2: 0 18px 60px rgba(0,0,0,.45);
+      --shadow: 0 24px 90px rgba(0,0,0,.62);
+      --shadow2: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 22px;
+    }
 
-    --r:26px;
-    --sideW: 92px;
-  }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:"Plus Jakarta Sans",system-ui,Segoe UI,Arial,sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x:hidden;
+    }
 
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    font-family:"Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    color:var(--text);
-    background:
-      radial-gradient(1000px 700px at 15% 10%, rgba(56,189,248,.11), transparent 62%),
-      radial-gradient(1000px 700px at 85% 20%, rgba(167,139,250,.10), transparent 62%),
-      radial-gradient(1200px 900px at 70% 90%, rgba(34,197,94,.10), transparent 62%),
-      linear-gradient(180deg, var(--bg0), var(--bg1));
-    overflow-x:hidden;
-  }
+    .bg{
+      position:fixed; inset:0; z-index:-2;
+      background:
+        radial-gradient(1200px 520px at 18% 15%, rgba(56,189,248,.18), transparent 60%),
+        radial-gradient(1000px 560px at 82% 22%, rgba(16,185,129,.12), transparent 60%),
+        radial-gradient(900px 520px at 50% 85%, rgba(167,139,250,.10), transparent 65%),
+        linear-gradient(180deg, #000814, #020617);
+    }
+    .noise{
+      position:fixed; inset:0; z-index:-1;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+      opacity:.16;
+      mix-blend-mode:overlay;
+      pointer-events:none;
+    }
 
-  /* ===== Live background canvas ===== */
-  #livebg{
-    position:fixed; inset:0;
-    width:100%; height:100%;
-    z-index:0;
-    pointer-events:none;
-    opacity:.90;
-  }
-  .vignette{
-    position:fixed; inset:0; z-index:0;
-    pointer-events:none;
-    background:
-      radial-gradient(900px 520px at 50% 0%, rgba(255,255,255,.06), transparent 60%),
-      radial-gradient(1300px 750px at 50% 110%, rgba(0,0,0,.55), transparent 60%),
-      linear-gradient(180deg, rgba(2,6,23,.05), rgba(2,6,23,.45));
-  }
+    .blob{
+      position:fixed;
+      width:420px; height:420px;
+      border-radius:50%;
+      filter: blur(50px);
+      opacity:.22;
+      z-index:-1;
+      animation: float 9s ease-in-out infinite;
+    }
+    .b1{ left:-120px; top:80px; background: rgba(56,189,248,.8); }
+    .b2{ right:-160px; top:140px; background: rgba(16,185,129,.8); animation-duration: 11s; }
+    .b3{ left:38%; bottom:-220px; background: rgba(167,139,250,.8); animation-duration: 13s; }
+    @keyframes float{
+      0%,100%{ transform: translate(0,0) scale(1); }
+      50%{ transform: translate(24px,-18px) scale(1.06); }
+    }
 
-  /* ===== App layout ===== */
-  .app{
-    position:relative;
-    z-index:1;
-    display:grid;
-    grid-template-columns: var(--sideW) 1fr;
-    min-height:100vh;
-  }
+    #fx{
+      position:fixed; inset:0; z-index:-0;
+      pointer-events:none; opacity:.75;
+    }
 
-  /* ===== Sidebar ===== */
-  .sidebar{
-    position:sticky;
-    top:0;
-    height:100vh;
-    padding:14px 10px;
-    border-right:1px solid rgba(255,255,255,.08);
-    background: linear-gradient(180deg, rgba(2,6,23,.62), rgba(2,6,23,.38));
-    backdrop-filter: blur(10px);
-  }
+    .left-rail{
+      position:fixed; inset:0 auto 0 0;
+      width:72px;
+      background:#0f172a;
+      border-right:1px solid var(--border);
+      display:flex; flex-direction:column; align-items:center;
+      padding-top:14px; gap:18px;
+      z-index:9999;
+    }
+    .left-rail a{
+      width:56px;
+      text-align:center;
+      font-size:11px;
+      font-weight:900;
+      text-decoration:none;
+      color:#fff;
+      padding:8px 6px;
+      border-radius:12px;
+      line-height:1.2;
+      transition:.2s ease;
+    }
+    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
+    .left-rail a.hub{ color:var(--accent); }
+    .left-rail a.weekly{ color:var(--green); }
+    .left-rail a.monthly{ color:var(--green); }
+    .left-rail a.tada{ color:var(--amber); }
 
-  .sideBrand{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    margin-bottom:10px;
-  }
-  .homeDot{
-    width:44px; height:44px;
-    border-radius:16px;
-    display:grid;
-    place-items:center;
-    background: rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.10);
-    box-shadow: 0 18px 60px rgba(0,0,0,.35);
-    font-weight:1000;
-    color: rgba(234,242,255,.92);
-  }
+    /* ASI rail color */
+    .left-rail a.asi{ color: var(--cyan); }
 
-  .nav{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    margin-top:8px;
-  }
-  .nav a{
-    text-decoration:none;
-    color: rgba(234,242,255,.90);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:6px;
-    padding:10px 6px;
-    border-radius:18px;
-    border:1px solid rgba(255,255,255,.08);
-    background: rgba(2,6,23,.25);
-    transition:.18s ease;
-    user-select:none;
-  }
-  .nav a:hover{
-    transform: translateY(-2px);
-    border-color: rgba(56,189,248,.32);
-    box-shadow: 0 18px 60px rgba(0,0,0,.35);
-  }
-  .nav .ico{
-    width:42px; height:42px;
-    border-radius:16px;
-    display:grid; place-items:center;
-    font-size:18px;
-    background: rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.08);
-  }
-  .nav small{
-    font-size:11px;
-    font-weight:1000;
-    color: rgba(159,179,200,.95);
-  }
-  .nav a.active{
-    background: linear-gradient(180deg, rgba(56,189,248,.14), rgba(2,6,23,.22));
-    border-color: rgba(56,189,248,.30);
-  }
+    /* ✅ Daily Diary rail color */
+    .left-rail a.diary{ color: var(--indigo); }
 
-  /* ===== Main ===== */
-  .main{
-    padding:26px 26px 30px;
-  }
+    .wrap{
+      max-width:1240px;
+      margin:0 auto;
+      padding:56px 18px 90px;
+      margin-left:72px;
+    }
 
-  /* ===== Header / hero ===== */
-  .hero{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:16px;
-    flex-wrap:wrap;
-    margin-bottom:14px;
-  }
-  .heroLeft h1{
-    margin:0;
-    font-size:44px;
-    letter-spacing:.8px;
-    font-weight:1000;
-  }
-  .heroLeft p{
-    margin:6px 0 0;
-    color: var(--muted);
-    font-weight:800;
-    line-height:1.45;
-    max-width:760px;
-  }
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:18px;
+      margin-bottom: 16px;
+    }
+    .brand{ display:flex; flex-direction:column; gap:10px; }
 
-  .heroRight{
-    text-align:right;
-    margin-top:6px;
-    min-width:180px;
-  }
-  .time{
-    font-weight:1000;
-    font-size:14px;
-    color: rgba(234,242,255,.95);
-  }
-  .date{
-    margin-top:4px;
-    font-weight:900;
-    font-size:12px;
-    color: rgba(159,179,200,.95);
-  }
+    .title{
+      margin:0;
+      font-size:38px;
+      font-weight:900;
+      letter-spacing:.8px;
+      line-height:1.05;
+    }
+    .title .a{ color: var(--accent); }
+    .title .b{ color: #cbeeff; }
 
-  /* ===== Pills row ===== */
-  .pills{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin:12px 0 18px;
-  }
-  .pill{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    padding:10px 14px;
-    border-radius:999px;
-    border:1px solid rgba(255,255,255,.10);
-    background: rgba(2,6,23,.28);
-    box-shadow: var(--shadow2);
-    font-weight:1000;
-    color: rgba(234,242,255,.92);
-    user-select:none;
-  }
-  .pill .miniIco{
-    width:28px; height:28px;
-    border-radius:12px;
-    display:grid; place-items:center;
-    background: rgba(255,255,255,.07);
-    border:1px solid rgba(255,255,255,.10);
-    font-size:13px;
-  }
+    .subtitle{
+      margin:0;
+      color: var(--muted);
+      font-weight:600;
+      font-size:14px;
+      line-height:1.5;
+      max-width: 760px;
+    }
 
-  /* ===== Cards grid ===== */
-  .grid{
-    display:grid;
-    grid-template-columns: repeat(3, minmax(290px, 1fr));
-    gap:22px;
-    margin-top:6px;
-  }
-  @media (max-width:1200px){
-    .grid{ grid-template-columns: repeat(2, minmax(280px, 1fr)); }
-  }
-  @media (max-width:780px){
-    .main{ padding:18px 14px 24px; }
-    .heroLeft h1{ font-size:34px; }
-    .grid{ grid-template-columns: 1fr; }
-    :root{ --sideW: 86px; }
-  }
+    .badge-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 6px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(34,48,74,.9);
+      background: rgba(2,6,23,.55);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      font-size:12px;
+      font-weight:800;
+      color: #dbeafe;
+    }
 
-  .card{
-    position:relative;
-    border-radius: var(--r);
-    border:1px solid rgba(255,255,255,.10);
-    background: linear-gradient(180deg, var(--panelA), var(--panelB));
-    box-shadow: var(--shadow2);
-    backdrop-filter: blur(12px);
-    overflow:hidden;
-    padding:22px;
-    min-height:176px;
-  }
-  .card::before{
-    content:"";
-    position:absolute; inset:-1px;
-    background: radial-gradient(560px 260px at 18% 0%, rgba(56,189,248,.14), transparent 66%);
-    pointer-events:none;
-  }
-  .card:hover{
-    box-shadow: 0 42px 120px rgba(0,0,0,.66);
-    border-color: rgba(56,189,248,.26);
-  }
+    .clock{
+      text-align:right;
+      color: var(--muted);
+      font-weight:800;
+      font-size:12px;
+      padding-top: 6px;
+      white-space:nowrap;
+    }
+    .clock b{ color:#eaf6ff; font-weight:900; letter-spacing:.5px; }
 
-  .cardTop{
-    display:flex;
-    align-items:center;
-    gap:14px;
-  }
-  .appIcon{
-    width:56px; height:56px;
-    border-radius:22px;
-    display:grid;
-    place-items:center;
-    font-size:24px;
-    background: rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.10);
-    box-shadow: 0 18px 65px rgba(0,0,0,.35);
-  }
-  .card h3{
-    margin:0;
-    font-size:22px;
-    font-weight:1000;
-    letter-spacing:.2px;
-  }
-  .card p{
-    margin:10px 0 16px;
-    color: var(--muted);
-    font-weight:800;
-    line-height:1.45;
-    font-size:13px;
-    max-width:520px;
-  }
+    .spark{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
+      opacity:.55;
+      margin: 18px 0 0;
+    }
 
-  .actions{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .btn{
-    border:none;
-    border-radius: 14px;
-    padding:10px 14px;
-    font-weight:1000;
-    cursor:pointer;
-    font-size:13px;
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    transition:.18s ease;
-    user-select:none;
-  }
-  .btn:active{ transform: translateY(1px); }
+    .section{ margin-top: 22px; }
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      border:1px solid rgba(34,48,74,.9);
+      background: rgba(2,6,23,.45);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.30);
+    }
+    .section-title .left{
+      display:flex;align-items:center;gap:10px;
+      font-weight:900;letter-spacing:.3px;
+      color:#eaf6ff;
+    }
+    .section-title .left span{
+      width:34px;height:34px;border-radius:12px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+    }
+    .section-title .right{
+      font-size:12px;
+      font-weight:800;
+      color: rgba(148,163,184,.85);
+      white-space:nowrap;
+    }
+    .section-divider{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(56,189,248,.45), transparent);
+      opacity:.7;
+      margin: 14px 0 18px;
+    }
 
-  .btn.blue{ background: var(--blue); color:#06121f; }
-  .btn.green{ background: var(--green); color:#06121f; }
-  .btn.violet{ background: var(--violet); color:#06121f; }
-  .btn.amber{ background: var(--amber); color:#06121f; }
-  .btn.pink{ background: var(--pink); color:#06121f; }
-  .btn.ghost{
-    background: rgba(255,255,255,.07);
-    color: rgba(234,242,255,.95);
-    border:1px solid rgba(255,255,255,.10);
-  }
-  .btn:hover{ filter:brightness(1.06); }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:22px;
+      margin-top:18px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .clock{ display:none; }
+      .section-title .right{ display:none; }
+    }
+    @media (max-width: 640px){
+      .grid{ grid-template-columns: 1fr; }
+      .title{ font-size:30px; }
+      .wrap{ padding-top: 38px; }
+    }
 
-  /* ===== Footer ===== */
-  .footer{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-top:18px;
-    padding:10px 2px 0;
-    color: rgba(159,179,200,.80);
-    font-weight:900;
-    font-size:12px;
-  }
-  .tip{ opacity:.85; }
+    .card{
+      position:relative;
+      border-radius: var(--radius);
+      padding: 24px 24px 20px;
+      background: linear-gradient(180deg, rgba(17,28,51,.92), rgba(15,23,42,.92));
+      border: 1px solid rgba(34,48,74,.9);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+      transform-style:preserve-3d;
+      cursor: pointer;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(650px 260px at 15% 15%, rgba(56,189,248,.18), transparent 55%),
+        radial-gradient(540px 240px at 88% 18%, rgba(16,185,129,.12), transparent 55%);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .card::after{
+      content:"";
+      position:absolute;
+      top:-40%;
+      left:-60%;
+      width:60%;
+      height:180%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+      transform: rotate(18deg);
+      opacity:0;
+      transition: opacity .35s ease;
+      pointer-events:none;
+    }
+    .card:hover::after{ opacity:1; animation: sweep 1.2s ease; }
+    @keyframes sweep{
+      0%{ transform: translateX(0) rotate(18deg); }
+      100%{ transform: translateX(380%) rotate(18deg); }
+    }
+    .card:hover{
+      border-color: rgba(56,189,248,.55);
+      box-shadow: var(--shadow);
+      transform: translateY(-6px);
+    }
 
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce){
-    #livebg{ display:none; }
-  }
-</style>
+    .card-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      position:relative;
+      z-index:1;
+      margin-bottom: 10px;
+    }
+    .ico{
+      width:42px;height:42px;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      font-size:20px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.35);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .ico.plfs{ background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.28); }
+    .ico.ufs{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.26); }
+    .ico.asuse{ background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.26); }
+    .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
+    .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
+    .ico.arc{ background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.26); }
+    .ico.tp{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.26); }
+    .ico.asi{ background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.26); }
+    .ico.diary{ background: rgba(96,165,250,.10); border-color: rgba(96,165,250,.26); }
+
+    .card h3{ margin:0; font-size:18px; font-weight:900; letter-spacing:.2px; }
+    .card p{
+      margin:6px 0 16px;
+      color: var(--muted);
+      font-weight:600;
+      font-size:12.5px;
+      line-height:1.5;
+      position:relative;
+      z-index:1;
+    }
+
+    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:1; margin-top: 10px; }
+
+    .btn{
+      appearance:none; border:none; cursor:pointer;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.3px;
+      color:#001019;
+      background: var(--accent);
+      box-shadow: 0 18px 35px rgba(56,189,248,.18);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      user-select:none;
+      transform: translateZ(25px);
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .btn:hover{ transform: translateZ(25px) translateY(-2px); }
+
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      color:#e5e7eb;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:none;
+    }
+    .btn.secondary:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
+    .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
+    .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
+    .btn.cyan{ background: var(--cyan); color:#001014; box-shadow: 0 18px 35px rgba(34,211,238,.15); }
+    .btn.indigo{ background: var(--indigo); color:#061125; box-shadow: 0 18px 35px rgba(96,165,250,.15); }
+
+    .foot{
+      margin-top: 26px;
+      color: rgba(148,163,184,.75);
+      font-weight:700;
+      font-size:11px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .foot b{ color:#dbeafe; }
+  </style>
 </head>
 
 <body>
-<canvas id="livebg"></canvas>
-<div class="vignette"></div>
+  <nav class="left-rail">
+    <a href="index.html" class="hub">🏠 HUB</a>
+    <a href="plfs_gateway.html">📊 PLFS</a>
 
-<div class="app">
-  <!-- ===== Sidebar ===== -->
-  <aside class="sidebar">
-    <div class="sideBrand">
-      <div class="homeDot" title="Hub">🏠</div>
-    </div>
+    <a href="ufs_weekly.html" class="weekly">🗓️ Weekly</a>
+    <a href="ufs_monthly.html" class="monthly">📅 Monthly</a>
+    <a href="ufs_action.html" class="weekly">📈 Action</a>
 
-    <nav class="nav">
-      <a class="active" href="index.html" title="Hub">
-        <div class="ico">🏠</div>
-        <small>HUB</small>
-      </a>
+    <!-- ✅ NEW: UFS Block Description Locator -->
+    <a href="ufs_block_locator.html" class="weekly">📍 Locator</a>
 
-      <a href="plfs.html" title="PLFS">
-        <div class="ico">📊</div>
-        <small>PLFS</small>
-      </a>
+    <a href="asi.html" class="asi">🧭 ASI</a>
+    <a href="daily_diary.html" class="diary">📘 Diary</a>
+    <a href="ta_da.html" class="tada">🧮 TA/DA</a>
+  </nav>
 
-      <a href="ufs_weekly.html" title="UFS Weekly">
-        <div class="ico">📆</div>
-        <small>Weekly</small>
-      </a>
+  <div class="bg"></div>
+  <canvas id="fx"></canvas>
+  <div class="noise"></div>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
 
-      <a href="ufs_monthly.html" title="UFS Monthly">
-        <div class="ico">🗓</div>
-        <small>Monthly</small>
-      </a>
-
-      <a href="ta_da.html" title="TA/DA">
-        <div class="ico">🧾</div>
-        <small>TA/DA</small>
-      </a>
-    </nav>
-  </aside>
-
-  <!-- ===== Main ===== -->
-  <main class="main">
-    <header class="hero">
-      <div class="heroLeft">
-        <h1>NSO SCHEME HUB 2026</h1>
-        <p>
-          One dashboard to open PLFS, UFS (Weekly + Monthly), and ASUSE.
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <h1 class="title"><span class="a">NSO</span> <span class="b">SCHEME HUB 2026</span></h1>
+        <p class="subtitle">
+          One dashboard to open <b>PLFS</b>, <b>UFS</b> (Weekly + Monthly), <b>ASUSE</b>, and <b>ASI</b>.
           Fast navigation, premium UI, and clean access for field operations.
         </p>
+        <div class="badge-row">
+          <div class="pill">⚡ Quick Launch</div>
+          <div class="pill">🛰️ Live Tools</div>
+          <div class="pill">🧠 Smart Workflow</div>
+          <div class="pill">🔒 Secure Access</div>
+        </div>
+        <div class="spark"></div>
       </div>
-      <div class="heroRight">
-        <div class="time" id="timeTxt">--:--</div>
-        <div class="date" id="dateTxt">---</div>
-      </div>
-    </header>
 
-    <div class="pills">
-      <div class="pill"><span class="miniIco">⚡</span> Quick Launch</div>
-      <div class="pill"><span class="miniIco">🛰</span> Live Tools</div>
-      <div class="pill"><span class="miniIco">🧠</span> Smart Workflow</div>
-      <div class="pill"><span class="miniIco">🔒</span> Secure Access</div>
+      <div class="clock" id="clockBox">
+        <div><b id="nowTime">--:--</b></div>
+        <div id="nowDate">--</div>
+      </div>
     </div>
 
-    <section class="grid">
+    <div class="section">
+      <div class="section-title">
+        <div class="left"><span>📊</span><div>Schemes</div></div>
+        <div class="right">PLFS • UFS • ASUSE • ASI • Daily Diary</div>
+      </div>
+      <div class="section-divider"></div>
 
-      <!-- PLFS -->
-      <article class="card">
-        <div class="cardTop">
-          <div class="appIcon">📊</div>
-          <div>
-            <h3>PLFS</h3>
-            <p style="margin:6px 0 0">Command dashboard for sample tracking, visits, and field monitoring.</p>
+      <div class="grid">
+        <div class="card" onclick="go('plfs_gateway.html')" role="button">
+          <div class="card-head"><div class="ico plfs">📊</div><h3>PLFS</h3></div>
+          <p>Command dashboard for sample tracking, visits, and field monitoring.</p>
+          <div class="btnrow">
+            <a class="btn" href="plfs_gateway.html" onclick="event.stopPropagation()">🚀 Open PLFS</a>
+            <a class="btn secondary" href="plfs_gateway.html#help" onclick="event.stopPropagation()">📌 Guide</a>
           </div>
         </div>
-        <p></p>
-        <div class="actions">
-          <button class="btn blue" onclick="go('plfs.html')">🚀 Open PLFS</button>
-          <button class="btn ghost" onclick="toast('Guide coming soon')">📌 Guide</button>
-        </div>
-      </article>
 
-      <!-- UFS -->
-      <article class="card">
-        <div class="cardTop">
-          <div class="appIcon">📅</div>
-          <div>
-            <h3>UFS</h3>
-            <p style="margin:6px 0 0">Open weekly and monthly progress tools in one place.</p>
+        <div class="card" onclick="go('ufs_weekly.html')" role="button">
+          <div class="card-head"><div class="ico ufs">🗓️</div><h3>UFS</h3></div>
+          <p>Open weekly and monthly progress tools in one place.</p>
+          <div class="btnrow">
+            <a class="btn green" href="ufs_weekly.html" onclick="event.stopPropagation()">📅 Weekly</a>
+            <a class="btn green" href="ufs_monthly.html" onclick="event.stopPropagation()">🗓️ Monthly</a>
+            <a class="btn secondary" href="ufs_action.html" onclick="event.stopPropagation()">📈 Action</a>
           </div>
         </div>
-        <p></p>
-        <div class="actions">
-          <button class="btn green" onclick="go('ufs_weekly.html')">📆 Weekly</button>
-          <button class="btn green" onclick="go('ufs_monthly.html')">🗓 Monthly</button>
-          <button class="btn ghost" onclick="toast('Reports can be connected')">📈 Reports</button>
-        </div>
-      </article>
 
-      <!-- ASUSE -->
-      <article class="card">
-        <div class="cardTop">
-          <div class="appIcon">🧾</div>
-          <div>
-            <h3>ASUSE</h3>
-            <p style="margin:6px 0 0">ASUSE operations: roster, monitoring, and quick analytics access.</p>
+        <!-- ✅ NEW CARD: UFS Block Description Locator -->
+        <div class="card" onclick="go('ufs_block_locator.html')" role="button">
+          <div class="card-head"><div class="ico ufs">📍</div><h3>UFS Block Locator</h3></div>
+          <p>Block boundary + device location + north/east/west/south description & list.</p>
+          <div class="btnrow">
+            <a class="btn green" href="ufs_block_locator.html" onclick="event.stopPropagation()">📍 Open Locator</a>
+            <a class="btn secondary" href="ufs_block_locator.html#help" onclick="event.stopPropagation()">📌 Guide</a>
           </div>
         </div>
-        <p></p>
-        <div class="actions">
-          <!-- Rename file if needed: Asuse.html / asuse.html -->
-          <button class="btn violet" onclick="go('asuse.html')">✨ Open ASUSE</button>
-          <button class="btn ghost" onclick="toast('Settings coming soon')">⚙ Settings</button>
-        </div>
-      </article>
 
-      <!-- TA/DA -->
-      <article class="card" style="grid-column: span 1;">
-        <div class="cardTop">
-          <div class="appIcon">🧾</div>
-          <div>
-            <h3>TA / DA</h3>
-            <p style="margin:6px 0 0">Excel-like TA/DA calculation sheet with designation-wise rates and auto totals.</p>
+        <div class="card" onclick="go('asuse.html')" role="button">
+          <div class="card-head"><div class="ico asuse">🧾</div><h3>ASUSE</h3></div>
+          <p>ASUSE operations: roster, monitoring, and quick analytics access.</p>
+          <div class="btnrow">
+            <a class="btn violet" href="asuse.html" onclick="event.stopPropagation()">✨ Open ASUSE</a>
+            <a class="btn secondary" href="asuse.html#settings" onclick="event.stopPropagation()">⚙️ Settings</a>
           </div>
         </div>
-        <p></p>
-        <div class="actions">
-          <button class="btn amber" onclick="go('ta_da.html')">🧮 Open Sheet</button>
-          <button class="btn ghost" onclick="window.print()">🖨 Print</button>
+
+        <div class="card" onclick="go('asi.html')" role="button">
+          <div class="card-head"><div class="ico asi">🧭</div><h3>ASI</h3></div>
+          <p>ASI operations: quick access, monitoring, and field tools.</p>
+          <div class="btnrow">
+            <a class="btn cyan" href="asi.html" onclick="event.stopPropagation()">🚀 Open ASI</a>
+            <a class="btn secondary" href="asi.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+          </div>
         </div>
-      </article>
+      </div>
+    </div>
 
-    </section>
+    <div class="section">
+      <div class="section-title">
+        <div class="left"><span>🧾</span><div>TA/DA Bills & Documents</div></div>
+        <div class="right">Sheet • Bills • Archive</div>
+      </div>
+      <div class="section-divider"></div>
 
-    <div class="footer">
+      <div class="grid">
+        <div class="card" onclick="go('ta_da.html')" role="button">
+          <div class="card-head"><div class="ico tada">🧮</div><h3>TA / DA Calculation</h3></div>
+          <p>Designation-wise TA/DA with PDF & Excel export.</p>
+          <div class="btnrow">
+            <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
+            <a class="btn secondary" href="ta_da.html#pdf" onclick="event.stopPropagation()">⬇️ PDF Export</a>
+          </div>
+        </div>
+
+        <div class="card" onclick="go('daily_diary.html')" role="button">
+          <div class="card-head"><div class="ico diary">📘</div><h3>Daily Diary</h3></div>
+          <p>Calendar-based daily diary with tours, office/holiday quick clicks, and print-ready output.</p>
+          <div class="btnrow">
+            <a class="btn indigo" href="daily_diary.html" onclick="event.stopPropagation()">📘 Open Diary</a>
+            <a class="btn secondary" href="daily_diary.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+          </div>
+        </div>
+
+        <div class="card" onclick="go('tada_documents.html')" role="button">
+          <div class="card-head"><div class="ico docs">📄</div><h3>Bill Documents</h3></div>
+          <p>Upload / view TA bills, hotel bills, tickets, scanned PDFs, and supporting files.</p>
+          <div class="btnrow">
+            <a class="btn amber" href="tada_documents.html" onclick="event.stopPropagation()">📄 Open Bills</a>
+            <a class="btn secondary" href="tada_documents.html#upload" onclick="event.stopPropagation()">⬆️ Upload</a>
+          </div>
+        </div>
+
+        <div class="card" onclick="go('tentative_program.html')" role="button">
+          <div class="card-head"><div class="ico tp">🗓️</div><h3>Tentative Program</h3></div>
+          <p>Create / edit tentative program and print clean A4 format.</p>
+          <div class="btnrow">
+            <a class="btn" href="tentative_program.html" onclick="event.stopPropagation()">🗓️ Open Program</a>
+            <a class="btn secondary" href="tentative_program.html#print" onclick="event.stopPropagation()">🖨️ Print</a>
+          </div>
+        </div>
+
+        <div class="card" onclick="go('ta_da_archive.html')" role="button">
+          <div class="card-head"><div class="ico arc">🗂️</div><h3>Bill Archive</h3></div>
+          <p>Past TA/DA claims and PDF records.</p>
+          <div class="btnrow">
+            <a class="btn secondary" href="ta_da_archive.html" onclick="event.stopPropagation()">🗂️ View Archive</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
       <div>Made for <b>NSO Field Operations</b> • 2026</div>
-      <div class="tip">Tip: Hover cards for glow ✨</div>
+      <div>Tip: Hover cards for glow ✨</div>
     </div>
-  </main>
-</div>
+  </div>
 
-<script>
-  function go(url){ window.location.href = url; }
+  <script>
+    function go(url){ window.location.href = url; }
 
-  // ===== toast helper
-  let toastTimer=null;
-  function toast(msg){
-    clearTimeout(toastTimer);
-    let el=document.getElementById('toast');
-    if(!el){
-      el=document.createElement('div');
-      el.id='toast';
-      el.style.position='fixed';
-      el.style.left='50%';
-      el.style.bottom='26px';
-      el.style.transform='translateX(-50%)';
-      el.style.padding='12px 14px';
-      el.style.borderRadius='999px';
-      el.style.background='rgba(15,23,42,.75)';
-      el.style.border='1px solid rgba(255,255,255,.12)';
-      el.style.color='rgba(234,242,255,.95)';
-      el.style.fontWeight='900';
-      el.style.fontSize='12px';
-      el.style.boxShadow='0 20px 70px rgba(0,0,0,.55)';
-      el.style.backdropFilter='blur(10px)';
-      el.style.zIndex='99';
-      document.body.appendChild(el);
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function tick(){
+      const d = new Date();
+      const h = pad(d.getHours()), m = pad(d.getMinutes());
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      document.getElementById('nowTime').textContent = `${h}:${m}`;
+      document.getElementById('nowDate').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
-    el.textContent=msg;
-    el.style.opacity='1';
-    toastTimer=setTimeout(()=>{ el.style.opacity='0'; }, 2200);
-  }
+    tick(); setInterval(tick, 1000);
 
-  // ===== live time/date
-  const timeTxt=document.getElementById('timeTxt');
-  const dateTxt=document.getElementById('dateTxt');
-
-  function pad(n){ return String(n).padStart(2,'0'); }
-  function tick(){
-    const d=new Date();
-    timeTxt.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    const opts={ weekday:'long', year:'numeric', month:'short', day:'2-digit' };
-    dateTxt.textContent = d.toLocaleDateString(undefined, opts);
-  }
-  tick(); setInterval(tick, 1000);
-
-  /* ==========================================================
-     LIVE BACKGROUND: Constellation + Glowing Orbs
-     - pointer reactive
-     - mobile friendly
-  ========================================================== */
-  const canvas = document.getElementById('livebg');
-  const ctx = canvas.getContext('2d', { alpha: true });
-
-  let W=0,H=0,DPR=1;
-  function resize(){
-    DPR = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width  = Math.floor(innerWidth * DPR);
-    canvas.height = Math.floor(innerHeight * DPR);
-    canvas.style.width = innerWidth + 'px';
-    canvas.style.height = innerHeight + 'px';
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-    W = innerWidth; H = innerHeight;
-  }
-  window.addEventListener('resize', resize, {passive:true});
-  resize();
-
-  const pointer = { x: W*0.5, y: H*0.35, active:false };
-  window.addEventListener('mousemove', (e)=>{ pointer.x=e.clientX; pointer.y=e.clientY; pointer.active=true; }, {passive:true});
-  window.addEventListener('mouseleave', ()=>{ pointer.active=false; }, {passive:true});
-  window.addEventListener('touchmove', (e)=>{
-    if(!e.touches || !e.touches[0]) return;
-    pointer.x = e.touches[0].clientX;
-    pointer.y = e.touches[0].clientY;
-    pointer.active = true;
-  }, {passive:true});
-
-  const palette = [
-    {r:56,g:189,b:248},
-    {r:167,g:139,b:250},
-    {r:34,g:197,b:94},
-    {r:251,g:113,b:133},
-    {r:245,g:158,b:11},
-  ];
-
-  const dots=[];
-  const rnd=(a,b)=>a+Math.random()*(b-a);
-
-  function seed(){
-    dots.length = 0;
-    const count = Math.max(85, Math.min(150, Math.floor((W*H)/14000)));
-    for(let i=0;i<count;i++){
-      const c = palette[i % palette.length];
-      dots.push({
-        x: rnd(0,W), y: rnd(0,H),
-        vx: rnd(-.35,.35), vy: rnd(-.35,.35),
-        r: rnd(1.2,2.6),
-        glow: rnd(10,28),
-        cr:c.r,cg:c.g,cb:c.b,
-        phase: rnd(0, Math.PI*2)
-      });
+    const c = document.getElementById('fx');
+    const ctx = c.getContext('2d');
+    let W,H,particles=[];
+    function resize(){
+      W = c.width = window.innerWidth;
+      H = c.height = window.innerHeight;
+      particles = Array.from({length: 70}, () => ({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: Math.random()*1.6 + 0.4,
+        vx: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
+        vy: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
+        a: Math.random()*0.35 + 0.15
+      }));
     }
-  }
-  seed();
+    window.addEventListener('resize', resize);
+    resize();
 
-  function line(x1,y1,x2,y2,a,r,g,b){
-    ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x1,y1);
-    ctx.lineTo(x2,y2);
-    ctx.stroke();
-  }
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      for(const p of particles){
+        p.x += p.vx; p.y += p.vy;
+        if(p.x < -20) p.x = W+20;
+        if(p.x > W+20) p.x = -20;
+        if(p.y < -20) p.y = H+20;
+        if(p.y > H+20) p.y = -20;
 
-  let lastT=0;
-  function animate(t){
-    requestAnimationFrame(animate);
-    const dt = Math.min(0.033, (t-lastT)/1000 || 0.016);
-    lastT=t;
-
-    // fade layer
-    ctx.fillStyle = "rgba(4,9,19,0.20)";
-    ctx.fillRect(0,0,W,H);
-
-    // move dots
-    for(const p of dots){
-      p.x += p.vx * (60*dt);
-      p.y += p.vy * (60*dt);
-
-      // wrap
-      if(p.x < -30) p.x = W + 30;
-      if(p.x > W + 30) p.x = -30;
-      if(p.y < -30) p.y = H + 30;
-      if(p.y > H + 30) p.y = -30;
-
-      // pointer swirl
-      const dx = p.x - pointer.x;
-      const dy = p.y - pointer.y;
-      const dist = Math.sqrt(dx*dx + dy*dy) + 0.0001;
-      const influence = pointer.active ? Math.max(0, 1 - dist/320) : 0;
-
-      if(influence > 0){
-        const ax = (-dy/dist) * influence * 0.55;
-        const ay = ( dx/dist) * influence * 0.55;
-        p.vx = (p.vx*0.985) + ax*0.03;
-        p.vy = (p.vy*0.985) + ay*0.03;
-      }else{
-        p.vx *= 0.995;
-        p.vy *= 0.995;
+        ctx.beginPath();
+        ctx.globalAlpha = p.a;
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle = "#cbeeff";
+        ctx.fill();
       }
 
-      // clamp
-      const sp = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
-      if(sp > 1.2){ p.vx *= 1.2/sp; p.vy *= 1.2/sp; }
-    }
-
-    // links
-    for(let i=0;i<dots.length;i++){
-      const a = dots[i];
-      for(let j=i+1;j<dots.length;j++){
-        const b = dots[j];
-        const dx=a.x-b.x, dy=a.y-b.y;
-        const d2 = dx*dx + dy*dy;
-        const maxD = 150;
-        if(d2 < maxD*maxD){
-          const d = Math.sqrt(d2);
-          const alpha = (1 - d/maxD) * 0.16;
-          const r = (a.cr + b.cr) / 2 | 0;
-          const g = (a.cg + b.cg) / 2 | 0;
-          const bl = (a.cb + b.cb) / 2 | 0;
-          line(a.x,a.y,b.x,b.y,alpha,r,g,bl);
+      for(let i=0;i<particles.length;i++){
+        for(let j=i+1;j<particles.length;j++){
+          const a = particles[i], b = particles[j];
+          const dx = a.x-b.x, dy = a.y-b.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < 140){
+            ctx.globalAlpha = (1 - dist/140) * 0.18;
+            ctx.strokeStyle = "#38bdf8";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x,a.y);
+            ctx.lineTo(b.x,b.y);
+            ctx.stroke();
+          }
         }
       }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
     }
+    draw();
 
-    // dots
-    for(const p of dots){
-      const pulse = 0.55 + 0.45*Math.sin(t/700 + p.phase);
-
-      // glow
-      const grad = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y, p.glow);
-      grad.addColorStop(0, `rgba(${p.cr},${p.cg},${p.cb},${0.18*pulse})`);
-      grad.addColorStop(1, `rgba(${p.cr},${p.cg},${p.cb},0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.glow,0,Math.PI*2);
-      ctx.fill();
-
-      // core
-      ctx.fillStyle = `rgba(${p.cr},${p.cg},${p.cb},0.82)`;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y, p.r*(0.9+0.35*pulse), 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
-  requestAnimationFrame(animate);
-</script>
+    document.querySelectorAll('.card').forEach(card=>{
+      let rect=null;
+      card.addEventListener('mousemove', (e)=>{
+        rect = rect || card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width/2;
+        const cy = rect.height/2;
+        const rx = ((y - cy)/cy) * -5;
+        const ry = ((x - cx)/cx) * 6;
+        card.style.transform = `translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      });
+      card.addEventListener('mouseleave', ()=>{
+        rect=null;
+        card.style.transform = '';
+      });
+    });
+  </script>
 </body>
 </html>
