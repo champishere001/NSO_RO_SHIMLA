@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WKT → KML (b_w_iv)</title>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<style>
+body{margin:0;background:#0b1220;color:#e5e7eb;font-family:system-ui}
+.wrap{max-width:1200px;margin:auto;padding:16px}
+textarea{
+  width:100%; height:280px;
+  background:#020617; color:#e5e7eb;
+  border:1px solid #22304a; border-radius:12px;
+  padding:12px; font-family:monospace; font-size:12px;
+}
+.row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+button{
+  padding:12px 18px; border-radius:12px; border:none;
+  font-weight:900; cursor:pointer
+}
+#convertBtn{background:#38bdf8;color:#020617}
+#downloadBtn{background:#10b981;color:#020617}
+#downloadBtn:disabled{opacity:.45; cursor:not-allowed}
+.log{
+  margin-top:12px; background:#000; border-radius:12px;
+  padding:10px; height:220px; overflow:auto;
+  font-family:monospace; font-size:12px
+}
+.ok{color:#10b981}.err{color:#fb7185}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <h2>WKT → KML Converter (b_w_iv)</h2>
+  <p>Paste your raw data (same format as you shared):</p>
+
+  <textarea id="input" placeholder="Paste here..."></textarea>
+
+  <div class="row">
+    <button id="convertBtn" onclick="convert()">Convert (Prepare ZIP)</button>
+    <button id="downloadBtn" onclick="downloadZip()" disabled>Download ZIP</button>
+  </div>
+
+  <div id="log" class="log"></div>
+</div>
+
+<script>
+const logEl = document.getElementById("log");
+const downloadBtn = document.getElementById("downloadBtn");
+
+let downloadBlobUrl = null;
+
+const log=(m,c)=>{
+  const d=document.createElement("div");
+  d.textContent=m;
+  if(c) d.className=c;
+  logEl.appendChild(d);
+  logEl.scrollTop=logEl.scrollHeight;
+};
+
+// Basic WKT MultiPolygon parser (single ring). Works with your sample format.
+function parseWKT(wkt){
+  const cleaned = wkt
+    .trim()
+    .replace(/^MultiPolygon\s*\(\(\(/i,'')
+    .replace(/\)\)\)\s*$/,'');
+  const coords = cleaned.split(',').map(p=>{
+    const [x,y]=p.trim().split(/\s+/).map(Number);
+    return `${x},${y},0`;
+  });
+  // Ensure closed ring
+  if(coords.length>2 && coords[0] !== coords[coords.length-1]) coords.push(coords[0]);
+  return coords.join(' ');
+}
+
+function makeKML(coords,name,meta){
+return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<Placemark>
+<name>${name}</name>
+<ExtendedData>
+  <Data name="b"><value>${meta.b}</value></Data>
+  <Data name="w"><value>${meta.w}</value></Data>
+  <Data name="iv"><value>${meta.iv}</value></Data>
+  <Data name="recordno"><value>${meta.recordno}</value></Data>
+</ExtendedData>
+<Style>
+  <LineStyle><color>ff00ffff</color><width>2</width></LineStyle>
+  <PolyStyle><color>5500ffff</color></PolyStyle>
+</Style>
+<Polygon>
+<outerBoundaryIs>
+<LinearRing>
+<coordinates>
+${coords}
+</coordinates>
+</LinearRing>
+</outerBoundaryIs>
+</Polygon>
+</Placemark>
+</Document>
+</kml>`;
+}
+
+// Read lines safely (handles big paste)
+function getDataLines(text){
+  return text.split(/\r?\n/).filter(l=>l && /MultiPolygon/i.test(l));
+}
+
+async function convert(){
+  logEl.innerHTML="";
+
+  // reset previous download
+  if(downloadBlobUrl){ URL.revokeObjectURL(downloadBlobUrl); downloadBlobUrl=null; }
+  downloadBtn.disabled = true;
+
+  const text=document.getElementById("input").value.trim();
+  if(!text){ log("No data pasted","err"); return; }
+
+  const lines = getDataLines(text);
+  if(!lines.length){ log("No MultiPolygon rows found","err"); return; }
+
+  const zip = new JSZip();
+  let count=0, skipped=0;
+
+  for(const line of lines){
+    // split columns by tabs first; if not, fall back to multiple spaces
+    let parts = line.split(/\t+/);
+    if(parts.length < 5) parts = line.split(/\s{2,}/); // 2+ spaces
+
+    if(parts.length < 5){ skipped++; continue; }
+
+    const wkt = parts[0].trim();
+    const b = parts[1].trim();
+    const w = parts[2].trim();
+    const iv = parts[3].trim();
+    const recordno = parts[4].trim();
+
+    try{
+      const coords = parseWKT(wkt);
+      const fname = `b${b}_w${w}_iv${iv}.kml`;
+      zip.file(fname, makeKML(coords, fname, {b,w,iv,recordno}));
+      count++;
+      if(count<=50) log("Prepared "+fname,"ok"); // avoid huge log spam
+    }catch(e){
+      skipped++;
+    }
+  }
+
+  if(!count){
+    log("Nothing converted. Check paste format (needs 5 columns).","err");
+    return;
+  }
+
+  const blob = await zip.generateAsync({type:"blob"});
+  downloadBlobUrl = URL.createObjectURL(blob);
+
+  downloadBtn.disabled = false;
+  log(`✅ ZIP ready: ${count} files (skipped ${skipped})`,"ok");
+  log("Now click: Download ZIP","ok");
+}
+
+function downloadZip(){
+  if(!downloadBlobUrl) return;
+  const a = document.createElement("a");
+  a.href = downloadBlobUrl;
+  a.download = "kml_output.zip";
+  a.click();
+}
+</script>
+</body>
+</html>
