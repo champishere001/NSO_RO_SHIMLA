@@ -1,860 +1,1429 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>NSO Scheme Hub 2026</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <title>UFS KML Viewer (Ward/Block Match + Sheet Directions + Live Console)</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- toGeoJSON (KML -> GeoJSON) -->
+  <script src="https://unpkg.com/@tmcw/togeojson@5.6.1/dist/togeojson.umd.js"></script>
+
+  <!-- Turf (point-in-polygon) -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+  <!-- JSZip (ZIP -> extract KMLs in browser) -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <style>
     :root{
-      --bg:#020617;
-      --panel:#0b1222;
-      --card1:#0f172a;
-      --card2:#111c33;
+      --bg:#0b1220;
+      --panel:#0f172a;
+      --panel2:#0b1326;
       --border:#22304a;
-
-      --accent:#38bdf8;
-      --green:#10b981;
-      --amber:#f59e0b;
-      --pink:#fb7185;
-      --violet:#a78bfa;
-
-      --cyan:#22d3ee;
-      --indigo:#60a5fa;
-
       --text:#e5e7eb;
       --muted:#94a3b8;
+      --accent:#38bdf8;
+      --ok:#22c55e;
+      --bad:#ef4444;
+      --warn:#f59e0b;
 
-      --shadow: 0 24px 90px rgba(0,0,0,.62);
-      --shadow2: 0 18px 60px rgba(0,0,0,.45);
-      --radius: 22px;
+      --radius:16px;
+      --shadow: 0 18px 70px rgba(0,0,0,.55);
     }
-
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:"Plus Jakarta Sans",system-ui,Segoe UI,Arial,sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x:hidden;
-    }
-
-    .bg{
-      position:fixed; inset:0; z-index:-2;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
       background:
-        radial-gradient(1200px 520px at 18% 15%, rgba(56,189,248,.18), transparent 60%),
-        radial-gradient(1000px 560px at 82% 22%, rgba(16,185,129,.12), transparent 60%),
-        radial-gradient(900px 520px at 50% 85%, rgba(167,139,250,.10), transparent 65%),
-        linear-gradient(180deg, #000814, #020617);
+        radial-gradient(900px 420px at 15% 10%, rgba(56,189,248,.14), transparent 60%),
+        radial-gradient(900px 420px at 85% 20%, rgba(167,139,250,.10), transparent 60%),
+        radial-gradient(700px 400px at 35% 85%, rgba(34,197,94,.10), transparent 55%),
+        var(--bg);
     }
-    .noise{
-      position:fixed; inset:0; z-index:-1;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
-      opacity:.16;
-      mix-blend-mode:overlay;
-      pointer-events:none;
-    }
-
-    .blob{
-      position:fixed;
-      width:420px; height:420px;
-      border-radius:50%;
-      filter: blur(50px);
-      opacity:.22;
-      z-index:-1;
-      animation: float 9s ease-in-out infinite;
-    }
-    .b1{ left:-120px; top:80px; background: rgba(56,189,248,.8); }
-    .b2{ right:-160px; top:140px; background: rgba(16,185,129,.8); animation-duration: 11s; }
-    .b3{ left:38%; bottom:-220px; background: rgba(167,139,250,.8); animation-duration: 13s; }
-    @keyframes float{
-      0%,100%{ transform: translate(0,0) scale(1); }
-      50%{ transform: translate(24px,-18px) scale(1.06); }
-    }
-
-    #fx{
-      position:fixed; inset:0; z-index:-0;
-      pointer-events:none; opacity:.75;
-    }
-
-    .left-rail{
-      position:fixed; inset:0 auto 0 0;
-      width:72px;
-      background:#0f172a;
-      border-right:1px solid var(--border);
-      display:flex; flex-direction:column; align-items:center;
-      padding-top:14px; gap:18px;
-      z-index:9999;
-    }
-    .left-rail a{
-      width:56px;
-      text-align:center;
-      font-size:11px;
-      font-weight:900;
-      text-decoration:none;
-      color:#fff;
-      padding:8px 6px;
-      border-radius:12px;
-      line-height:1.2;
-      transition:.2s ease;
-    }
-    .left-rail a:hover{ background:#1e293b; transform:translateX(2px); }
-    .left-rail a.hub{ color:var(--accent); }
-    .left-rail a.weekly{ color:var(--green); }
-    .left-rail a.monthly{ color:var(--green); }
-    .left-rail a.tada{ color:var(--amber); }
-    .left-rail a.asi{ color: var(--cyan); }
-    .left-rail a.diary{ color: var(--indigo); }
-
     .wrap{
-      max-width:1240px;
-      margin:0 auto;
-      padding:56px 18px 90px;
-      margin-left:72px;
+      width:min(1100px, 100%);
+      margin: 14px auto 30px;
+      padding: 0 12px;
     }
-
-    .top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:18px;
-      margin-bottom: 16px;
+    .header{
+      background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(11,19,38,.92));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 14px 12px;
     }
-    .brand{ display:flex; flex-direction:column; gap:10px; }
-
     .title{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom: 8px;
+    }
+    .title h1{
       margin:0;
-      font-size:38px;
-      font-weight:900;
-      letter-spacing:.8px;
-      line-height:1.05;
+      font-size: 18px;
+      letter-spacing:.2px;
+      line-height:1.25;
     }
-    .title .a{ color: var(--accent); }
-    .title .b{ color: #cbeeff; }
-
-    .subtitle{
-      margin:0;
+    .badge{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      background: rgba(56,189,248,.10);
+      color: var(--text);
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .sub{
       color: var(--muted);
-      font-weight:600;
-      font-size:14px;
-      line-height:1.5;
-      max-width: 760px;
-    }
-
-    .badge-row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top: 6px;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(34,48,74,.9);
-      background: rgba(2,6,23,.55);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      font-size:12px;
-      font-weight:800;
-      color: #dbeafe;
-    }
-
-    .clock{
-      text-align:right;
-      color: var(--muted);
-      font-weight:800;
-      font-size:12px;
-      padding-top: 6px;
-      white-space:nowrap;
-    }
-    .clock b{ color:#eaf6ff; font-weight:900; letter-spacing:.5px; }
-
-    .spark{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.65), transparent);
-      opacity:.55;
-      margin: 18px 0 0;
-    }
-
-    .section{ margin-top: 22px; }
-    .section-title{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding: 12px 16px;
-      border-radius: 16px;
-      border:1px solid rgba(34,48,74,.9);
-      background: rgba(2,6,23,.45);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.30);
-    }
-    .section-title .left{
-      display:flex;align-items:center;gap:10px;
-      font-weight:900;letter-spacing:.3px;
-      color:#eaf6ff;
-    }
-    .section-title .left span{
-      width:34px;height:34px;border-radius:12px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.06);
-    }
-    .section-title .right{
-      font-size:12px;
-      font-weight:800;
-      color: rgba(148,163,184,.85);
-      white-space:nowrap;
-    }
-    .section-divider{
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(56,189,248,.45), transparent);
-      opacity:.7;
-      margin: 14px 0 18px;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .grid{
       display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:22px;
-      margin-top:18px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .clock{ display:none; }
-      .section-title .right{ display:none; }
-    }
-    @media (max-width: 640px){
-      .grid{ grid-template-columns: 1fr; }
-      .title{ font-size:30px; }
-      .wrap{ padding-top: 38px; }
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
     }
 
     .card{
-      position:relative;
+      background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(11,19,38,.92));
+      border:1px solid var(--border);
       border-radius: var(--radius);
-      padding: 24px 24px 20px;
-      background: linear-gradient(180deg, rgba(17,28,51,.92), rgba(15,23,42,.92));
-      border: 1px solid rgba(34,48,74,.9);
-      box-shadow: var(--shadow2);
-      overflow:hidden;
-      transform-style:preserve-3d;
-      cursor: pointer;
-      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-    }
-    .card::before{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      background:
-        radial-gradient(650px 260px at 15% 15%, rgba(56,189,248,.18), transparent 55%),
-        radial-gradient(540px 240px at 88% 18%, rgba(16,185,129,.12), transparent 55%);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .card::after{
-      content:"";
-      position:absolute;
-      top:-40%;
-      left:-60%;
-      width:60%;
-      height:180%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
-      transform: rotate(18deg);
-      opacity:0;
-      transition: opacity .35s ease;
-      pointer-events:none;
-    }
-    .card:hover::after{ opacity:1; animation: sweep 1.2s ease; }
-    @keyframes sweep{
-      0%{ transform: translateX(0) rotate(18deg); }
-      100%{ transform: translateX(380%) rotate(18deg); }
-    }
-    .card:hover{
-      border-color: rgba(56,189,248,.55);
       box-shadow: var(--shadow);
-      transform: translateY(-6px);
+      overflow:hidden;
     }
+    .cardHead{
+      padding: 12px 12px 10px;
+      border-bottom:1px solid rgba(34,48,74,.7);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .cardHead .h{
+      font-weight: 900;
+      font-size: 14px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .cardBody{ padding: 12px; }
 
-    .card-head{
-      display:flex;
+    .row{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .controls{
+      display:flex; flex-wrap:wrap; gap:10px;
       align-items:center;
-      gap:12px;
-      position:relative;
-      z-index:1;
-      margin-bottom: 10px;
     }
-    .ico{
-      width:42px;height:42px;
-      border-radius: 14px;
-      display:grid; place-items:center;
-      font-size:20px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.35);
-      box-shadow: 0 12px 30px rgba(0,0,0,.25);
-    }
-    .ico.plfs{ background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.28); }
-    .ico.ufs{ background: rgba(16,185,129,.10); border-color: rgba(16,185,129,.26); }
-    .ico.asuse{ background: rgba(167,139,250,.10); border-color: rgba(167,139,250,.26); }
-    .ico.tada{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
-    .ico.docs{ background: rgba(251,113,133,.10); border-color: rgba(251,113,133,.26); }
-    .ico.arc{ background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.26); }
-    .ico.tp{ background: rgba(56,189,248,.10); border-color: rgba(56,189,248,.26); }
-    .ico.asi{ background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.26); }
-    .ico.diary{ background: rgba(96,165,250,.10); border-color: rgba(96,165,250,.26); }
-
-    .card h3{ margin:0; font-size:18px; font-weight:900; letter-spacing:.2px; }
-    .card p{
-      margin:6px 0 16px;
-      color: var(--muted);
-      font-weight:600;
-      font-size:12.5px;
-      line-height:1.5;
-      position:relative;
-      z-index:1;
-    }
-
-    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; position:relative; z-index:1; margin-top: 10px; }
 
     .btn{
-      appearance:none; border:none; cursor:pointer;
-      padding: 10px 14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
       border-radius: 12px;
-      font-weight:900;
-      font-size:12px;
-      letter-spacing:.3px;
-      color:#001019;
-      background: var(--accent);
-      box-shadow: 0 18px 35px rgba(56,189,248,.18);
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      text-decoration:none;
+      font-weight: 900;
+      cursor:pointer;
+      transition: transform .06s ease, background .15s ease;
       user-select:none;
-      transform: translateZ(25px);
-      transition: transform .18s ease, background .18s ease, border-color .18s ease;
     }
-    .btn:hover{ transform: translateZ(25px) translateY(-2px); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(56,189,248,.22), rgba(56,189,248,.12));
+      border-color: rgba(56,189,248,.30);
+    }
+    .btn.ok{
+      background: linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.12));
+      border-color: rgba(34,197,94,.30);
+    }
+    .btn.bad{
+      background: linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.12));
+      border-color: rgba(239,68,68,.30);
+    }
+    .btn.warn{
+      background: linear-gradient(180deg, rgba(245,158,11,.22), rgba(245,158,11,.12));
+      border-color: rgba(245,158,11,.35);
+    }
 
-    .btn.secondary{
-      background: rgba(255,255,255,.06);
-      color:#e5e7eb;
+    .inp, .sel{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 12px;
       border:1px solid rgba(255,255,255,.10);
-      box-shadow:none;
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      outline:none;
+      font-weight: 700;
     }
-    .btn.secondary:hover{
-      background: rgba(255,255,255,.10);
-      border-color: rgba(255,255,255,.18);
+    .inp:focus, .sel:focus{
+      border-color: rgba(56,189,248,.45);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.14);
     }
 
-    .btn.green{ background: var(--green); color:#00110a; box-shadow: 0 18px 35px rgba(16,185,129,.15); }
-    .btn.violet{ background: var(--violet); color:#0b0620; box-shadow: 0 18px 35px rgba(167,139,250,.15); }
-    .btn.amber{ background: var(--amber); color:#1b1100; box-shadow: 0 18px 35px rgba(245,158,11,.15); }
-    .btn.cyan{ background: var(--cyan); color:#001014; box-shadow: 0 18px 35px rgba(34,211,238,.15); }
-    .btn.indigo{ background: var(--indigo); color:#061125; box-shadow: 0 18px 35px rgba(96,165,250,.15); }
-
-    .foot{
-      margin-top: 26px;
-      color: rgba(148,163,184,.75);
-      font-weight:700;
-      font-size:11px;
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .foot b{ color:#dbeafe; }
-
-    /* =======================
-       ✅ UFS MENU (POPUP)
-    ======================== */
-    .modal{
-      position:fixed; inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-      z-index:99999;
-    }
-    .modal.show{ display:flex; }
-    .modal-backdrop{
-      position:absolute; inset:0;
-      background: rgba(2,6,23,.72);
-      backdrop-filter: blur(8px);
-    }
-    .modal-panel{
-      position:relative;
-      width:min(760px, 100%);
-      border-radius: 22px;
-      border:1px solid rgba(34,48,74,.95);
-      background: linear-gradient(180deg, rgba(17,28,51,.96), rgba(15,23,42,.96));
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      animation: pop .18s ease-out;
-    }
-    @keyframes pop{
-      from{ transform: translateY(10px) scale(.985); opacity:.0; }
-      to{ transform: translateY(0) scale(1); opacity:1; }
-    }
-    .modal-panel::before{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(900px 320px at 18% 10%, rgba(16,185,129,.14), transparent 60%),
-        radial-gradient(700px 320px at 88% 18%, rgba(56,189,248,.14), transparent 60%);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .modal-head{
-      position:relative;
-      z-index:1;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      padding:18px 18px 10px;
-    }
-    .modal-title{
-      display:flex; align-items:center; gap:10px;
-      font-weight:900;
-      letter-spacing:.3px;
-      color:#eaf6ff;
-      margin:0;
-      font-size:18px;
-    }
-    .modal-title .tag{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color:#dbeafe;
-      font-size:12px;
-      font-weight:900;
-    }
-    .modal-sub{
-      position:relative;
-      z-index:1;
-      padding:0 18px 12px;
-      margin:0;
-      color: rgba(148,163,184,.92);
-      font-weight:700;
-      font-size:12.5px;
-      line-height:1.45;
-    }
-    .modal-close{
-      appearance:none; border:none;
-      cursor:pointer;
-      width:40px; height:40px;
-      border-radius:14px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      color:#e5e7eb;
-      font-weight:900;
-      display:grid; place-items:center;
-      transition:.15s ease;
-      position:relative;
-      z-index:1;
-    }
-    .modal-close:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
-
-    .modal-body{
-      position:relative;
-      z-index:1;
-      padding: 10px 18px 18px;
-    }
-    .ufs-grid{
+    .two{
       display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap:12px;
+      grid-template-columns: 1fr;
+      gap: 12px;
     }
-    @media (max-width: 620px){
-      .ufs-grid{ grid-template-columns: 1fr; }
+    @media (min-width: 920px){
+      .two{ grid-template-columns: 1.1fr .9fr; }
     }
-    .ufs-tile{
-      border-radius: 18px;
-      border:1px solid rgba(34,48,74,.9);
-      background: rgba(2,6,23,.40);
-      padding:14px 14px 12px;
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-      cursor:pointer;
-      transition:.18s ease;
-    }
-    .ufs-tile:hover{
-      transform: translateY(-3px);
-      border-color: rgba(16,185,129,.55);
-      box-shadow: 0 18px 45px rgba(0,0,0,.35);
-      background: rgba(2,6,23,.55);
-    }
-    .ufs-ico{
-      width:44px; height:44px;
-      border-radius:16px;
-      display:grid; place-items:center;
-      font-size:20px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.30);
-      flex:0 0 auto;
-    }
-    .ufs-ico.green{ background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.26); }
-    .ufs-ico.accent{ background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.26); }
-    .ufs-ico.amber{ background: rgba(245,158,11,.10); border-color: rgba(245,158,11,.26); }
 
-    .ufs-tile h4{
-      margin:0;
-      font-size:14px;
-      font-weight:900;
-      color:#eaf6ff;
-      letter-spacing:.2px;
+    #map{
+      width:100%;
+      height: 360px;
+      border-radius: 16px;
+      border:1px solid var(--border);
+      overflow:hidden;
+      background: #0b1220;
     }
-    .ufs-tile p{
-      margin:6px 0 0;
-      color: rgba(148,163,184,.92);
-      font-weight:700;
-      font-size:12px;
-      line-height:1.35;
+
+    .kpi{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
-    .hint{
-      margin-top:12px;
-      color: rgba(148,163,184,.75);
-      font-weight:800;
-      font-size:11px;
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
+    .kpi .box{
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.05);
+      border-radius: 14px;
+      padding: 10px 10px;
+      min-height: 52px;
     }
-    .kbd{
-      font-weight:900;
-      color:#dbeafe;
-      border:1px solid rgba(255,255,255,.12);
+    .kpi .lab{ color: var(--muted); font-size: 11px; font-weight: 800; }
+    .kpi .val{ font-weight: 900; font-size: 13px; margin-top: 4px; word-break: break-word; }
+
+    .dirBox{
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.05);
+      border-radius: 14px;
+      padding: 10px 10px;
+      margin-top: 10px;
+    }
+    .dirBox .lab{ color: var(--muted); font-size: 11px; font-weight: 900; margin-bottom: 4px; }
+    .dirBox .val{ font-weight: 800; font-size: 12px; line-height: 1.35; }
+
+    #activityPanel{
+      margin-top: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      overflow:hidden;
+    }
+    .activity-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-weight: 900;
+    }
+    .activity-header button{
+      border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.06);
-      padding:4px 8px;
-      border-radius:10px;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 900;
+      cursor:pointer;
+    }
+    #activityLog{
+      max-height: 220px;
+      overflow:auto;
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .logline{ padding: 4px 0; border-bottom:1px dashed rgba(255,255,255,.06); }
+    .logline.ok{ color: rgba(34,197,94,.95); }
+    .logline.bad{ color: rgba(239,68,68,.95); }
+    .logline.warn{ color: rgba(245,158,11,.95); }
+    .logline.info{ color: rgba(229,231,235,.95); }
+
+    .hint{
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+
+    .fileRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    input[type="file"]{ display:none; }
+    .pill{
+      padding:7px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .chk{
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      font-weight: 900;
+      color: var(--text);
+      user-select:none;
+    }
+    .chk input{ transform: scale(1.1); }
+
+    .selGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    @media (min-width: 720px){
+      .selGrid{ grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 
 <body>
-  <nav class="left-rail">
-    <a href="index.html" class="hub">🏠 HUB</a>
-    <a href="plfs_gateway.html">📊 PLFS</a>
-
-    <a href="ufs_weekly.html" class="weekly">🗓️ Weekly</a>
-    <a href="ufs_monthly.html" class="monthly">📅 Monthly</a>
-    <a href="ufs_action.html" class="weekly">📈 Action</a>
-    <a href="ufs_block_locator.html" class="weekly">📍 Locator</a>
-
-    <a href="asi.html" class="asi">🧭 ASI</a>
-    <a href="daily_diary.html" class="diary">📘 Diary</a>
-    <a href="ta_da.html" class="tada">🧮 TA/DA</a>
-  </nav>
-
-  <div class="bg"></div>
-  <canvas id="fx"></canvas>
-  <div class="noise"></div>
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-
-  <!-- ✅ UFS POPUP MENU -->
-  <div class="modal" id="ufsModal" aria-hidden="true">
-    <div class="modal-backdrop" id="ufsBackdrop"></div>
-
-    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="ufsTitle">
-      <div class="modal-head">
-        <div>
-          <h2 class="modal-title" id="ufsTitle">
-            <span class="tag">🗓️ UFS Scheme</span>
-            <span style="opacity:.8;font-weight:900">Choose page</span>
-          </h2>
-        </div>
-        <button class="modal-close" id="ufsClose" title="Close (Esc)">✕</button>
-      </div>
-
-      <p class="modal-sub">
-        All UFS-related tools will open from here. Click any option below.
-      </p>
-
-      <div class="modal-body">
-        <div class="ufs-grid">
-          <div class="ufs-tile" onclick="go('ufs_weekly.html')">
-            <div class="ufs-ico green">📅</div>
-            <div>
-              <h4>Weekly Progress</h4>
-              <p>Weekly monitoring, updates, and progress entry.</p>
-            </div>
-          </div>
-
-          <div class="ufs-tile" onclick="go('ufs_monthly.html')">
-            <div class="ufs-ico green">🗓️</div>
-            <div>
-              <h4>Monthly Progress</h4>
-              <p>Monthly scheme dashboard and consolidated view.</p>
-            </div>
-          </div>
-
-          <div class="ufs-tile" onclick="go('ufs_action.html')">
-            <div class="ufs-ico amber">📈</div>
-            <div>
-              <h4>Action Plan</h4>
-              <p>Targets, daily action plans, and field execution plan.</p>
-            </div>
-          </div>
-
-          <div class="ufs-tile" onclick="go('ufs_block_locator.html')">
-            <div class="ufs-ico accent">📍</div>
-            <div>
-              <h4>Block Locator</h4>
-              <p>Boundary + device location + NSEW description & list.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="hint">
-          <div>Tip: You can also use left rail shortcuts anytime.</div>
-          <div><span class="kbd">Esc</span> to close</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <h1 class="title"><span class="a">NSO</span> <span class="b">SCHEME HUB 2026</span></h1>
-        <p class="subtitle">
-          One dashboard to open <b>PLFS</b>, <b>UFS</b> (Weekly + Monthly + Action + Locator), <b>ASUSE</b>, and <b>ASI</b>.
-          Fast navigation, premium UI, and clean access for field operations.
-        </p>
-        <div class="badge-row">
-          <div class="pill">⚡ Quick Launch</div>
-          <div class="pill">🛰️ Live Tools</div>
-          <div class="pill">🧠 Smart Workflow</div>
-          <div class="pill">🔒 Secure Access</div>
-        </div>
-        <div class="spark"></div>
+    <div class="header">
+      <div class="title">
+        <h1>UFS KML Viewer (Ward/Block Match + Sheet Directions)</h1>
+        <div class="badge" id="countBadge">0 boundaries</div>
       </div>
-
-      <div class="clock" id="clockBox">
-        <div><b id="nowTime">--:--</b></div>
-        <div id="nowDate">--</div>
+      <div class="sub">
+        Upload KML/ZIP → GPS location se boundary match → KML filename se Ward/Block read → Google Sheet se
+        <b>IV No + Town + North/East/South/West</b> auto show.
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">
-        <div class="left"><span>📊</span><div>Schemes</div></div>
-        <div class="right">PLFS • UFS • ASUSE • ASI • Daily Diary</div>
-      </div>
-      <div class="section-divider"></div>
+    <div class="grid">
 
-      <div class="grid">
-        <div class="card" onclick="go('plfs_gateway.html')" role="button">
-          <div class="card-head"><div class="ico plfs">📊</div><h3>PLFS</h3></div>
-          <p>Command dashboard for sample tracking, visits, and field monitoring.</p>
-          <div class="btnrow">
-            <a class="btn" href="plfs_gateway.html" onclick="event.stopPropagation()">🚀 Open PLFS</a>
-            <a class="btn secondary" href="plfs_gateway.html#help" onclick="event.stopPropagation()">📌 Guide</a>
+      <!-- Controls -->
+      <div class="card">
+        <div class="cardHead">
+          <div class="h">⚙️ Controls</div>
+          <div class="fileRow">
+            <label class="btn primary" for="kmlInput">Upload .kml / .zip</label>
+            <input id="kmlInput" type="file" accept=".kml,.zip" multiple />
           </div>
         </div>
 
-        <!-- ✅ UPDATED: UFS card now opens UFS menu popup -->
-        <div class="card" onclick="openUfsMenu()" role="button" aria-label="Open UFS menu">
-          <div class="card-head"><div class="ico ufs">🗓️</div><h3>UFS</h3></div>
-          <p>Click to open all UFS pages (Weekly, Monthly, Action, Locator).</p>
-          <div class="btnrow">
-            <button class="btn green" type="button" onclick="event.stopPropagation(); openUfsMenu()">🧭 Open UFS Menu</button>
-            <button class="btn secondary" type="button" onclick="event.stopPropagation(); go('ufs_weekly.html')">⚡ Quick Weekly</button>
-          </div>
-        </div>
+        <div class="cardBody">
+          <div class="row">
+            <input class="inp" id="proxyUrl" placeholder="Paste Apps Script Proxy URL here (required for Drive ZIP)" />
+            <input class="inp" id="kmlUrl" value="https://drive.google.com/file/d/1I7SfE0fOOV-er-06U-q8dICbjmFMLZeK/view?usp=drivesdk" />
 
-        <div class="card" onclick="go('asuse.html')" role="button">
-          <div class="card-head"><div class="ico asuse">🧾</div><h3>ASUSE</h3></div>
-          <p>ASUSE operations: roster, monitoring, and quick analytics access.</p>
-          <div class="btnrow">
-            <a class="btn violet" href="asuse.html" onclick="event.stopPropagation()">✨ Open ASUSE</a>
-            <a class="btn secondary" href="asuse.html#settings" onclick="event.stopPropagation()">⚙️ Settings</a>
-          </div>
-        </div>
+            <div class="controls">
+              <button class="btn ok" id="fetchDriveBtn">Fetch ZIP from Drive</button>
+              <button class="btn primary" id="loadKmlUrlBtn">Load URL (non-Drive)</button>
+              <button class="btn" id="restoreSavedBtn">Restore Saved KML</button>
+              <button class="btn warn" id="clearSavedBtn">Clear Saved KML</button>
+              <label class="chk"><input type="checkbox" id="saveOfflineChk" checked>Save Offline</label>
+              <label class="chk"><input type="checkbox" id="autoFetchChk">Auto-fetch Drive ZIP on open</label>
+            </div>
 
-        <div class="card" onclick="go('asi.html')" role="button">
-          <div class="card-head"><div class="ico asi">🧭</div><h3>ASI</h3></div>
-          <p>ASI operations: quick access, monitoring, and field tools.</p>
-          <div class="btnrow">
-            <a class="btn cyan" href="asi.html" onclick="event.stopPropagation()">🚀 Open ASI</a>
-            <a class="btn secondary" href="asi.html#help" onclick="event.stopPropagation()">📌 Guide</a>
-          </div>
-        </div>
-      </div>
-    </div>
+            <input class="inp" id="sheetUrl" value="https://docs.google.com/spreadsheets/d/1MoKhZ2mzNtTgPvkM_xFk-TffpiYrkSRyNctOFQ5APBI/edit?usp=drivesdk" />
 
-    <div class="section">
-      <div class="section-title">
-        <div class="left"><span>🧾</span><div>TA/DA Bills & Documents</div></div>
-        <div class="right">Sheet • Bills • Archive</div>
-      </div>
-      <div class="section-divider"></div>
+            <div class="controls">
+              <button class="btn warn" id="loadSheetBtn">Load Sheet</button>
+              <button class="btn ok" id="startGpsBtn">Start GPS</button>
+              <button class="btn bad" id="stopGpsBtn">Stop</button>
+              <button class="btn primary" id="detectNowBtn">Detect Now</button>
+              <button class="btn" id="fitAllBtn">Fit All</button>
+              <button class="btn" id="clearBtn">Clear</button>
+            </div>
 
-      <div class="grid">
-        <div class="card" onclick="go('ta_da.html')" role="button">
-          <div class="card-head"><div class="ico tada">🧮</div><h3>TA / DA Calculation</h3></div>
-          <p>Designation-wise TA/DA with PDF & Excel export.</p>
-          <div class="btnrow">
-            <a class="btn amber" href="ta_da.html" onclick="event.stopPropagation()">🧾 Open Sheet</a>
-            <a class="btn secondary" href="ta_da.html#pdf" onclick="event.stopPropagation()">⬇️ PDF Export</a>
-          </div>
-        </div>
-          
-            <div class="card" onclick="go('daily_diary.html')" role="button">
-          <div class="card-head"><div class="ico diary">📘</div><h3>Daily Diary</h3></div>
-          <p>Calendar-based daily diary with tours, office/holiday quick clicks, and print-ready output.</p>
-          <div class="btnrow">
-            <a class="btn indigo" href="daily_diary.html" onclick="event.stopPropagation()">📘 Open Diary</a>
-            <a class="btn secondary" href="daily_diary.html#help" onclick="event.stopPropagation()">📌 Guide</a>
-          </div>
-        </div>
-
-        <div class="card" onclick="go('tentative_program.html')" role="button">
-          <div class="card-head"><div class="ico tp">🗓️</div><h3>Tentative Program</h3></div>
-          <p>Create / edit tentative program and print clean A4 format.</p>
-          <div class="btnrow">
-            <a class="btn" href="tentative_program.html" onclick="event.stopPropagation()">🗓️ Open Program</a>
-            <a class="btn secondary" href="tentative_program.html#print" onclick="event.stopPropagation()">🖨️ Print</a>
+            <div class="hint">
+              ✅ Sheet must be public: Share → General access → <b>Anyone with the link</b> → Viewer. <br/>
+              KML filename example: <b>b14w6iv1.kml</b> (Block=14, Ward=6) <br/>
+              ZIP must contain .kml files. (folders inside ZIP OK) <br/>
+              ✅ Drive ZIP fetch works via Proxy URL only (Apps Script Web App). <br/>
+              ✅ One-time upload: KML saves offline (IndexedDB) + auto-restore on open.
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="foot">
-      <div>Made for <b>NSO Field Operations</b> • 2026</div>
-      <div>Tip: Hover cards for glow ✨</div>
+      <!-- Selection Console -->
+      <div class="card">
+        <div class="cardHead">
+          <div class="h">🧾 Selection Console (Town / IV / Ward / Block)</div>
+          <div class="pill" id="selStatus">Ready</div>
+        </div>
+        <div class="cardBody">
+          <div class="selGrid">
+            <select class="sel" id="townSel"><option value="">Town (All)</option></select>
+            <select class="sel" id="ivSel"><option value="">IV No (All)</option></select>
+            <select class="sel" id="wardSel"><option value="">Ward No (All)</option></select>
+            <select class="sel" id="blockSel"><option value="">Block No (All)</option></select>
+          </div>
+
+          <div class="controls" style="margin-top:10px">
+            <button class="btn primary" id="showSelectedBtn">Show Selected</button>
+            <button class="btn" id="clearSelectionBtn">Clear Selection</button>
+          </div>
+
+          <div class="hint">
+            ✅ This console uses <b>Sheet data</b>. Boundary highlight uses <b>uploaded/offline KML</b> (Ward+Block match).
+          </div>
+        </div>
+      </div>
+
+      <div class="two">
+        <!-- Map -->
+        <div class="card">
+          <div class="cardHead">
+            <div class="h">🗺️ Map</div>
+            <div class="pill" id="gpsStatus">GPS: OFF</div>
+          </div>
+          <div class="cardBody">
+            <div id="map"></div>
+
+            <div id="activityPanel">
+              <div class="activity-header">
+                <span>📡 Live Activity Console</span>
+                <button id="clearLogBtn">Clear</button>
+              </div>
+              <div id="activityLog"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detected Info -->
+        <div class="card">
+          <div class="cardHead">
+            <div class="h">📍 Detected / Selected Info</div>
+            <div class="pill" id="sheetStatus">Sheet: NOT LOADED</div>
+          </div>
+          <div class="cardBody">
+            <div class="kpi">
+              <div class="box">
+                <div class="lab">Current Location</div>
+                <div class="val" id="locVal">—</div>
+              </div>
+              <div class="box">
+                <div class="lab">Inside Boundary</div>
+                <div class="val" id="insideVal">—</div>
+              </div>
+
+              <div class="box">
+                <div class="lab">Town (from Sheet col I)</div>
+                <div class="val" id="townVal">—</div>
+              </div>
+              <div class="box">
+                <div class="lab">IV No (from Sheet col B)</div>
+                <div class="val" id="ivVal">—</div>
+              </div>
+
+              <div class="box">
+                <div class="lab">Ward / Block (from KML name)</div>
+                <div class="val" id="wbVal">—</div>
+              </div>
+              <div class="box">
+                <div class="lab">Boundary BBox (N/S/E/W)</div>
+                <div class="val" id="bboxVal">—</div>
+              </div>
+            </div>
+
+            <div class="dirBox"><div class="lab">North</div><div class="val" id="northVal">No entry</div></div>
+            <div class="dirBox"><div class="lab">East</div><div class="val" id="eastVal">No entry</div></div>
+            <div class="dirBox"><div class="lab">South</div><div class="val" id="southVal">No entry</div></div>
+            <div class="dirBox"><div class="lab">West</div><div class="val" id="westVal">No entry</div></div>
+
+            <div class="hint" style="margin-top:10px">
+              Matching key: <b>Ward No + Block Number</b>. Now also shows <b>Town + IV No</b> from the Sheet row.
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <script>
-    function go(url){ window.location.href = url; }
+<script>
+/* =========================
+   Live Activity Console
+========================= */
+function logAct(msg, type="info"){
+  const el = document.getElementById("activityLog");
+  const t = new Date().toLocaleTimeString();
+  const div = document.createElement("div");
+  div.className = "logline " + type;
+  div.textContent = `• ${t}  ${msg}`;
+  el.prepend(div);
+}
+function clearActivity(){
+  document.getElementById("activityLog").innerHTML = "";
+  logAct("Console cleared", "warn");
+}
 
-    // ===== Clock
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function tick(){
-      const d = new Date();
-      const h = pad(d.getHours()), m = pad(d.getMinutes());
-      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      document.getElementById('nowTime').textContent = `${h}:${m}`;
-      document.getElementById('nowDate').textContent = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+/* =========================
+   IndexedDB (Save KML offline)
+========================= */
+const DB_NAME = "ufs_kml_viewer_db";
+const STORE = "kml_files";
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        db.createObjectStore(STORE, { keyPath: "name" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbPutKml(name, text){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put({ name, text, savedAt: Date.now() });
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGetAllKml(){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbClearAll(){
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* =========================
+   Helpers: CSV parse (handles quotes)
+========================= */
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    const next = text[i+1];
+
+    if(ch === '"'){
+      if(inQuotes && next === '"'){ cur += '"'; i++; }
+      else{ inQuotes = !inQuotes; }
+    }else if(ch === ',' && !inQuotes){
+      row.push(cur.trim()); cur = "";
+    }else if((ch === '\n' || ch === '\r') && !inQuotes){
+      if(ch === '\r' && next === '\n') i++;
+      row.push(cur.trim()); cur = "";
+      if(row.length > 1 || (row.length===1 && row[0]!== "")){
+        rows.push(row.map(x => x.replace(/^"|"$/g,"")));
+      }
+      row = [];
+    }else{
+      cur += ch;
     }
-    tick(); setInterval(tick, 1000);
+  }
+  if(cur.length || row.length){
+    row.push(cur.trim());
+    if(row.length) rows.push(row.map(x => x.replace(/^"|"$/g,"")));
+  }
+  return rows.filter(r => r.some(c => String(c||"").trim()!==""));
+}
 
-    // ===== Background particles
-    const c = document.getElementById('fx');
-    const ctx = c.getContext('2d');
-    let W,H,particles=[];
-    function resize(){
-      W = c.width = window.innerWidth;
-      H = c.height = window.innerHeight;
-      particles = Array.from({length: 70}, () => ({
-        x: Math.random()*W,
-        y: Math.random()*H,
-        r: Math.random()*1.6 + 0.4,
-        vx: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
-        vy: (Math.random()*0.6 + 0.2) * (Math.random()<0.5?-1:1),
-        a: Math.random()*0.35 + 0.15
-      }));
+const numOnly = v => String(v||"").replace(/\D/g,"");
+const makeKey = (ward, block) => `w${numOnly(ward)}-b${numOnly(block)}`;
+const norm = s => String(s||"").trim();
+
+/* =========================
+   Sheet load (CSV export)
+========================= */
+let sheetMap = new Map();     // key -> {north,east,south,west,town,iv}
+let sheetRows = [];           // rows for dropdowns
+let sheetLoaded = false;
+
+function sheetIdFromUrl(u){
+  const m = String(u||"").match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : null;
+}
+
+function findHeaderIndex(headers, wanted){
+  // wanted can be array of candidate strings
+  const low = headers.map(h => String(h||"").toLowerCase().trim());
+  for(const cand of wanted){
+    const idx = low.indexOf(cand.toLowerCase());
+    if(idx !== -1) return idx;
+  }
+  return -1;
+}
+
+async function loadSheet(gid=0){
+  const u = document.getElementById("sheetUrl").value.trim();
+  const id = sheetIdFromUrl(u);
+  if(!id){
+    logAct("❌ Invalid Google Sheet URL", "bad");
+    setSheetStatus(false, "Sheet: URL INVALID");
+    return;
+  }
+
+  const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+  logAct("📥 Loading Sheet CSV: " + csvUrl);
+
+  let text = "";
+  try{
+    const res = await fetch(csvUrl);
+    text = await res.text();
+  }catch(e){
+    logAct("❌ Fetch failed: " + e.message, "bad");
+    setSheetStatus(false, "Sheet: LOAD FAILED");
+    return;
+  }
+
+  if(text.trim().startsWith("<!DOCTYPE html") || text.includes("ServiceLogin")){
+    logAct("❌ Sheet not public / permission issue (got HTML login page)", "bad");
+    setSheetStatus(false, "Sheet: NOT PUBLIC");
+    return;
+  }
+
+  const rows = parseCSV(text);
+  if(!rows.length){
+    logAct("❌ CSV parsed but empty rows", "bad");
+    setSheetStatus(false, "Sheet: EMPTY");
+    return;
+  }
+
+  const headers = rows[0].map(h => String(h||"").trim());
+  const headersLow = headers.map(h => h.toLowerCase().trim());
+
+  // IMPORTANT: your sheet has "IV No" and "TOWN"
+  const idx = {
+    iv:    findHeaderIndex(headers, ["IV No","IV NO","IVNo","IV"]),
+    ward:  findHeaderIndex(headers, ["Ward No","WARD NO","Ward"]),
+    block: findHeaderIndex(headers, ["Block Number","BLOCK NUMBER","Block"]),
+    north: findHeaderIndex(headers, ["North","NORTH"]),
+    east:  findHeaderIndex(headers, ["East","EAST"]),
+    south: findHeaderIndex(headers, ["South","SOUTH"]),
+    west:  findHeaderIndex(headers, ["West","WEST"]),
+    town:  findHeaderIndex(headers, ["Town","TOWN"]),
+  };
+
+  const required = ["iv","town","ward","block","north","east","south","west"];
+  const missing = required.filter(k => idx[k] === -1);
+  if(missing.length){
+    logAct("❌ Headers missing: " + missing.join(", ") + " | Found: " + headers.join(" | "), "bad");
+    setSheetStatus(false, "Sheet: WRONG HEADERS");
+    return;
+  }
+
+  const map2 = new Map();
+  const list = [];
+
+  for(let i=1;i<rows.length;i++){
+    const r = rows[i];
+
+    const iv = norm(r[idx.iv]);
+    const town = norm(r[idx.town]);
+
+    const ward = numOnly(r[idx.ward]);
+    const block = numOnly(r[idx.block]);
+    if(!ward || !block) continue;
+
+    const key = makeKey(ward, block);
+    const item = {
+      key,
+      iv,
+      town,
+      ward,
+      block,
+      north: norm(r[idx.north]),
+      east:  norm(r[idx.east]),
+      south: norm(r[idx.south]),
+      west:  norm(r[idx.west]),
+    };
+
+    map2.set(key, item);
+    list.push(item);
+  }
+
+  sheetMap = map2;
+  sheetRows = list;
+  sheetLoaded = true;
+
+  logAct("✅ Sheet loaded. Keys: " + sheetMap.size, "ok");
+  setSheetStatus(true, "Sheet: LOADED ("+sheetMap.size+")");
+
+  buildSelectionOptions();
+}
+
+function setSheetStatus(ok, label){
+  const el = document.getElementById("sheetStatus");
+  el.textContent = label;
+  el.style.borderColor = ok ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.35)";
+  el.style.background = ok ? "rgba(34,197,94,.10)" : "rgba(239,68,68,.08)";
+}
+
+function setSelStatus(txt){
+  document.getElementById("selStatus").textContent = txt;
+}
+
+/* =========================
+   Selection Console (Town/IV/Ward/Block)
+========================= */
+function uniqueSorted(arr){
+  return Array.from(new Set(arr.filter(x => String(x||"").trim()!==""))).sort((a,b)=>String(a).localeCompare(String(b), undefined, {numeric:true}));
+}
+function fillSelect(sel, items, placeholder){
+  const cur = sel.value;
+  sel.innerHTML = "";
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = placeholder;
+  sel.appendChild(opt0);
+  for(const it of items){
+    const o = document.createElement("option");
+    o.value = it;
+    o.textContent = it;
+    sel.appendChild(o);
+  }
+  // keep selection if still available
+  if(Array.from(sel.options).some(o => o.value === cur)){
+    sel.value = cur;
+  }else{
+    sel.value = "";
+  }
+}
+
+function filteredSheetRows(){
+  const town = document.getElementById("townSel").value;
+  const iv = document.getElementById("ivSel").value;
+  const ward = document.getElementById("wardSel").value;
+  const block = document.getElementById("blockSel").value;
+
+  return sheetRows.filter(r => {
+    if(town && r.town !== town) return false;
+    if(iv && r.iv !== iv) return false;
+    if(ward && String(r.ward) !== String(ward)) return false;
+    if(block && String(r.block) !== String(block)) return false;
+    return true;
+  });
+}
+
+function buildSelectionOptions(){
+  // initial full options based on current filters (cascading)
+  const rows = filteredSheetRows();
+
+  // For cascading, we rebuild each dropdown from partially filtered views
+  // Step 1: Town from all rows
+  fillSelect(document.getElementById("townSel"), uniqueSorted(sheetRows.map(r=>r.town)), "Town (All)");
+
+  // Step 2: IV based on Town filter
+  const town = document.getElementById("townSel").value;
+  const rowsTown = sheetRows.filter(r => !town || r.town === town);
+  fillSelect(document.getElementById("ivSel"), uniqueSorted(rowsTown.map(r=>r.iv)), "IV No (All)");
+
+  // Step 3: Ward based on Town+IV
+  const iv = document.getElementById("ivSel").value;
+  const rowsTownIv = rowsTown.filter(r => !iv || r.iv === iv);
+  fillSelect(document.getElementById("wardSel"), uniqueSorted(rowsTownIv.map(r=>String(r.ward))).map(String), "Ward No (All)");
+
+  // Step 4: Block based on Town+IV+Ward
+  const ward = document.getElementById("wardSel").value;
+  const rowsTownIvWard = rowsTownIv.filter(r => !ward || String(r.ward) === String(ward));
+  fillSelect(document.getElementById("blockSel"), uniqueSorted(rowsTownIvWard.map(r=>String(r.block))).map(String), "Block No (All)");
+
+  setSelStatus(sheetLoaded ? `Filtered rows: ${filteredSheetRows().length}` : "Load Sheet first");
+}
+
+/* =========================
+   Map init
+========================= */
+const map = L.map("map", { zoomControl:true }).setView([31.1048, 77.1734], 13);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 20,
+  attribution: "&copy; OpenStreetMap"
+}).addTo(map);
+
+const boundaryLayer = L.featureGroup().addTo(map);
+let gpsMarker = null;
+let gpsAccuracy = null;
+let watchId = null;
+let lastPos = null;
+
+/* =========================
+   KML store
+========================= */
+const kmlItems = [];
+function updateCount(){
+  document.getElementById("countBadge").textContent = `${kmlItems.length} boundaries`;
+}
+
+function parseWardBlockFromName(filename){
+  const s = (filename || "").toLowerCase();
+  const b = (s.match(/b(\d+)/) || [])[1] || "";
+  const w = (s.match(/w(\d+)/) || [])[1] || "";
+  return { ward: w, block: b };
+}
+
+function geojsonToTurfPolygons(geojson){
+  const polys = [];
+  if(!geojson || !geojson.features) return polys;
+  for(const f of geojson.features){
+    if(!f || !f.geometry) continue;
+    const g = f.geometry;
+    if(g.type === "Polygon" || g.type === "MultiPolygon"){
+      polys.push(f);
     }
-    window.addEventListener('resize', resize);
-    resize();
+  }
+  return polys;
+}
 
-    function draw(){
-      ctx.clearRect(0,0,W,H);
-      for(const p of particles){
-        p.x += p.vx; p.y += p.vy;
-        if(p.x < -20) p.x = W+20;
-        if(p.x > W+20) p.x = -20;
-        if(p.y < -20) p.y = H+20;
-        if(p.y > H+20) p.y = -20;
+function computeBBoxFromGeoJSON(geojson){
+  let N = -Infinity, S = Infinity, E = -Infinity, W = Infinity;
 
-        ctx.beginPath();
-        ctx.globalAlpha = p.a;
-        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-        ctx.fillStyle = "#cbeeff";
-        ctx.fill();
+  function walkCoords(coords){
+    if(typeof coords[0] === "number"){
+      const lon = coords[0], lat = coords[1];
+      if(lat > N) N = lat;
+      if(lat < S) S = lat;
+      if(lon > E) E = lon;
+      if(lon < W) W = lon;
+      return;
+    }
+    for(const c of coords) walkCoords(c);
+  }
+
+  if(geojson && geojson.features){
+    for(const f of geojson.features){
+      if(f.geometry && f.geometry.coordinates){
+        walkCoords(f.geometry.coordinates);
+      }
+    }
+  }
+  if(!isFinite(N)) return null;
+  return { N, S, E, W };
+}
+
+/* =========================
+   UI setters
+========================= */
+function setText(id, v){ document.getElementById(id).textContent = v; }
+function setDirText(n,e,s,w){
+  setText("northVal", n || "No entry");
+  setText("eastVal",  e || "No entry");
+  setText("southVal", s || "No entry");
+  setText("westVal",  w || "No entry");
+}
+function setTownIv(town, iv){
+  setText("townVal", town || "—");
+  setText("ivVal", iv || "—");
+}
+
+function setGpsStatus(on){
+  const el = document.getElementById("gpsStatus");
+  el.textContent = on ? "GPS: ON" : "GPS: OFF";
+  el.style.borderColor = on ? "rgba(34,197,94,.35)" : "rgba(239,68,68,.35)";
+  el.style.background = on ? "rgba(34,197,94,.10)" : "rgba(239,68,68,.08)";
+}
+
+/* =========================
+   Highlight boundary by ward/block
+========================= */
+let highlightedLayer = null;
+function highlightByWardBlock(ward, block){
+  const w = String(ward||"");
+  const b = String(block||"");
+  const hit = kmlItems.find(it => String(it.ward||"")===w && String(it.block||"")===b);
+
+  if(highlightedLayer){
+    try{ highlightedLayer.setStyle({ weight: 2, opacity: 0.9, fillOpacity: 0.15 }); }catch(e){}
+    highlightedLayer = null;
+  }
+
+  if(!hit){
+    logAct(`⚠️ No KML found for w${w} b${b} (upload/restore KML)`, "warn");
+    return null;
+  }
+
+  // set strong style
+  try{ hit.layer.setStyle({ weight: 5, opacity: 1, fillOpacity: 0.25 }); }catch(e){}
+  highlightedLayer = hit.layer;
+
+  // zoom to it
+  try{
+    map.fitBounds(hit.layer.getBounds().pad(0.15));
+  }catch(e){}
+
+  logAct(`🎯 Highlighted boundary: ${hit.name} (w${w} b${b})`, "ok");
+  return hit;
+}
+
+/* =========================
+   Detect boundary for current point (GPS)
+========================= */
+function detectForLatLng(lat, lng){
+  if(!kmlItems.length){
+    logAct("⚠️ No boundaries loaded", "warn");
+    return;
+  }
+
+  setText("locVal", `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+  const pt = turf.point([lng, lat]);
+
+  for(const item of kmlItems){
+    if(!item.bbox) continue;
+    if(lat > item.bbox.N || lat < item.bbox.S || lng > item.bbox.E || lng < item.bbox.W) continue;
+
+    for(const f of item.polygons){
+      try{
+        if(turf.booleanPointInPolygon(pt, f)){
+          setText("insideVal", item.name);
+          setText("wbVal", `Ward w${item.ward || "?"} / Block b${item.block || "?"}`);
+
+          const bb = item.bbox;
+          setText("bboxVal", `N ${bb.N.toFixed(6)} | S ${bb.S.toFixed(6)} | E ${bb.E.toFixed(6)} | W ${bb.W.toFixed(6)}`);
+
+          logAct(`✅ Detected inside: ${item.name} (w${item.ward} b${item.block})`, "ok");
+
+          if(sheetLoaded){
+            const key = makeKey(item.ward, item.block);
+            const hit = sheetMap.get(key);
+            if(hit){
+              setTownIv(hit.town, hit.iv);
+              setDirText(hit.north || "—", hit.east || "—", hit.south || "—", hit.west || "—");
+              logAct(`🧾 Sheet matched: ${key} (Town=${hit.town || "-"}, IV=${hit.iv || "-"})`, "ok");
+            }else{
+              setTownIv("—","—");
+              setDirText("No entry","No entry","No entry","No entry");
+              logAct(`⚠️ Sheet no match for key: ${key}`, "warn");
+            }
+          }else{
+            setTownIv("—","—");
+            setDirText("No entry","No entry","No entry","No entry");
+            logAct("⚠️ Sheet not loaded yet (click Load Sheet)", "warn");
+          }
+          return;
+        }
+      }catch(e){
+        logAct("❌ PIP error: " + e.message, "bad");
+      }
+    }
+  }
+
+  setText("insideVal", "Not inside any boundary");
+  setText("wbVal", "—");
+  setText("bboxVal", "—");
+  setTownIv("—","—");
+  setDirText("No entry","No entry","No entry","No entry");
+  logAct("ℹ️ Not inside any boundary", "info");
+}
+
+/* =========================
+   GPS start/stop
+========================= */
+function startGPS(){
+  if(!navigator.geolocation){
+    logAct("❌ Geolocation not supported", "bad");
+    return;
+  }
+  if(watchId) return;
+
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      lastPos = { lat: latitude, lng: longitude, acc: accuracy };
+
+      if(!gpsMarker){
+        gpsMarker = L.circleMarker([latitude, longitude], { radius: 8 }).addTo(map);
+      }else{
+        gpsMarker.setLatLng([latitude, longitude]);
       }
 
-      for(let i=0;i<particles.length;i++){
-        for(let j=i+1;j<particles.length;j++){
-          const a = particles[i], b = particles[j];
-          const dx = a.x-b.x, dy = a.y-b.y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if(dist < 140){
-            ctx.globalAlpha = (1 - dist/140) * 0.18;
-            ctx.strokeStyle = "#38bdf8";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(a.x,a.y);
-            ctx.lineTo(b.x,b.y);
-            ctx.stroke();
+      if(!gpsAccuracy){
+        gpsAccuracy = L.circle([latitude, longitude], { radius: accuracy }).addTo(map);
+      }else{
+        gpsAccuracy.setLatLng([latitude, longitude]);
+        gpsAccuracy.setRadius(accuracy);
+      }
+
+      setText("locVal", `${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${Math.round(accuracy)}m)`);
+      logAct(`📍 GPS update: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} ±${Math.round(accuracy)}m`, "info");
+
+      detectForLatLng(latitude, longitude);
+    },
+    (err) => {
+      logAct("❌ GPS error: " + err.message, "bad");
+      setGpsStatus(false);
+      stopGPS();
+    },
+    { enableHighAccuracy:true, maximumAge: 5000, timeout: 20000 }
+  );
+
+  setGpsStatus(true);
+  logAct("✅ GPS started", "ok");
+}
+
+function stopGPS(){
+  if(watchId){
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  setGpsStatus(false);
+  logAct("🛑 GPS stopped", "warn");
+}
+
+/* =========================
+   Drive proxy fetch (REQUIRED for Drive ZIP)
+========================= */
+function extractDriveFileId(url){
+  const u = String(url||"");
+  let m = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  m = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  return null;
+}
+
+function base64ToU8(b64){
+  const bin = atob(b64);
+  const u8 = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+
+function looksLikeZip(u8){
+  return u8 && u8.length >= 2 && u8[0] === 0x50 && u8[1] === 0x4B;
+}
+
+async function fetchFromDriveViaProxy(fileId){
+  const proxy = document.getElementById("proxyUrl").value.trim();
+  if(!proxy){
+    logAct("❌ Proxy URL missing. Paste Apps Script Web App URL in Proxy field.", "bad");
+    return null;
+  }
+  const url = `${proxy}?id=${encodeURIComponent(fileId)}`;
+  logAct("🔌 Proxy fetch: " + url, "info");
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if(!data.ok){
+    logAct("❌ Proxy error: " + (data.error || "unknown"), "bad");
+    return null;
+  }
+  return data;
+}
+
+/* =========================
+   Load KML from text
+========================= */
+async function addKmlFromText(name, text, saveOffline=true){
+  const { ward, block } = parseWardBlockFromName(name);
+
+  try{
+    const xml = new DOMParser().parseFromString(text, "text/xml");
+    const geojson = toGeoJSON.kml(xml);
+
+    const layer = L.geoJSON(geojson, { style: { weight: 2, opacity: 0.9, fillOpacity: 0.15 } });
+    layer.addTo(boundaryLayer);
+
+    const bbox = computeBBoxFromGeoJSON(geojson);
+    const polygons = geojsonToTurfPolygons(geojson);
+
+    kmlItems.push({ name, ward, block, layer, geojson, bbox, polygons });
+    updateCount();
+
+    if(saveOffline){
+      await idbPutKml(name, text);
+      logAct(`💾 Saved offline: ${name}`, "ok");
+    }
+
+    logAct(`✅ Loaded KML: ${name} (w${ward||"?"} b${block||"?"})`, "ok");
+  }catch(e){
+    logAct(`❌ Failed to load ${name}: ${e.message}`, "bad");
+  }
+}
+
+/* =========================
+   Upload KML / ZIP (multi)
+========================= */
+async function handleKmlOrZipFiles(files){
+  if(!files || !files.length) return;
+
+  const saveOffline = document.getElementById("saveOfflineChk").checked;
+  logAct(`📦 Selected ${files.length} file(s)`, "info");
+
+  for(const file of files){
+    const fname = (file.name || "").toLowerCase();
+
+    if(fname.endsWith(".kml")){
+      try{
+        const text = await file.text();
+        await addKmlFromText(file.name, text, saveOffline);
+      }catch(e){
+        logAct(`❌ Failed to read ${file.name}: ${e.message}`, "bad");
+      }
+      continue;
+    }
+
+    if(fname.endsWith(".zip")){
+      try{
+        logAct(`🗜️ Unzipping: ${file.name}`, "info");
+
+        const zipData = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(zipData);
+
+        const entries = Object.keys(zip.files);
+        const kmlEntryNames = entries.filter(n => n.toLowerCase().endsWith(".kml") && !zip.files[n].dir);
+
+        if(!kmlEntryNames.length){
+          logAct(`⚠️ No .kml found inside ZIP: ${file.name}`, "warn");
+          continue;
+        }
+
+        logAct(`📂 Found ${kmlEntryNames.length} KML in ZIP`, "ok");
+
+        for(const entryName of kmlEntryNames){
+          try{
+            const kmlText = await zip.files[entryName].async("text");
+            const virtualName = `${file.name}::${entryName}`;
+            await addKmlFromText(virtualName, kmlText, saveOffline);
+          }catch(e){
+            logAct(`❌ ZIP entry failed ${entryName}: ${e.message}`, "bad");
           }
         }
+      }catch(e){
+        logAct(`❌ ZIP unzip failed (${file.name}): ${e.message}`, "bad");
       }
-      ctx.globalAlpha = 1;
-      requestAnimationFrame(draw);
-    }
-    draw();
-
-    // ===== Card tilt
-    document.querySelectorAll('.card').forEach(card=>{
-      let rect=null;
-      card.addEventListener('mousemove', (e)=>{
-        rect = rect || card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const cx = rect.width/2;
-        const cy = rect.height/2;
-        const rx = ((y - cy)/cy) * -5;
-        const ry = ((x - cx)/cx) * 6;
-        card.style.transform = `translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
-      });
-      card.addEventListener('mouseleave', ()=>{
-        rect=null;
-        card.style.transform = '';
-      });
-    });
-
-    // ===== ✅ UFS menu logic
-    const ufsModal = document.getElementById('ufsModal');
-    const ufsBackdrop = document.getElementById('ufsBackdrop');
-    const ufsClose = document.getElementById('ufsClose');
-
-    function openUfsMenu(){
-      ufsModal.classList.add('show');
-      ufsModal.setAttribute('aria-hidden','false');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeUfsMenu(){
-      ufsModal.classList.remove('show');
-      ufsModal.setAttribute('aria-hidden','true');
-      document.body.style.overflow = '';
+      continue;
     }
 
-    ufsBackdrop.addEventListener('click', closeUfsMenu);
-    ufsClose.addEventListener('click', closeUfsMenu);
+    logAct(`⚠️ Skipped unsupported file: ${file.name}`, "warn");
+  }
 
-    window.addEventListener('keydown', (e)=>{
-      if(e.key === 'Escape' && ufsModal.classList.contains('show')) closeUfsMenu();
-    });
+  fitAll();
+}
 
-    // expose for inline onclick
-    window.openUfsMenu = openUfsMenu;
-  </script>
+/* =========================
+   Fetch ZIP from Drive (uses Proxy)
+========================= */
+async function fetchDriveZip(){
+  const link = document.getElementById("kmlUrl").value.trim();
+  const fid = extractDriveFileId(link);
+  if(!fid){
+    logAct("❌ Not a valid Drive file link", "bad");
+    return;
+  }
+
+  const saveOffline = document.getElementById("saveOfflineChk").checked;
+
+  const data = await fetchFromDriveViaProxy(fid);
+  if(!data) return;
+
+  const name = data.name || `drive_${fid}.zip`;
+  const u8 = base64ToU8(data.base64 || "");
+
+  const isZip =
+    name.toLowerCase().endsWith(".zip") ||
+    String(data.mimeType||"").toLowerCase().includes("zip") ||
+    looksLikeZip(u8);
+
+  if(!isZip){
+    logAct("⚠️ Drive file is not ZIP (or proxy returned non-zip).", "warn");
+  }
+
+  try{
+    logAct(`🗜️ ZIP received: ${name} (${u8.length} bytes)`, "ok");
+    const zip = await JSZip.loadAsync(u8);
+
+    const entries = Object.keys(zip.files);
+    const kmlEntryNames = entries.filter(n => n.toLowerCase().endsWith(".kml") && !zip.files[n].dir);
+
+    if(!kmlEntryNames.length){
+      logAct("⚠️ ZIP contains no .kml files", "warn");
+      return;
+    }
+
+    logAct(`✅ Extracting ${kmlEntryNames.length} KML...`, "info");
+    for(const entryName of kmlEntryNames){
+      const kmlText = await zip.files[entryName].async("text");
+      const virtualName = `${name}::${entryName}`;
+      await addKmlFromText(virtualName, kmlText, saveOffline);
+    }
+
+    fitAll();
+    logAct("✅ Drive ZIP import done", "ok");
+  }catch(e){
+    logAct("❌ ZIP parse failed: " + e.message, "bad");
+  }
+}
+
+/* =========================
+   Load non-Drive URL (CORS must allow)
+========================= */
+async function loadNonDriveUrl(){
+  const input = document.getElementById("kmlUrl").value.trim();
+  if(!input){
+    logAct("❌ URL is empty", "bad");
+    return;
+  }
+
+  const saveOffline = document.getElementById("saveOfflineChk").checked;
+
+  try{
+    const res = await fetch(input);
+    const buf = await res.arrayBuffer();
+    const u8 = new Uint8Array(buf);
+
+    const head = new TextDecoder("utf-8").decode(u8.slice(0, 200));
+    if(head.includes("<!DOCTYPE html") || head.includes("ServiceLogin")){
+      logAct("❌ Got HTML instead of file. Check URL/CORS.", "bad");
+      return;
+    }
+
+    const name = (new URL(input)).pathname.split("/").pop() || "remote_file";
+
+    if(looksLikeZip(u8) || name.toLowerCase().endsWith(".zip")){
+      const zip = await JSZip.loadAsync(u8);
+      const entries = Object.keys(zip.files);
+      const kmlEntryNames = entries.filter(n => n.toLowerCase().endsWith(".kml") && !zip.files[n].dir);
+      if(!kmlEntryNames.length){
+        logAct("⚠️ ZIP contains no .kml", "warn");
+        return;
+      }
+      for(const entryName of kmlEntryNames){
+        const kmlText = await zip.files[entryName].async("text");
+        const virtualName = `${name}::${entryName}`;
+        await addKmlFromText(virtualName, kmlText, saveOffline);
+      }
+      fitAll();
+      return;
+    }
+
+    const text = new TextDecoder("utf-8").decode(u8);
+    await addKmlFromText(name.endsWith(".kml") ? name : (name + ".kml"), text, saveOffline);
+    fitAll();
+  }catch(e){
+    logAct("❌ URL load failed: " + e.message, "bad");
+  }
+}
+
+/* =========================
+   Restore/Clear saved
+========================= */
+async function restoreSaved(){
+  try{
+    const saved = await idbGetAllKml();
+    if(!saved.length){
+      logAct("ℹ️ No saved KML found in offline storage", "info");
+      return;
+    }
+    logAct(`📦 Restoring ${saved.length} saved KML...`, "info");
+
+    for(const f of saved){
+      if(kmlItems.some(x => x.name === f.name)) continue;
+      await addKmlFromText(f.name, f.text, false);
+    }
+    fitAll();
+    logAct("✅ Restore complete", "ok");
+  }catch(e){
+    logAct("❌ Restore failed: " + e.message, "bad");
+  }
+}
+
+async function clearSaved(){
+  try{
+    await idbClearAll();
+    logAct("🧹 Offline saved KML cleared", "warn");
+  }catch(e){
+    logAct("❌ Clear saved failed: " + e.message, "bad");
+  }
+}
+
+/* =========================
+   Fit/Clear
+========================= */
+function fitAll(){
+  if(boundaryLayer.getLayers().length){
+    map.fitBounds(boundaryLayer.getBounds().pad(0.15));
+    logAct("🔎 Fit all boundaries", "info");
+  }else{
+    logAct("⚠️ Nothing to fit", "warn");
+  }
+}
+
+function clearAll(){
+  boundaryLayer.clearLayers();
+  kmlItems.length = 0;
+  updateCount();
+
+  setText("insideVal", "—");
+  setText("wbVal", "—");
+  setText("bboxVal", "—");
+  setTownIv("—","—");
+  setDirText("No entry","No entry","No entry","No entry");
+
+  logAct("🧹 Cleared all boundaries (map only)", "warn");
+}
+
+/* =========================
+   Selection Actions
+========================= */
+function showSelected(){
+  if(!sheetLoaded){
+    logAct("⚠️ Load Sheet first", "warn");
+    return;
+  }
+
+  const town = document.getElementById("townSel").value;
+  const iv = document.getElementById("ivSel").value;
+  const ward = document.getElementById("wardSel").value;
+  const block = document.getElementById("blockSel").value;
+
+  // Need ward+block for exact info
+  if(!ward || !block){
+    logAct("⚠️ Please select Ward and Block (Town/IV optional)", "warn");
+    return;
+  }
+
+  const key = makeKey(ward, block);
+  const row = sheetMap.get(key);
+
+  if(row){
+    setTownIv(row.town, row.iv);
+    setDirText(row.north, row.east, row.south, row.west);
+    setText("wbVal", `Ward w${row.ward} / Block b${row.block}`);
+    setText("insideVal", "Selected (not GPS)");
+    logAct(`🧾 Selected sheet row: ${key} (Town=${row.town||"-"}, IV=${row.iv||"-"})`, "ok");
+  }else{
+    setTownIv("—","—");
+    setDirText("No entry","No entry","No entry","No entry");
+    logAct(`⚠️ No sheet row for ${key}`, "warn");
+  }
+
+  const kmlHit = highlightByWardBlock(ward, block);
+  if(kmlHit && kmlHit.bbox){
+    const bb = kmlHit.bbox;
+    setText("bboxVal", `N ${bb.N.toFixed(6)} | S ${bb.S.toFixed(6)} | E ${bb.E.toFixed(6)} | W ${bb.W.toFixed(6)}`);
+  }else{
+    setText("bboxVal", "—");
+  }
+}
+
+function clearSelection(){
+  document.getElementById("townSel").value = "";
+  document.getElementById("ivSel").value = "";
+  document.getElementById("wardSel").value = "";
+  document.getElementById("blockSel").value = "";
+  buildSelectionOptions();
+  logAct("Selection cleared", "info");
+}
+
+/* =========================
+   Persist inputs (proxy + drive link + autoFetch)
+========================= */
+const LS_PROXY="ufs_proxyUrl", LS_DRIVE="ufs_driveUrl", LS_AUTOFETCH="ufs_autoFetch";
+function loadPrefs(){
+  const p = localStorage.getItem(LS_PROXY); if(p) document.getElementById("proxyUrl").value = p;
+  const d = localStorage.getItem(LS_DRIVE); if(d) document.getElementById("kmlUrl").value = d;
+  const a = localStorage.getItem(LS_AUTOFETCH); if(a) document.getElementById("autoFetchChk").checked = (a==="1");
+}
+function savePrefs(){
+  localStorage.setItem(LS_PROXY, document.getElementById("proxyUrl").value.trim());
+  localStorage.setItem(LS_DRIVE, document.getElementById("kmlUrl").value.trim());
+  localStorage.setItem(LS_AUTOFETCH, document.getElementById("autoFetchChk").checked ? "1":"0");
+}
+
+/* =========================
+   Buttons + events
+========================= */
+document.getElementById("kmlInput").addEventListener("change", async (e) => {
+  await handleKmlOrZipFiles(e.target.files);
+  e.target.value = "";
+});
+
+document.getElementById("fetchDriveBtn").addEventListener("click", async () => {
+  savePrefs();
+  await fetchDriveZip();
+});
+document.getElementById("loadKmlUrlBtn").addEventListener("click", loadNonDriveUrl);
+
+document.getElementById("restoreSavedBtn").addEventListener("click", restoreSaved);
+document.getElementById("clearSavedBtn").addEventListener("click", clearSaved);
+
+document.getElementById("loadSheetBtn").addEventListener("click", async () => {
+  await loadSheet(0);
+});
+
+document.getElementById("startGpsBtn").addEventListener("click", startGPS);
+document.getElementById("stopGpsBtn").addEventListener("click", stopGPS);
+
+document.getElementById("detectNowBtn").addEventListener("click", () => {
+  if(!lastPos){
+    logAct("⚠️ No GPS fix yet. Start GPS first.", "warn");
+    return;
+  }
+  logAct("🧭 Detect Now clicked", "info");
+  detectForLatLng(lastPos.lat, lastPos.lng);
+});
+
+document.getElementById("fitAllBtn").addEventListener("click", fitAll);
+document.getElementById("clearBtn").addEventListener("click", clearAll);
+document.getElementById("clearLogBtn").addEventListener("click", clearActivity);
+
+document.getElementById("showSelectedBtn").addEventListener("click", showSelected);
+document.getElementById("clearSelectionBtn").addEventListener("click", clearSelection);
+
+["proxyUrl","kmlUrl","autoFetchChk"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", savePrefs);
+});
+
+["townSel","ivSel","wardSel","blockSel"].forEach(id=>{
+  document.getElementById(id).addEventListener("change", () => {
+    buildSelectionOptions();
+  });
+});
+
+/* =========================
+   Initial
+========================= */
+function setInit(){
+  setGpsStatus(false);
+  setSheetStatus(false, "Sheet: NOT LOADED");
+  setSelStatus("Load Sheet first");
+  logAct("Ready. 1) Restore/Upload KML/ZIP  2) Load Sheet  3) Start GPS or use Selection Console", "info");
+}
+setInit();
+
+loadPrefs();
+
+// Auto-restore saved KML on page open
+restoreSaved();
+
+// Optional: auto-fetch drive ZIP on open (ONLY if checked)
+(async () => {
+  if(document.getElementById("autoFetchChk").checked){
+    const link = document.getElementById("kmlUrl").value.trim();
+    const proxy = document.getElementById("proxyUrl").value.trim();
+    if(link && proxy){
+      logAct("🧩 Auto-fetch enabled → fetching Drive ZIP...", "info");
+      try{ await fetchDriveZip(); }catch(e){ logAct("Auto-fetch failed: "+e.message, "bad"); }
+    }else{
+      logAct("⚠️ Auto-fetch checked but Proxy/Drive link missing", "warn");
+    }
+  }
+})();
+</script>
 </body>
 </html>
