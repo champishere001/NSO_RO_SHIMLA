@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>UFS KML Viewer (b_w_iv strict + Multi-town + Boundary CSV)</title>
+  <title>UFS KML Viewer (b_w_iv strict + Multi-town + Boundary CSV + GPS + Structure Logger + Track)</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -128,6 +128,7 @@
       border-color: rgba(56,189,248,.45);
       box-shadow: 0 0 0 4px rgba(56,189,248,.14);
     }
+    textarea.inp{ resize: vertical; min-height: 84px; }
 
     .two{ display:grid; grid-template-columns:1fr; gap:12px; }
     @media (min-width: 920px){ .two{ grid-template-columns: 1.1fr .9fr; } }
@@ -222,7 +223,6 @@
     .chk input{ transform: scale(1.1); }
     .selGrid{ display:grid; grid-template-columns:1fr; gap:10px; }
     @media (min-width: 720px){ .selGrid{ grid-template-columns: 1fr 1fr; } }
-
     code{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
   </style>
 </head>
@@ -231,12 +231,13 @@
   <div class="wrap">
     <div class="header">
       <div class="title">
-        <h1>UFS KML Viewer (STRICT b_w_iv + Multi-town Boundary Match)</h1>
+        <h1>UFS KML Viewer (STRICT b_w_iv + Multi-town Boundary Match + GPS + Structure Logger)</h1>
         <div class="badge" id="countBadge">0 boundaries</div>
       </div>
       <div class="sub">
         ✅ KML name must be: <b>b{block}_w{ward}_iv{iv}_xxxx.kml</b> (example: <code>b17_w34_iv15_3962014.kml</code>)<br/>
-        ✅ Boundary descriptions load from boundary CSV/Google Sheet using: <b>Town + IV + Ward + Block</b> (auto town-resolve if needed).
+        ✅ Boundary descriptions load from boundary CSV/Google Sheet using: <b>Town + IV + Ward + Block</b> (auto town-resolve if needed).<br/>
+        ✅ Structure Logger: saves a pin at your GPS point + auto-detects IV/Ward/Block from the boundary you are inside.
       </div>
     </div>
 
@@ -311,6 +312,46 @@
         </div>
       </div>
 
+      <!-- Structure Logger + Track -->
+      <div class="card">
+        <div class="cardHead">
+          <div class="h">🏠 Structure Logger (Auto Ward/Block) + 🧭 Track</div>
+          <div class="pill" id="logStatus">Logs: 0</div>
+        </div>
+
+        <div class="cardBody">
+          <div class="selGrid">
+            <input class="inp" id="houseNoInp" placeholder="House No / Plot No" />
+            <input class="inp" id="structureNameInp" placeholder="Structure Name (Shop/School/Temple etc.)" />
+            <input class="inp" id="ownerNameInp" placeholder="Owner Name" />
+            <input class="inp" id="householdsInp" placeholder="No of Household (e.g., 1/2/3)" inputmode="numeric" />
+          </div>
+
+          <div style="margin-top:10px">
+            <textarea class="inp" id="remarksInp" rows="3" placeholder="Remarks / Landmark / Any note (optional)"></textarea>
+          </div>
+
+          <div class="controls" style="margin-top:10px">
+            <button class="btn ok" id="addStructureBtn">📌 Save Structure at Current Location</button>
+            <button class="btn" id="voiceBtn">🎙️ Voice Input (selected field)</button>
+            <button class="btn warn" id="stopVoiceBtn">⏹ Stop Voice</button>
+            <button class="btn primary" id="toggleTrackBtn">🧭 Start Track</button>
+            <button class="btn" id="clearLogsBtn">🧹 Clear Logs</button>
+          </div>
+
+          <div class="controls" style="margin-top:10px">
+            <button class="btn primary" id="exportCsvBtn">⬇️ Export CSV</button>
+            <button class="btn primary" id="exportGeoJsonBtn">⬇️ Export GeoJSON</button>
+            <span class="pill" id="autoWBpill">Ward/Block: auto from GPS</span>
+          </div>
+
+          <div class="hint">
+            ✅ Best flow: (1) Load Boundary CSV/Sheet (2) Load KML/ZIP (3) Start GPS (4) Fill details (5) Save Structure.<br/>
+            ✅ Each save drops a pin at the exact GPS point and auto assigns IV/Ward/Block from the boundary you are inside.
+          </div>
+        </div>
+      </div>
+
       <div class="two">
         <!-- Map -->
         <div class="card">
@@ -374,7 +415,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -617,7 +657,6 @@ async function loadBoundaryFromUrlOrSheet(){
     return;
   }
 
-  // If Google Sheet link -> export CSV
   const sid = sheetIdFromUrl(u);
   let fetchUrl = u;
   if(sid){
@@ -752,7 +791,6 @@ function resolveBoundaryRow(townSelected, iv, ward, block, onResolved){
     return;
   }
 
-  // If user selected town -> exact
   if(townSelected){
     const keyExact = makeKey(townSelected, iv, ward, block);
     const hit = boundaryExact.get(keyExact) || null;
@@ -760,7 +798,6 @@ function resolveBoundaryRow(townSelected, iv, ward, block, onResolved){
     return;
   }
 
-  // Else try WBIV index
   const keyWBIV = makeKeyWBIV(iv, ward, block);
   const hits = boundaryIndexWBIV.get(keyWBIV) || [];
   if(hits.length === 0){
@@ -772,7 +809,6 @@ function resolveBoundaryRow(townSelected, iv, ward, block, onResolved){
     return;
   }
 
-  // Multiple towns -> ask user
   const towns = uniqueSorted(hits.map(h=>h.town));
   openTownResolveModal(towns, (pickedTown) => {
     const keyExact = makeKey(pickedTown, iv, ward, block);
@@ -790,11 +826,19 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap"
 }).addTo(map);
 
-const boundaryLayer = L.featureGroup().addTo(map);
+const boundaryLayer = L.featureGroup().addTo(map);     // KML polygons
+const structureLayer = L.featureGroup().addTo(map);    // saved pins
 let gpsMarker = null;
 let gpsAccuracy = null;
 let watchId = null;
 let lastPos = null;
+
+/* =========================
+   Track movement state
+========================= */
+let trackOn = false;
+let trackLine = null;
+let trackPts = []; // [{lat,lng,ts,acc}]
 
 /* =========================
    KML store + STRICT filename parsing
@@ -904,7 +948,50 @@ function applyBoundaryRow(row){
 }
 
 /* =========================
-   Detect boundary for point (GPS)
+   Auto Ward/Block/IV from point
+========================= */
+function findKmlHitForLatLng(lat, lng){
+  if(!kmlItems.length) return null;
+  const pt = turf.point([lng, lat]);
+
+  for(const item of kmlItems){
+    if(!item.bbox) continue;
+    if(lat > item.bbox.N || lat < item.bbox.S || lng > item.bbox.E || lng < item.bbox.W) continue;
+
+    for(const f of item.polygons){
+      try{
+        if(turf.booleanPointInPolygon(pt, f)){
+          return item;
+        }
+      }catch(e){}
+    }
+  }
+  return null;
+}
+
+/* =========================
+   Track movement helper
+========================= */
+function onTrackPoint(lat, lng, acc){
+  if(!trackOn) return;
+
+  const now = Date.now();
+  const last = trackPts[trackPts.length - 1];
+  if(last){
+    const d = map.distance([last.lat,last.lng], [lat,lng]);
+    if(d < 3) return;
+  }
+  trackPts.push({lat, lng, ts: now, acc: acc || null});
+
+  if(!trackLine){
+    trackLine = L.polyline([[lat,lng]]).addTo(map);
+  }else{
+    trackLine.addLatLng([lat,lng]);
+  }
+}
+
+/* =========================
+   Detect boundary for point (GPS) - older function kept
 ========================= */
 function detectForLatLng(lat, lng){
   if(!kmlItems.length){
@@ -958,7 +1045,7 @@ function detectForLatLng(lat, lng){
 }
 
 /* =========================
-   GPS start/stop
+   GPS start/stop - older function kept + track added
 ========================= */
 function startGPS(){
   if(!navigator.geolocation){
@@ -983,7 +1070,9 @@ function startGPS(){
 
       setText("locVal", `${latitude.toFixed(6)}, ${longitude.toFixed(6)} (±${Math.round(accuracy)}m)`);
       logAct(`📍 GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} ±${Math.round(accuracy)}m`, "info");
-      detectForLatLng(latitude, longitude);
+
+      detectForLatLng(latitude, longitude);     // older behavior kept
+      onTrackPoint(latitude, longitude, accuracy); // new behavior
     },
     (err) => {
       logAct("❌ GPS error: " + err.message, "bad");
@@ -1006,7 +1095,7 @@ function stopGPS(){
 }
 
 /* =========================
-   Drive proxy fetch helpers
+   Drive proxy fetch helpers - older functions kept
 ========================= */
 function extractDriveFileId(url){
   const u = String(url||"");
@@ -1044,7 +1133,7 @@ async function fetchFromDriveViaProxy(fileId){
 }
 
 /* =========================
-   Load KML from text (STRICT filename)
+   Load KML from text (STRICT filename) - older function kept
 ========================= */
 async function addKmlFromText(name, text, saveOffline=true){
   const parsed = parseB_W_IV_FromName(name);
@@ -1083,7 +1172,7 @@ async function addKmlFromText(name, text, saveOffline=true){
 }
 
 /* =========================
-   Upload KML / ZIP (multi)
+   Upload KML / ZIP (multi) - older function kept
 ========================= */
 async function handleKmlOrZipFiles(files){
   if(!files || !files.length) return;
@@ -1140,7 +1229,7 @@ async function handleKmlOrZipFiles(files){
 }
 
 /* =========================
-   Fetch ZIP from Drive (proxy)
+   Fetch ZIP from Drive (proxy) - older function kept
 ========================= */
 async function fetchDriveZip(){
   const link = document.getElementById("kmlUrl").value.trim();
@@ -1184,7 +1273,7 @@ async function fetchDriveZip(){
 }
 
 /* =========================
-   Load URL (non-drive)
+   Load URL (non-drive) - older function kept
 ========================= */
 async function loadNonDriveUrl(){
   const input = document.getElementById("kmlUrl").value.trim();
@@ -1235,7 +1324,7 @@ async function loadNonDriveUrl(){
 }
 
 /* =========================
-   Restore/Clear saved KML
+   Restore/Clear saved KML - older functions kept
 ========================= */
 async function restoreSaved(){
   try{
@@ -1265,18 +1354,33 @@ async function clearSaved(){
 }
 
 /* =========================
-   Fit/Clear map
+   Fit/Clear map - older functions kept (enhanced to include pins/track)
 ========================= */
 function fitAll(){
-  if(boundaryLayer.getLayers().length){
-    map.fitBounds(boundaryLayer.getBounds().pad(0.15));
-    logAct("🔎 Fit all boundaries", "info");
-  }else logAct("⚠️ Nothing to fit", "warn");
+  const layers = [];
+  boundaryLayer.getLayers().forEach(l => layers.push(l));
+  structureLayer.getLayers().forEach(l => layers.push(l));
+  if(trackLine) layers.push(trackLine);
+
+  if(layers.length){
+    const fg = L.featureGroup(layers);
+    try{ map.fitBounds(fg.getBounds().pad(0.15)); }catch(e){}
+    logAct("🔎 Fit all layers", "info");
+  }else{
+    logAct("⚠️ Nothing to fit", "warn");
+  }
 }
 function clearAll(){
   boundaryLayer.clearLayers();
+  structureLayer.clearLayers();
   kmlItems.length = 0;
   updateCount();
+
+  if(trackLine){
+    try{ map.removeLayer(trackLine); }catch(e){}
+  }
+  trackLine = null;
+  trackPts = [];
 
   setText("insideVal", "—");
   setText("wbVal", "—");
@@ -1285,11 +1389,11 @@ function clearAll(){
   setTown("—");
   setDirText("No entry","No entry","No entry","No entry");
 
-  logAct("🧹 Cleared all boundaries (map only)", "warn");
+  logAct("🧹 Cleared all boundaries + pins (map only)", "warn");
 }
 
 /* =========================
-   Selection actions
+   Selection actions - older functions kept
 ========================= */
 function showSelected(){
   if(!boundaryLoaded){
@@ -1321,7 +1425,6 @@ function showSelected(){
   // Map highlight by Ward+Block (KML)
   highlightByWardBlock(ward, block);
 }
-
 function clearSelection(){
   document.getElementById("townSel").value = "";
   document.getElementById("ivSel").value = "";
@@ -1332,7 +1435,7 @@ function clearSelection(){
 }
 
 /* =========================
-   Persist prefs (proxy + drive link + autoFetch + boundary url)
+   Persist prefs - older functions kept
 ========================= */
 const LS_PROXY="ufs_proxyUrl", LS_DRIVE="ufs_driveUrl", LS_AUTOFETCH="ufs_autoFetch", LS_BOUND="ufs_boundaryUrl";
 function loadPrefs(){
@@ -1349,7 +1452,248 @@ function savePrefs(){
 }
 
 /* =========================
-   Events
+   Structure Logger (Pinpoint building at input point)
+========================= */
+let structureLogs = [];
+function updateLogStatus(){
+  document.getElementById("logStatus").textContent = `Logs: ${structureLogs.length}`;
+}
+updateLogStatus();
+
+function makeStructurePopup(rec){
+  const esc = (s) => String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  return `
+  <div style="font-family:system-ui; font-size:12px; line-height:1.35; color:#0b1220;">
+    <div style="font-weight:900; margin-bottom:6px;">🏠 ${esc(rec.structureName || "Structure")}</div>
+    <div><b>House/Plot:</b> ${esc(rec.houseNo || "—")}</div>
+    <div><b>Owner:</b> ${esc(rec.ownerName || "—")}</div>
+    <div><b>Households:</b> ${esc(rec.households || "—")}</div>
+    <div><b>Town:</b> ${esc(rec.town || "—")}</div>
+    <div><b>IV/Ward/Block:</b> IV ${esc(rec.iv || "—")} / W ${esc(rec.ward || "—")} / B ${esc(rec.block || "—")}</div>
+    <div><b>KML:</b> ${esc(rec.kmlName || "—")}</div>
+    <div><b>GPS:</b> ${rec.lat.toFixed(6)}, ${rec.lng.toFixed(6)} (±${rec.acc?Math.round(rec.acc):"?"}m)</div>
+    <div style="margin-top:6px"><b>Remarks:</b><br/>${esc(rec.remarks || "—")}</div>
+    <div style="margin-top:6px; color:#475569;"><b>Time:</b> ${new Date(rec.ts).toLocaleString()}</div>
+  </div>`;
+}
+
+function addStructureAtCurrentLocation(){
+  if(!lastPos){
+    logAct("⚠️ No GPS fix yet. Start GPS first.", "warn");
+    return;
+  }
+  if(!kmlItems.length){
+    logAct("⚠️ No KML boundaries loaded. Upload/Restore KML/ZIP first.", "warn");
+    return;
+  }
+
+  const {lat, lng, acc} = lastPos;
+  const hit = findKmlHitForLatLng(lat, lng);
+  if(!hit){
+    logAct("⚠️ You are not inside any KML boundary. Cannot auto decide Ward/Block.", "warn");
+    return;
+  }
+
+  const selectedTown = document.getElementById("townSel").value;
+
+  resolveBoundaryRow(selectedTown, hit.iv, hit.ward, hit.block, (row) => {
+    const rec = {
+      ts: Date.now(),
+      lat, lng, acc: acc || null,
+      iv: String(hit.iv||""),
+      ward: String(hit.ward||""),
+      block: String(hit.block||""),
+      kmlName: hit.name,
+      town: row ? row.town : (selectedTown || ""),
+      houseNo: document.getElementById("houseNoInp").value.trim(),
+      structureName: document.getElementById("structureNameInp").value.trim(),
+      ownerName: document.getElementById("ownerNameInp").value.trim(),
+      households: document.getElementById("householdsInp").value.trim(),
+      remarks: document.getElementById("remarksInp").value.trim(),
+      north: row ? row.north : "",
+      east:  row ? row.east  : "",
+      south: row ? row.south : "",
+      west:  row ? row.west  : "",
+    };
+
+    // Pinpoint: marker at the exact GPS point where you typed/voice entered
+    const m = L.marker([lat,lng]).addTo(structureLayer);
+    m.bindPopup(makeStructurePopup(rec));
+    m.openPopup();
+
+    structureLogs.push(rec);
+    updateLogStatus();
+
+    highlightByWardBlock(hit.ward, hit.block);
+
+    setText("insideVal", "Saved Structure (pinned)");
+    setText("wbVal", `Block b${hit.block} / Ward w${hit.ward} / IV ${hit.iv}`);
+    if(row) applyBoundaryRow(row);
+
+    logAct(`📌 Saved structure @ b${hit.block} w${hit.ward} iv${hit.iv} | ${rec.structureName || "Structure"}`, "ok");
+  });
+}
+
+/* =========================
+   Voice input (Web Speech API)
+========================= */
+let speechRec = null;
+let speechActive = false;
+let lastFocusedInput = null;
+
+["houseNoInp","structureNameInp","ownerNameInp","householdsInp","remarksInp"].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener("focus", ()=> lastFocusedInput = el);
+  el.addEventListener("click", ()=> lastFocusedInput = el);
+});
+
+function startVoice(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    logAct("❌ Voice input not supported on this browser/device.", "bad");
+    return;
+  }
+  if(speechActive) return;
+
+  speechRec = new SpeechRecognition();
+  // Change to "hi-IN" if you want Hindi
+  speechRec.lang = "en-IN";
+  speechRec.interimResults = true;
+  speechRec.continuous = true;
+
+  speechRec.onstart = () => {
+    speechActive = true;
+    logAct("🎙️ Voice started (speak now)...", "info");
+  };
+
+  speechRec.onerror = (e) => {
+    logAct("❌ Voice error: " + (e.error || "unknown"), "bad");
+  };
+
+  speechRec.onend = () => {
+    speechActive = false;
+    logAct("⏹ Voice stopped", "warn");
+  };
+
+  speechRec.onresult = (event) => {
+    let finalText = "";
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      const transcript = event.results[i][0].transcript;
+      if(event.results[i].isFinal) finalText += transcript;
+    }
+    const target = lastFocusedInput || document.getElementById("remarksInp");
+    if(!target) return;
+    if(finalText.trim()){
+      target.value = (target.value ? (target.value.trim() + " ") : "") + finalText.trim();
+    }
+  };
+
+  speechRec.start();
+}
+function stopVoice(){
+  try{ if(speechRec) speechRec.stop(); }catch(e){}
+}
+
+/* =========================
+   Export helpers (CSV + GeoJSON)
+========================= */
+function downloadBlob(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportLogsCSV(){
+  if(!structureLogs.length){
+    logAct("ℹ️ No logs to export", "info");
+    return;
+  }
+
+  const cols = [
+    "ts","time","lat","lng","acc",
+    "town","iv","ward","block","kmlName",
+    "houseNo","structureName","ownerName","households","remarks",
+    "north","east","south","west"
+  ];
+
+  const esc = (v) => {
+    const s = String(v ?? "");
+    if(/[,"\n\r]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+    return s;
+  };
+
+  const lines = [];
+  lines.push(cols.join(","));
+  for(const r of structureLogs){
+    const row = { ...r, time: new Date(r.ts).toLocaleString() };
+    lines.push(cols.map(c => esc(row[c])).join(","));
+  }
+
+  downloadBlob(`ufs_structure_logs_${Date.now()}.csv`, lines.join("\n"), "text/csv;charset=utf-8");
+  logAct("⬇️ CSV exported", "ok");
+}
+
+function exportLogsGeoJSON(){
+  if(!structureLogs.length){
+    logAct("ℹ️ No logs to export", "info");
+    return;
+  }
+
+  const fc = {
+    type: "FeatureCollection",
+    features: structureLogs.map(r => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [r.lng, r.lat] },
+      properties: {
+        ts: r.ts,
+        time: new Date(r.ts).toISOString(),
+        acc: r.acc,
+        town: r.town,
+        iv: r.iv,
+        ward: r.ward,
+        block: r.block,
+        kmlName: r.kmlName,
+        houseNo: r.houseNo,
+        structureName: r.structureName,
+        ownerName: r.ownerName,
+        households: r.households,
+        remarks: r.remarks,
+        north: r.north, east: r.east, south: r.south, west: r.west
+      }
+    }))
+  };
+
+  downloadBlob(`ufs_structure_logs_${Date.now()}.geojson`, JSON.stringify(fc, null, 2), "application/geo+json");
+  logAct("⬇️ GeoJSON exported", "ok");
+}
+
+function clearLogs(){
+  structureLogs = [];
+  structureLayer.clearLayers();
+  updateLogStatus();
+  logAct("🧹 Logs cleared (pins removed)", "warn");
+}
+
+function toggleTrack(){
+  trackOn = !trackOn;
+  const btn = document.getElementById("toggleTrackBtn");
+  btn.textContent = trackOn ? "🧭 Stop Track" : "🧭 Start Track";
+  if(trackOn){
+    logAct("🧭 Track ON (movement line will record during GPS)", "ok");
+  }else{
+    logAct("🧭 Track OFF", "warn");
+  }
+}
+
+/* =========================
+   Events - all old buttons kept + new buttons wired
 ========================= */
 document.getElementById("kmlInput").addEventListener("change", async (e) => {
   await handleKmlOrZipFiles(e.target.files);
@@ -1402,6 +1746,14 @@ document.getElementById("clearLogBtn").addEventListener("click", clearActivity);
 document.getElementById("showSelectedBtn").addEventListener("click", showSelected);
 document.getElementById("clearSelectionBtn").addEventListener("click", clearSelection);
 
+document.getElementById("addStructureBtn").addEventListener("click", addStructureAtCurrentLocation);
+document.getElementById("voiceBtn").addEventListener("click", startVoice);
+document.getElementById("stopVoiceBtn").addEventListener("click", stopVoice);
+document.getElementById("toggleTrackBtn").addEventListener("click", toggleTrack);
+document.getElementById("exportCsvBtn").addEventListener("click", exportLogsCSV);
+document.getElementById("exportGeoJsonBtn").addEventListener("click", exportLogsGeoJSON);
+document.getElementById("clearLogsBtn").addEventListener("click", clearLogs);
+
 ["proxyUrl","kmlUrl","autoFetchChk","boundaryUrl"].forEach(id=>{
   document.getElementById(id).addEventListener("change", savePrefs);
 });
@@ -1410,19 +1762,19 @@ document.getElementById("clearSelectionBtn").addEventListener("click", clearSele
 });
 
 /* =========================
-   Init
+   Init - older init kept
 ========================= */
 function setInit(){
   setGpsStatus(false);
   setBoundaryStatus(false, "Boundary: NOT LOADED");
   setSelStatus("Load Boundary first");
-  logAct("Ready. 1) Upload Boundary CSV or Load Boundary URL  2) Upload/Restore KML/ZIP  3) Start GPS", "info");
+  logAct("Ready. 1) Load Boundary  2) Upload/Restore KML/ZIP  3) Start GPS  4) Save Structure pins", "info");
 }
 setInit();
 loadPrefs();
 restoreSaved();
 
-// Optional auto-fetch Drive ZIP on open
+// Optional auto-fetch Drive ZIP on open - older behavior kept
 (async () => {
   if(document.getElementById("autoFetchChk").checked){
     const link = document.getElementById("kmlUrl").value.trim();
